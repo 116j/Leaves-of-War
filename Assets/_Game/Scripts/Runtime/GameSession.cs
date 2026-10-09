@@ -1777,7 +1777,9 @@ namespace Hortensia.Runtime
                 group.alpha = 0f;
 
                 CreateText(root.transform, text, 44f, new Vector2(0f, 0f), new Vector2(1500f, 600f), 1f);
-                TMP_Text prompt = CreateText(root.transform, "Click or press any key to continue", 24f, new Vector2(0f, -440f), new Vector2(1500f, 60f), 0.7f);
+                bool touch = Application.isMobilePlatform || (Touchscreen.current != null && Mouse.current == null);
+                string promptText = touch ? "Tap to continue" : "Click or press any key to continue";
+                TMP_Text prompt = CreateText(root.transform, promptText, 24f, new Vector2(0f, -440f), new Vector2(1500f, 60f), 0.7f);
                 prompt.gameObject.SetActive(false);
 
                 return new TransitionScreen(root, group, prompt, clock);
@@ -1847,6 +1849,7 @@ namespace Hortensia.Runtime
             {
                 return (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) ||
                        (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
+                       (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame) ||
                        (Gamepad.current != null && (Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.startButton.wasPressedThisFrame));
             }
         }

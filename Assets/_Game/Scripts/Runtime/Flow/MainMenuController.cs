@@ -85,6 +85,8 @@ namespace Hortensia.Runtime
 
         [Header("Hint Text Style")]
         [SerializeField, TextArea(1, 3)] private string hintMessage = "Hold the left mouse button and move to sweep the leaves  ·  Enter to blow them away";
+        [Tooltip("Hint shown on phones and tablets.")]
+        [SerializeField, TextArea(1, 3)] private string hintMessageTouch = "Swipe to sweep the leaves  ·  Double-tap to blow them away";
         [SerializeField] private TMP_FontAsset hintFont;
         [SerializeField] private Font hintFontFile;
         [SerializeField] private bool hintBold = false;
@@ -118,6 +120,10 @@ namespace Hortensia.Runtime
         [SerializeField, Range(0f, 1f)] private float goldLeafTint = 0.6f;
         [SerializeField, Min(0)] private int maxGoldLeaves = 1500;
         [SerializeField, Min(0.1f)] private float gustDuration = 0.8f;
+
+        [Header("Touch")]
+        [Tooltip("Max seconds between the two taps of a double-tap (gust of wind).")]
+        [SerializeField, Range(0.15f, 0.6f)] private float doubleTapTime = 0.35f;
 
         [Header("Broom")]
         [SerializeField, Range(6f, 80f)] private float broomHalfWidth = 30f;
@@ -225,6 +231,13 @@ namespace Hortensia.Runtime
         private bool inputLocked;
         private bool starting;
 
+        private bool touchDevice;
+        private float tapStartTime;
+        private Vector2 tapStartPosition;
+        private float lastTapTime = -10f;
+        private Vector2 lastTapPosition;
+        private RawImage cursorImage;
+
         private AudioSource sweepSource;
         private AudioSource sfxSource;
         private AudioSource entrySource;
@@ -239,6 +252,7 @@ namespace Hortensia.Runtime
 
         private void Awake()
         {
+            touchDevice = Application.isMobilePlatform || (Touchscreen.current != null && Mouse.current == null);
             EnsureEventSystem();
             if (FindAnyObjectByType<SettingsApplier>() == null)
                 new GameObject("Settings Applier").AddComponent<SettingsApplier>();
@@ -275,8 +289,9 @@ namespace Hortensia.Runtime
             }
             else
             {
-                HandleMouseSweeping();
+                HandlePointerSweeping();
                 HandleConfirm();
+                HandleDoubleTap();
                 RegrowLeaves();
             }
 
@@ -314,7 +329,7 @@ namespace Hortensia.Runtime
             hintFontAsset = ResolveFont(hintFontFile, hintFont, "Hint Font") ?? readableFont;
         }
 
-        private static TMP_FontAsset ResolveFont(Font file, TMP_FontAsset asset, string label)
+        internal static TMP_FontAsset ResolveFont(Font file, TMP_FontAsset asset, string label)
         {
             if (file != null)
             {
@@ -520,11 +535,12 @@ namespace Hortensia.Runtime
             hintGroup.blocksRaycasts = false;
 
             TMP_Text text = CreateText(box, "Text", hintFontAsset, hintSize, Vector2.zero, new Vector2(1700f, hintSize * 2f));
-            text.text = hintMessage;
+            string message = touchDevice ? hintMessageTouch : hintMessage;
+            text.text = message;
             text.color = hintColor;
             StyleText(text, hintBold, hintTextOutlineWidth, hintTextOutlineColor);
 
-            Vector2 preferred = text.GetPreferredValues(hintMessage, 1700f, 0f);
+            Vector2 preferred = text.GetPreferredValues(message, 1700f, 0f);
             Vector2 textSize = new Vector2(Mathf.Min(preferred.x, 1700f), preferred.y);
             box.sizeDelta = textSize + hintPadding * 2f;
             text.rectTransform.sizeDelta = textSize;
@@ -755,16 +771,31 @@ namespace Hortensia.Runtime
 
         private float RandomRange(float min, float max) => min + (float)rng.NextDouble() * (max - min);
 
-        private void HandleMouseSweeping()
+        private static bool ReadPointer(out Vector2 position, out bool pressed)
         {
+            Touchscreen touch = Touchscreen.current;
+            if (touch != null && touch.primaryTouch.press.isPressed)
+            {
+                position = touch.primaryTouch.position.ReadValue();
+                pressed = true;
+                return true;
+            }
+
             Mouse mouse = Mouse.current;
-            if (mouse == null || !mouse.leftButton.isPressed)
+            position = mouse != null ? mouse.position.ReadValue() : Vector2.zero;
+            pressed = mouse != null && mouse.leftButton.isPressed;
+            return mouse != null;
+        }
+
+        private void HandlePointerSweeping()
+        {
+            if (!ReadPointer(out Vector2 screen, out bool pressed) || !pressed)
             {
                 strokeActive = false;
                 return;
             }
 
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(leavesRect, mouse.position.ReadValue(), null, out Vector2 local))
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(leavesRect, screen, null, out Vector2 local))
                 return;
 
             Rect r = leavesRect.rect;
@@ -1014,7 +1045,39 @@ namespace Hortensia.Runtime
                 StartCoroutine(Gust(null));
         }
 
-        private IEnumerator Gust(System.Action onComplete)
+        private void HandleDoubleTap()
+        {
+            Touchscreen touch = Touchscreen.current;
+            if (touch == null)
+                return;
+
+            var primary = touch.primaryTouch;
+            Vector2 position = primary.position.ReadValue();
+            float now = Time.unscaledTime;
+            float slop = Screen.height * 0.04f;
+
+            if (primary.press.wasPressedThisFrame)
+            {
+                tapStartTime = now;
+                tapStartPosition = position;
+            }
+
+            if (!primary.press.wasReleasedThisFrame || now - tapStartTime > 0.25f || (position - tapStartPosition).magnitude > slop)
+                return;
+
+            bool secondTap = now - lastTapTime <= doubleTapTime && (position - lastTapPosition).magnitude <= slop * 2f;
+            if (secondTap && !items.Exists(i => i.Revealed && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)i.transform, position, null)))
+            {
+                lastTapTime = -10f;
+                StartCoroutine(Gust(null, false));
+                return;
+            }
+
+            lastTapTime = now;
+            lastTapPosition = position;
+        }
+
+        private IEnumerator Gust(System.Action onComplete, bool selectFirstEntry = true)
         {
             inputLocked = true;
             gustActive = true;
@@ -1056,7 +1119,7 @@ namespace Hortensia.Runtime
             }
 
             yield return null;
-            if (items.Count > 0 && EventSystem.current != null)
+            if (selectFirstEntry && items.Count > 0 && EventSystem.current != null)
                 EventSystem.current.SetSelectedGameObject(items[0].gameObject);
         }
 
@@ -1197,6 +1260,7 @@ namespace Hortensia.Runtime
                 creditsScroll.anchoredPosition = new Vector2(0f, y);
 
                 if ((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
+                    (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame) ||
                     (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
                     (Gamepad.current != null && (Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame)))
                 {
@@ -1342,9 +1406,9 @@ namespace Hortensia.Runtime
                 cursorCanvas = root.GetComponent<Canvas>();
                 cursorRect = NewRect("Broom", root, typeof(RawImage));
                 cursorRect.anchorMin = cursorRect.anchorMax = Vector2.zero;
-                RawImage image = cursorRect.GetComponent<RawImage>();
-                image.raycastTarget = false;
-                image.texture = texture;
+                cursorImage = cursorRect.GetComponent<RawImage>();
+                cursorImage.raycastTarget = false;
+                cursorImage.texture = texture;
             }
 
             cursorRect.sizeDelta = new Vector2(cursorSize * texture.width / texture.height, cursorSize);
@@ -1356,17 +1420,17 @@ namespace Hortensia.Runtime
 
         private void UpdateCursor()
         {
-            Mouse mouse = Mouse.current;
-            if (cursorCanvas == null || !cursorCanvas.gameObject.activeSelf || mouse == null)
+            if (cursorCanvas == null || !cursorCanvas.gameObject.activeSelf || !ReadPointer(out Vector2 screen, out bool held))
                 return;
 
             Cursor.visible = false;
+            cursorImage.enabled = !touchDevice || held;
             RectTransform canvasRect = (RectTransform)cursorCanvas.transform;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, mouse.position.ReadValue(), null, out Vector2 local))
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out Vector2 local))
                 cursorRect.anchoredPosition = local - canvasRect.rect.min;
 
             float dt = Time.unscaledDeltaTime;
-            bool pressed = mouse.leftButton.isPressed && !inputLocked;
+            bool pressed = held && !inputLocked;
             float speed01 = Mathf.Clamp01(lastStrokeSpeed / sweepFullSpeed);
             float target = 0f;
             if (pressed && Time.unscaledTime - lastStrokeTime < 0.15f)

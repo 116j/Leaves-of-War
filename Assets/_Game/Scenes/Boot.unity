@@ -148,6 +148,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d34b5d8e6b4246e2a7b7598da65d3f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Hortensia.Runtime.BootController
+  nextSceneName: MainMenu
+  startupVideoFileName: loading-screen.mp4
+  skipHoldSeconds: 1
+  skipHoldDecayRate: 2
+  failsafeSeconds: 45
+  promptFont: {fileID: 11400000, guid: 11a2e1bb9652b9244aeb48a39f49f6d4, type: 2}
+  promptFontFile: {fileID: 12800000, guid: 1591b6741c4c24147b5a632368ca4749, type: 3}
+  promptBold: 1
+  promptStyle:
+    message: HOLD TO SKIP
+    messageTouch: TOUCH AND HOLD TO SKIP
+    fontSize: 26
+    textColor: {r: 0.88, g: 0.86, b: 0.8, a: 0.85}
+    position: {x: -64, y: 64}
+    textOutlineWidth: 0.432
+    textOutlineColor: {r: 0, g: 0.019607844, b: 0.12941177, a: 1}
+    useBackground: 1
+    background: {fileID: 21300000, guid: 04620d2ee9ec3df408cf76cf6c479475, type: 3}
+    backgroundColor: {r: 0.9019608, g: 0.8509804, b: 0.72156864, a: 0.55}
+    padding: {x: 28, y: 12}
+    borderWidth: 0
+    borderColor: {r: 0, g: 0.019607844, b: 0.13333334, a: 0.85}
+    barFillColor: {r: 0.33962262, g: 0, b: 0.021006979, a: 0.92}
+    barTrackColor: {r: 0, g: 0, b: 0, a: 0.18}
+    barGap: 2
+    barThickness: 4
 --- !u!4 &1401258986
 Transform:
   m_ObjectHideFlags: 0

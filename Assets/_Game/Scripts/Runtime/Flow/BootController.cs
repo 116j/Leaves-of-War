@@ -1,5 +1,5 @@
+using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace Hortensia.Runtime
@@ -61,7 +61,7 @@ namespace Hortensia.Runtime
         [Tooltip("File name inside Assets/StreamingAssets. Played by URL so the same path works on desktop and WebGL.")]
         [SerializeField] private string startupVideoFileName = "loading-screen.mp4";
 
-        [Tooltip("How long a key, mouse button, or gamepad button must be held down to skip the ident. A hold rather than a tap is what makes an accidental skip impossible.")]
+        [Tooltip("How long a key, mouse button, gamepad button or finger on the screen must be held down to skip the ident. A hold rather than a tap is what makes an accidental skip impossible.")]
         [SerializeField] private float skipHoldSeconds = 1f;
 
         [Tooltip("How fast an abandoned hold drains back to zero, as a multiple of the fill rate. Draining rather than snapping keeps a fumbled hold from looking like a dropped input.")]
@@ -69,6 +69,16 @@ namespace Hortensia.Runtime
 
         [Tooltip("Hard ceiling. If the video stalls or the policy never resolves, hand off anyway rather than trapping the player on a black screen.")]
         [SerializeField] private float failsafeSeconds = 45f;
+
+        [Header("Skip Prompt Font")]
+        [Tooltip("Font of the HOLD TO SKIP prompt (TMP Font Asset). Use the same as the main menu's Panel Font or Hint Font.")]
+        [SerializeField] private TMP_FontAsset promptFont;
+        [Tooltip("EASIEST WAY: the .ttf / .otf file. Wins over Prompt Font; Prompt Font's material look is copied onto it.")]
+        [SerializeField] private Font promptFontFile;
+        [SerializeField] private bool promptBold = false;
+
+        [Header("Skip Prompt Style")]
+        [SerializeField] private SkipPromptStyle promptStyle = new SkipPromptStyle();
 
         private AsyncOperation nextSceneLoad;
         private StartupVideoScreen videoScreen;
@@ -91,7 +101,8 @@ namespace Hortensia.Runtime
             nextSceneLoad.allowSceneActivation = false;
 
             videoScreen = gameObject.AddComponent<StartupVideoScreen>();
-            videoScreen.Begin(startupVideoFileName);
+            TMP_FontAsset font = MainMenuController.ResolveFont(promptFontFile, promptFont, "Boot Prompt Font");
+            videoScreen.Begin(startupVideoFileName, font, promptBold, promptStyle);
         }
 
         private void Update()
@@ -156,7 +167,7 @@ namespace Hortensia.Runtime
 
         private void AccumulateSkipHold()
         {
-            if (IsSkipHeld())
+            if (StartupVideoScreen.IsSkipHeld)
             {
                 skipHoldElapsed += Time.unscaledDeltaTime;
                 return;
@@ -167,21 +178,6 @@ namespace Hortensia.Runtime
             skipHoldElapsed = Mathf.Max(
                 0f,
                 skipHoldElapsed - (Time.unscaledDeltaTime * skipHoldDecayRate));
-        }
-
-        private static bool IsSkipHeld()
-        {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.anyKey.isPressed)
-                return true;
-
-            Mouse mouse = Mouse.current;
-            if (mouse != null && mouse.leftButton.isPressed)
-                return true;
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                (gamepad.buttonSouth.isPressed || gamepad.startButton.isPressed);
         }
     }
 }
