@@ -73,3 +73,20 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Backup delle texture prima del ridimensionamento
+/textures_before_resize_backup/
+/tga_exr_before_resize_backup/
+
+# Asset in quarantena (file troppo grandi per GitHub)
+*quarantine*/
+
+# Pulizia degli script importati da The Portrait of Hortensia
+/pulizia_backup/
+/Pulizia/
+/Pulizia.zip
+Pulizia_LeavesOfWar.ps1
+
+# Scena di test dei dialoghi
+/[Aa]ssets/**/DialogueTest*.unity
+/[Aa]ssets/**/DialogueTest*.unity.meta
