@@ -305,11 +305,14 @@ MonoBehaviour:
   entryTextOutlineColor: {r: 0.9433962, g: 0.9433962, b: 0.9433962, a: 0.6392157}
   entrySize: {x: 520, y: 80}
   entrySpacing: 88
-  useEntryBackground: 0
-  entryBackground: {fileID: 0}
+  useEntryBackground: 1
+  entryBackgroundOnHover: 1
+  entryBackgroundUnfoldTime: 0.3
+  entryBackgroundCrumpleTime: 0.22
+  entryBackground: {fileID: 21300000, guid: 04620d2ee9ec3df408cf76cf6c479475, type: 3}
   entryBackgroundOverrides: []
-  entryBackgroundColor: {r: 0.9, g: 0.85, b: 0.72, a: 0.85}
-  entryBackgroundHighlightColor: {r: 1, g: 0.95, b: 0.82, a: 0.95}
+  entryBackgroundColor: {r: 0.9, g: 0.85, b: 0.72, a: 1}
+  entryBackgroundHighlightColor: {r: 1, g: 0.95, b: 0.82, a: 1}
   entryBorderWidth: 0
   entryBorderColor: {r: 0.118, g: 0.165, b: 0.227, a: 1}
   panelFont: {fileID: 11400000, guid: 11a2e1bb9652b9244aeb48a39f49f6d4, type: 2}
@@ -321,13 +324,13 @@ MonoBehaviour:
   hintFontFile: {fileID: 12800000, guid: 1591b6741c4c24147b5a632368ca4749, type: 3}
   hintBold: 1
   hintSize: 52
-  hintColor: {r: 0.96, g: 0.93, b: 0.88, a: 0.85}
+  hintColor: {r: 0.90196085, g: 0.85098046, b: 0.72156864, a: 1}
   hintPosition: {x: -50, y: -350}
   hintTextOutlineWidth: 0.432
   hintTextOutlineColor: {r: 0, g: 0.019607844, b: 0.12941177, a: 1}
-  useHintBackground: 0
-  hintBackground: {fileID: 0}
-  hintBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
+  useHintBackground: 1
+  hintBackground: {fileID: 21300000, guid: 04620d2ee9ec3df408cf76cf6c479475, type: 3}
+  hintBackgroundColor: {r: 0.90196085, g: 0.85098046, b: 0.72156864, a: 1}
   hintPadding: {x: 28, y: 12}
   hintBorderWidth: 0
   hintBorderColor: {r: 0, g: 0.019149873, b: 0.13207549, a: 0.85}
@@ -363,6 +366,11 @@ MonoBehaviour:
   sweepPitch: {x: 0.9, y: 1.12}
   gustClip: {fileID: 8300000, guid: fc0bebe5e193c6e4b8e3813420c0f28a, type: 3}
   gustVolume: 0.74
+  entryEnterSound: {fileID: 0}
+  entryExitSound: {fileID: 0}
+  entryClickSound: {fileID: 0}
+  entrySoundVolume: 0.8
+  entrySoundPitch: {x: 0.94, y: 1.06}
   cursorSize: 256
   cursorHotspot: {x: 191, y: 7}
   cursorSwingAngle: 16

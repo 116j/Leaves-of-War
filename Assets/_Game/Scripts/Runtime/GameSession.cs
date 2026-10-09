@@ -2,8 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Hortensia.Narrative;
+using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace Hortensia.Runtime
 {
@@ -16,10 +19,6 @@ namespace Hortensia.Runtime
 
         public static GameSession Instance { get; private set; }
         public static event Action<GameSession> InstanceChanged;
-
-        public static event Action<DreamTransitionCue> DreamTransitionMusicFinished;
-
-        public static event Action<DreamTransitionCue> DreamTransitionStarting;
 
         private NarrativeCatalog catalog;
         private PresentationSettings presentationSettings;
@@ -44,11 +43,13 @@ namespace Hortensia.Runtime
         private SaveGameData endingRollbackSnapshot;
         private ChapterRunner chapterRunner;
         private SceneTransitionSettings sceneTransitionSettings;
-        private DreamTransitionSettings dreamTransitionSettings;
-        private DreamTransitionScreen activeDreamTransitionScreen;
-        private bool dreamTransitionMusicActive;
-        private Coroutine dreamTransitionMusicWaitRoutine;
-        private float dreamTransitionMusicStartedAt;
+        private const float TransitionFadeInSeconds = 0.8f;
+        private const float TransitionFadeOutSeconds = 0.8f;
+        private const float TransitionMinimumVisibleSeconds = 2.5f;
+        private TransitionScreen activeTransitionScreen;
+        private bool transitionMusicActive;
+        private Coroutine transitionMusicWaitRoutine;
+        private float transitionMusicStartedAt;
         private ISequenceClock sequenceClock = UnitySequenceClock.Instance;
         private ISequenceInput sequenceInput = UnitySequenceInput.Instance;
         private readonly LoggingNarrativePresenter loggingPresenter = new LoggingNarrativePresenter();
@@ -84,7 +85,7 @@ namespace Hortensia.Runtime
         public ISequenceInput SequenceInput => sequenceInput;
         public bool IsSequencePaused =>
             sequenceClock is IPausableSequenceClock pausableClock && pausableClock.IsPaused;
-        public bool IsDreamTransitionActive => dreamTransitionMusicActive;
+        public bool IsDreamTransitionActive => transitionMusicActive;
         public bool HasActiveSequencePlayback =>
             chapterRunner != null && chapterRunner.HasActiveSequencePlayback;
         public bool HasActiveNarrativeRunner => runner != null;
@@ -145,8 +146,8 @@ namespace Hortensia.Runtime
         private void OnDestroy()
         {
             chapterRunner?.CancelActiveSequence();
-            DisposeActiveDreamTransitionScreen();
-            StopDreamTransitionMusic();
+            DisposeActiveTransitionScreen();
+            StopTransitionMusic();
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             if (state != null)
             {
@@ -1071,8 +1072,8 @@ namespace Hortensia.Runtime
             if (interruptedSceneLoad)
                 playerPlacementValidated = false;
             RollbackEndingTransaction();
-            DisposeActiveDreamTransitionScreen();
-            StopDreamTransitionMusic();
+            DisposeActiveTransitionScreen();
+            StopTransitionMusic();
 
             if (documentRoutine != null)
                 StopCoroutine(documentRoutine);
@@ -1420,7 +1421,7 @@ namespace Hortensia.Runtime
         private IEnumerator ReturnToMainMenuAfterNarrativeError()
         {
             chapterRunner?.CancelActiveSequence();
-            StopDreamTransitionMusic();
+            StopTransitionMusic();
             SetCurrentEnding(null);
             SetActiveSequence(null);
             const string mainMenuScene = "MainMenu";
@@ -1452,7 +1453,7 @@ namespace Hortensia.Runtime
                 sceneLoadInProgress = false;
             }
 
-            MainMenuController menu = FindFirstObjectByType<MainMenuController>();
+            MainMenuController menu = FindAnyObjectByType<MainMenuController>();
             menu?.RefreshSaveAvailability();
         }
 
@@ -1557,38 +1558,29 @@ namespace Hortensia.Runtime
             playerPlacementValidated = false;
 
             // Loading a save restores an already-established location. Replaying
-            // its arrival card (especially a dream cue) is both narratively wrong
+            // its arrival card is both narratively wrong
             // and can strand a pause-menu load behind a transition whose clock is
             // intentionally frozen. Authored TravelBeats and chapter changes keep
             // the default and still present their transitions normally.
             SceneTransitionCard transitionCard = playTransition
                 ? ResolveSceneTransitionCard(sceneName, spawnPointId)
                 : null;
-            DreamTransitionCue transitionCue = playTransition
-                ? ResolveDreamTransitionCue(sceneName)
-                : null;
-            bool hasSceneTransition = transitionCard != null || transitionCue != null;
-            string transitionText = transitionCard != null
-                ? transitionCard.CardText
-                : transitionCue != null ? transitionCue.CardText : string.Empty;
-            AudioClip transitionMusic = transitionCue != null
-                ? transitionCue.Music
-                : transitionCard?.Music;
-            float transitionMusicVolumeScale = transitionCue != null
-                ? transitionCue.VolumeScale
-                : transitionCard?.VolumeScale ?? 1f;
+            bool hasSceneTransition = transitionCard != null;
+            string transitionText = transitionCard != null ? transitionCard.CardText : string.Empty;
+            AudioClip transitionMusic = transitionCard?.Music;
+            float transitionMusicVolumeScale = transitionCard?.VolumeScale ?? 1f;
             // Only a card explicitly authored to show it keeps the skip
             // prompt (intended for the game's true opening card only) -
-            // every other transition (dream or plain card, with or without
+            // every other transition card (with or without
             // music) holds for its full authored/music duration. Reading
             // this from the card itself, rather than "is this the first
             // LoadScene since the process started", is what makes it
             // correct even when resuming from a save made partway through
             // the game.
             bool showSkipPrompt = transitionCard != null && transitionCard.ShowSkipPrompt;
-            StopDreamTransitionMusic();
+            StopTransitionMusic();
 
-            DreamTransitionScreen transitionScreen = null;
+            TransitionScreen transitionScreen = null;
             bool transitionLocksHeld = false;
             try
             {
@@ -1598,49 +1590,30 @@ namespace Hortensia.Runtime
                     PushPlayerLock();
                     transitionLocksHeld = true;
 
-                    transitionScreen = DreamTransitionScreen.Create(
-                        transitionText,
-                        sequenceClock);
-                    activeDreamTransitionScreen = transitionScreen;
+                    transitionScreen = TransitionScreen.Create(transitionText, sequenceClock);
+                    activeTransitionScreen = transitionScreen;
                     AudioManager audioManager = AudioManager.Instance;
                     if (audioManager != null && transitionMusic != null)
                     {
-                        dreamTransitionMusicActive = audioManager.PlayExclusiveMusic(
+                        transitionMusicActive = audioManager.PlayExclusiveMusic(
                             transitionMusic,
                             loop: false,
                             volumeScale: transitionMusicVolumeScale);
-                        if (dreamTransitionMusicActive)
+                        if (transitionMusicActive)
                         {
-                            dreamTransitionMusicStartedAt = sequenceClock.UnscaledTime;
-                            // The cleanup routine runs for ANY transition
-                            // music (card or cue) so exclusive audio mode
-                            // always ends once it finishes playing -
-                            // DreamTransitionMusicFinished itself is a
-                            // dream-cue-specific contract, and only fires
-                            // when there actually is one (see below).
-                            dreamTransitionMusicWaitRoutine = StartCoroutine(
-                                WaitForDreamTransitionMusicThenNotify(transitionCue));
+                            transitionMusicStartedAt = sequenceClock.UnscaledTime;
+                            transitionMusicWaitRoutine = StartCoroutine(WaitForTransitionMusicToEnd());
                         }
                     }
 
-                    // Silent arrival cards deliberately bypass the dream-audio
-                    // events. Existing dream cues retain their established
-                    // scene-audio handoff, including its fallback behavior.
-                    if (transitionCue != null)
-                        DreamTransitionStarting?.Invoke(transitionCue);
-
-                    if (transitionScreen != null)
-                    {
-                        yield return transitionScreen.FadeIn(
-                            dreamTransitionSettings.FadeInSeconds);
-                    }
+                    yield return transitionScreen.FadeIn(TransitionFadeInSeconds);
                 }
 
                 ISceneLoadOperation operation = SceneLoader.LoadSingleAsync(sceneName);
                 if (operation == null)
                 {
                     if (hasSceneTransition)
-                        StopDreamTransitionMusic();
+                        StopTransitionMusic();
                     FailOperation(result, $"Narrative travel to '{sceneName}' did not start.");
                     yield break;
                 }
@@ -1652,7 +1625,7 @@ namespace Hortensia.Runtime
                 if (!SceneLoader.IsLoadedAndActive(sceneName))
                 {
                     if (hasSceneTransition)
-                        StopDreamTransitionMusic();
+                        StopTransitionMusic();
                     FailOperation(result, $"Narrative travel did not activate the requested scene '{sceneName}'.");
                     yield break;
                 }
@@ -1661,7 +1634,7 @@ namespace Hortensia.Runtime
                 if (!TryPlacePlayerAt(spawnPointId, out string placementError))
                 {
                     if (hasSceneTransition)
-                        StopDreamTransitionMusic();
+                        StopTransitionMusic();
                     FailOperation(result, placementError);
                     yield break;
                 }
@@ -1674,22 +1647,19 @@ namespace Hortensia.Runtime
                 {
                     if (showSkipPrompt)
                     {
-                        yield return transitionScreen.HoldToContinueAndFadeOut(
-                            dreamTransitionSettings.FadeOutSeconds);
+                        yield return transitionScreen.HoldToContinueAndFadeOut(TransitionFadeOutSeconds);
                     }
                     else
                     {
-                        float holdSeconds = dreamTransitionSettings.MinimumVisibleSeconds;
+                        float holdSeconds = TransitionMinimumVisibleSeconds;
                         if (transitionMusic != null)
                         {
-                            float elapsedSinceMusicStart = sequenceClock.UnscaledTime - dreamTransitionMusicStartedAt;
+                            float elapsedSinceMusicStart = sequenceClock.UnscaledTime - transitionMusicStartedAt;
                             float remainingMusicSeconds = Mathf.Max(0f, transitionMusic.length - elapsedSinceMusicStart);
                             holdSeconds = Mathf.Max(holdSeconds, remainingMusicSeconds);
                         }
 
-                        yield return transitionScreen.HoldAndFadeOut(
-                            holdSeconds,
-                            dreamTransitionSettings.FadeOutSeconds);
+                        yield return transitionScreen.HoldAndFadeOut(holdSeconds, TransitionFadeOutSeconds);
                     }
                 }
 
@@ -1699,9 +1669,9 @@ namespace Hortensia.Runtime
             {
                 sceneLoadInProgress = false;
                 if (hasSceneTransition && !result.Succeeded)
-                    StopDreamTransitionMusic();
-                if (ReferenceEquals(activeDreamTransitionScreen, transitionScreen))
-                    activeDreamTransitionScreen = null;
+                    StopTransitionMusic();
+                if (ReferenceEquals(activeTransitionScreen, transitionScreen))
+                    activeTransitionScreen = null;
                 transitionScreen?.Dispose();
                 if (transitionLocksHeld)
                 {
@@ -1734,73 +1704,29 @@ namespace Hortensia.Runtime
                 : null;
         }
 
-        private DreamTransitionCue ResolveDreamTransitionCue(string targetSceneName)
+        private void StopTransitionMusic()
         {
-            if (state == null)
-                return null;
-
-            if (dreamTransitionSettings == null)
+            if (transitionMusicWaitRoutine != null)
             {
-                dreamTransitionSettings = Resources.Load<DreamTransitionSettings>(
-                    DreamTransitionSettings.ResourcePath);
+                StopCoroutine(transitionMusicWaitRoutine);
+                transitionMusicWaitRoutine = null;
             }
 
-            if (dreamTransitionSettings == null)
-                return null;
-
-            // Entering a scene configured for the CURRENT chapter (e.g. falling
-            // asleep into a dream) takes priority.
-            if (dreamTransitionSettings.TryGetCue(
-                    state.ChapterIndex,
-                    targetSceneName,
-                    DreamTransitionTrigger.OnEnterScene,
-                    out DreamTransitionCue enterCue))
-            {
-                return enterCue;
-            }
-
-            // Otherwise, check whether the scene we're currently LEAVING is
-            // configured to transition out at the end of the current chapter (e.g.
-            // waking up). SceneManager reports the scene still active right up
-            // until the new one takes over, so this reads correctly here, before
-            // the load below begins.
-            string currentSceneName = SceneManager.GetActiveScene().name;
-            if (dreamTransitionSettings.TryGetCue(
-                    state.ChapterIndex,
-                    currentSceneName,
-                    DreamTransitionTrigger.OnExitScene,
-                    out DreamTransitionCue exitCue))
-            {
-                return exitCue;
-            }
-
-            return null;
-        }
-
-        private void StopDreamTransitionMusic()
-        {
-            if (dreamTransitionMusicWaitRoutine != null)
-            {
-                StopCoroutine(dreamTransitionMusicWaitRoutine);
-                dreamTransitionMusicWaitRoutine = null;
-            }
-
-            if (!dreamTransitionMusicActive)
+            if (!transitionMusicActive)
                 return;
 
-            AudioManager audioManager = AudioManager.ExistingInstance;
-            audioManager?.EndExclusiveMusic(stopMusic: true);
-            dreamTransitionMusicActive = false;
+            AudioManager.ExistingInstance?.EndExclusiveMusic(stopMusic: true);
+            transitionMusicActive = false;
         }
 
-        private void DisposeActiveDreamTransitionScreen()
+        private void DisposeActiveTransitionScreen()
         {
-            DreamTransitionScreen transitionScreen = activeDreamTransitionScreen;
-            activeDreamTransitionScreen = null;
+            TransitionScreen transitionScreen = activeTransitionScreen;
+            activeTransitionScreen = null;
             transitionScreen?.Dispose();
         }
 
-        private IEnumerator WaitForDreamTransitionMusicThenNotify(DreamTransitionCue cue)
+        private IEnumerator WaitForTransitionMusicToEnd()
         {
             yield return null;
 
@@ -1809,13 +1735,119 @@ namespace Hortensia.Runtime
                    (audioManager.IsMusicPlaying || audioManager.IsGameplayAudioPaused))
                 yield return null;
 
-            dreamTransitionMusicWaitRoutine = null;
-            if (dreamTransitionMusicActive)
+            transitionMusicWaitRoutine = null;
+            if (transitionMusicActive)
             {
-                dreamTransitionMusicActive = false;
+                transitionMusicActive = false;
                 audioManager?.EndExclusiveMusic(stopMusic: false);
-                if (cue != null)
-                    DreamTransitionMusicFinished?.Invoke(cue);
+            }
+        }
+
+        private sealed class TransitionScreen
+        {
+            private readonly GameObject root;
+            private readonly CanvasGroup group;
+            private readonly TMP_Text prompt;
+            private readonly ISequenceClock clock;
+
+            private TransitionScreen(GameObject root, CanvasGroup group, TMP_Text prompt, ISequenceClock clock)
+            {
+                this.root = root;
+                this.group = group;
+                this.prompt = prompt;
+                this.clock = clock;
+            }
+
+            public static TransitionScreen Create(string text, ISequenceClock clock)
+            {
+                var root = new GameObject("Scene Transition", typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup), typeof(Image));
+                UnityEngine.Object.DontDestroyOnLoad(root);
+
+                Canvas canvas = root.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 30000;
+
+                CanvasScaler scaler = root.GetComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight = 0.5f;
+
+                root.GetComponent<Image>().color = Color.black;
+                CanvasGroup group = root.GetComponent<CanvasGroup>();
+                group.alpha = 0f;
+
+                CreateText(root.transform, text, 44f, new Vector2(0f, 0f), new Vector2(1500f, 600f), 1f);
+                TMP_Text prompt = CreateText(root.transform, "Click or press any key to continue", 24f, new Vector2(0f, -440f), new Vector2(1500f, 60f), 0.7f);
+                prompt.gameObject.SetActive(false);
+
+                return new TransitionScreen(root, group, prompt, clock);
+            }
+
+            private static TMP_Text CreateText(Transform parent, string content, float size, Vector2 position, Vector2 box, float alpha)
+            {
+                var textObject = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+                RectTransform rect = (RectTransform)textObject.transform;
+                rect.SetParent(parent, false);
+                rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = position;
+                rect.sizeDelta = box;
+
+                TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+                text.text = content ?? string.Empty;
+                text.fontSize = size;
+                text.color = new Color(0.96f, 0.93f, 0.88f, alpha);
+                text.alignment = TextAlignmentOptions.Center;
+                text.textWrappingMode = TextWrappingModes.Normal;
+                text.raycastTarget = false;
+                return text;
+            }
+
+            public IEnumerator FadeIn(float seconds) => Fade(1f, seconds);
+
+            public IEnumerator HoldAndFadeOut(float holdSeconds, float fadeSeconds)
+            {
+                float start = clock.UnscaledTime;
+                while (root != null && clock.UnscaledTime - start < holdSeconds)
+                    yield return null;
+                yield return Fade(0f, fadeSeconds);
+            }
+
+            public IEnumerator HoldToContinueAndFadeOut(float fadeSeconds)
+            {
+                if (prompt != null)
+                    prompt.gameObject.SetActive(true);
+                yield return null;
+                while (root != null && !ContinuePressed())
+                    yield return null;
+                yield return Fade(0f, fadeSeconds);
+            }
+
+            public void Dispose()
+            {
+                if (root != null)
+                    UnityEngine.Object.Destroy(root);
+            }
+
+            private IEnumerator Fade(float target, float seconds)
+            {
+                if (root == null)
+                    yield break;
+                float from = group.alpha;
+                float start = clock.UnscaledTime;
+                float t = 0f;
+                while (t < 1f && root != null)
+                {
+                    t = seconds <= 0f ? 1f : Mathf.Clamp01((clock.UnscaledTime - start) / seconds);
+                    group.alpha = Mathf.Lerp(from, target, t);
+                    yield return null;
+                }
+            }
+
+            private static bool ContinuePressed()
+            {
+                return (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) ||
+                       (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
+                       (Gamepad.current != null && (Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.startButton.wasPressedThisFrame));
             }
         }
 
