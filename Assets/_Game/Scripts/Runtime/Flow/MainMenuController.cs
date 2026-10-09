@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Hortensia.Narrative;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -22,8 +21,6 @@ namespace Hortensia.Runtime
         private const string CursorPath = "UI/CustomCursor";
         private const string HandwritingFontPath = "Fonts/ErraticCursive";
         private const string ReadableFontPath = "Fonts/OSerif";
-        private const string CatalogPath = "Narrative/NarrativeCatalog";
-        private const string SettingsPath = "Narrative/PresentationSettings";
         private const string FontSample = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         private const float OffscreenMargin = 6f;
 
@@ -254,6 +251,7 @@ namespace Hortensia.Runtime
         {
             touchDevice = Application.isMobilePlatform || (Touchscreen.current != null && Mouse.current == null);
             EnsureEventSystem();
+            EnsureCamera();
             if (FindAnyObjectByType<SettingsApplier>() == null)
                 new GameObject("Settings Applier").AddComponent<SettingsApplier>();
             LoadFonts();
@@ -272,7 +270,6 @@ namespace Hortensia.Runtime
             AudioManager.ExistingInstance?.StopMusicIfCurrent(menuMusic);
             if (cursorCanvas != null)
                 cursorCanvas.gameObject.SetActive(false);
-            Cursor.visible = true;
         }
 
         private void OnDestroy()
@@ -609,14 +606,14 @@ namespace Hortensia.Runtime
             header.text = "LOAD GAME";
             header.color = new Color(0.88f, 0.84f, 0.72f);
 
-            for (int i = 0; i < SaveGameStore.ManualSlotCount; i++)
+            for (int i = 0; i < LevelProgress.SlotCount; i++)
             {
                 int number = i + 1;
-                Button button = CreatePanelButton(panel, $"Slot {number:D2}", new Vector2(i % 2 == 0 ? -245f : 245f, 130f - i / 2 * 65f), () => LoadManualSlot(number));
+                Button button = CreatePanelButton(panel, $"Slot {number:D2}", new Vector2(i % 2 == 0 ? -245f : 245f, 130f - i / 2 * 65f), () => LoadLevel(LevelProgress.Slot(number)));
                 slots.Add((number, button, button.GetComponentInChildren<TMP_Text>()));
             }
 
-            autosaveButton = CreatePanelButton(panel, "Autosave", new Vector2(0f, -210f), ContinueGame);
+            autosaveButton = CreatePanelButton(panel, "Autosave", new Vector2(0f, -210f), () => LoadLevel(LevelProgress.Autosave));
             autosaveLabel = autosaveButton.GetComponentInChildren<TMP_Text>();
 
             loadStatusText = CreateText(panel, "Status", readableFont, 20f, new Vector2(0f, -295f), new Vector2(1120f, 62f));
@@ -1141,44 +1138,21 @@ namespace Hortensia.Runtime
 
         private void ContinueGame()
         {
-            if (starting || !TryCreateSession(out GameSession session))
+            string level = LevelProgress.Autosave;
+            if (starting || inputLocked || !LevelProgress.CanLoad(level))
                 return;
 
-            if (session.ContinueGame(out SaveReadStatus status))
-            {
-                starting = true;
-                return;
-            }
-
-            statusText.text = status == SaveReadStatus.TransientFailure ? "THE SAVE IS TEMPORARILY UNAVAILABLE."
-                : status == SaveReadStatus.Invalid ? "THE SAVE COULD NOT BE READ. IT HAS BEEN DISCARDED."
-                : "THE SAVE COULD NOT BE READ.";
-            RefreshContinueAvailability(false);
+            starting = true;
+            StartCoroutine(Gust(() => SceneManager.LoadScene(level)));
         }
 
-        private void LoadManualSlot(int number)
+        private void LoadLevel(string level)
         {
-            if (starting || !TryCreateSession(out GameSession session))
+            if (starting || !LevelProgress.CanLoad(level))
                 return;
 
-            if (session.LoadManualSlot(number, out SaveReadStatus status))
-            {
-                starting = true;
-                return;
-            }
-
-            loadStatusText.text = $"SLOT {number:D2}: {SlotStatusLabel(status)}.";
-            RefreshLoadAvailability();
-        }
-
-        private bool TryCreateSession(out GameSession session)
-        {
-            NarrativeCatalog catalog = Resources.Load<NarrativeCatalog>(CatalogPath);
-            PresentationSettings settings = Resources.Load<PresentationSettings>(SettingsPath);
-            session = catalog != null && settings != null ? GameSession.Create(catalog, settings) : null;
-            if (session == null)
-                statusText.text = "NARRATIVE DATA IS MISSING.";
-            return session != null;
+            starting = true;
+            SceneManager.LoadScene(level);
         }
 
         private void OpenPanel(System.Action open)
@@ -1272,62 +1246,21 @@ namespace Hortensia.Runtime
             }
         }
 
-        private void RefreshContinueAvailability(bool showReadFailure = true)
-        {
-            SaveReadStatus status = SaveGameStore.GetReadOnlyLoadStatus(Resources.Load<NarrativeCatalog>(CatalogPath), out _);
-            bool inMemory = GameSession.Instance != null && GameSession.Instance.HasRecoverableInMemoryProgress;
-            bool canLoad = GameSession.Instance?.CanLoadSavedGame != false;
-
-            continueItem?.SetAvailable(canLoad && (inMemory || IsLoadable(status)));
-
-            if (!showReadFailure || statusText == null)
-                return;
-
-            statusText.text = inMemory ? "UNSAVED PROGRESS IS AVAILABLE TO RETRY."
-                : status == SaveReadStatus.RecoverableBackup ? "A PREVIOUS SAVE IS AVAILABLE FOR RECOVERY."
-                : status == SaveReadStatus.Invalid ? "THE SAVE IS INVALID. STARTING A NEW GAME WILL CLEAR IT."
-                : status == SaveReadStatus.TransientFailure ? "THE SAVE IS TEMPORARILY UNAVAILABLE."
-                : string.Empty;
-        }
+        private void RefreshContinueAvailability() =>
+            continueItem?.SetAvailable(LevelProgress.CanLoad(LevelProgress.Autosave));
 
         private void RefreshLoadAvailability()
         {
-            NarrativeCatalog catalog = Resources.Load<NarrativeCatalog>(CatalogPath);
-            bool canLoad = GameSession.Instance?.CanLoadSavedGame != false;
-
-            SaveReadStatus autosave = SaveGameStore.GetReadOnlyLoadStatus(catalog, out _);
-            SetSlot(autosaveButton, autosaveLabel, "AUTOSAVE", autosave, canLoad);
-
+            SetSlot(autosaveButton, autosaveLabel, "AUTOSAVE", LevelProgress.Autosave);
             foreach (var (number, button, label) in slots)
-                SetSlot(button, label, $"SLOT {number:D2}", SaveGameStore.GetManualSlotReadOnlyLoadStatus(number, catalog, out _), canLoad);
+                SetSlot(button, label, $"SLOT {number:D2}", LevelProgress.Slot(number));
         }
 
-        private static void SetSlot(Button button, TMP_Text label, string name, SaveReadStatus status, bool canLoad)
+        private static void SetSlot(Button button, TMP_Text label, string name, string level)
         {
-            button.interactable = canLoad && IsLoadable(status);
+            button.interactable = LevelProgress.CanLoad(level);
             label.color = button.interactable ? PanelTextColor : PanelTextDisabledColor;
-            label.text = $"{name}  —  {SlotStatusLabel(status)}";
-        }
-
-        internal void RefreshSaveAvailability()
-        {
-            RefreshContinueAvailability();
-            RefreshLoadAvailability();
-        }
-
-        private static bool IsLoadable(SaveReadStatus status) =>
-            status == SaveReadStatus.Valid || status == SaveReadStatus.RecoverableBackup;
-
-        private static string SlotStatusLabel(SaveReadStatus status)
-        {
-            switch (status)
-            {
-                case SaveReadStatus.Valid: return "SAVED";
-                case SaveReadStatus.RecoverableBackup: return "RECOVERABLE";
-                case SaveReadStatus.Missing: return "EMPTY";
-                case SaveReadStatus.Invalid: return "INVALID";
-                default: return "UNAVAILABLE";
-            }
+            label.text = $"{name}  \u2014  {(string.IsNullOrEmpty(level) ? "EMPTY" : level.ToUpperInvariant())}";
         }
 
         private void StartAudio()
@@ -1534,10 +1467,19 @@ namespace Hortensia.Runtime
 
         private static void EnsureEventSystem()
         {
-            EventSystem existing = FindAnyObjectByType<EventSystem>();
-            DontDestroyOnLoad(existing != null
-                ? existing.gameObject
-                : new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule)));
+            if (FindAnyObjectByType<EventSystem>() == null)
+                new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+        }
+
+        private static void EnsureCamera()
+        {
+            if (FindAnyObjectByType<Camera>() != null)
+                return;
+
+            Camera menuCamera = new GameObject("Menu Camera").AddComponent<Camera>();
+            menuCamera.clearFlags = CameraClearFlags.SolidColor;
+            menuCamera.backgroundColor = Color.black;
+            menuCamera.cullingMask = 0;
         }
     }
 

@@ -37,6 +37,19 @@ namespace Hortensia.Runtime
         private bool draftDirty;
         private AudioSettingsDraft audioDraft;
         private Action refreshUiFromDraft;
+        private Action previewChanged;
+        private RectTransform currentContent;
+        private GameObject subtitleStylePanel;
+        private GameObject screenStylePanel;
+        private readonly List<TMP_Text> styleStatusTexts = new List<TMP_Text>();
+        private static Sprite hueSprite;
+        private static Sprite backdropSprite;
+
+        private static readonly Color[] PresetColors =
+        {
+            Color.white, new Color(0.96f, 0.93f, 0.88f), new Color(0.86f, 0.66f, 0.2f), new Color(1f, 0.9f, 0.3f),
+            new Color(0.85f, 0.25f, 0.2f), new Color(0.45f, 0.75f, 1f), new Color(0.5f, 0.8f, 0.45f), Color.black
+        };
 
         public OptionsPanel(Transform parent, TMP_FontAsset menuFont, TMP_FontAsset authorialFont, Action onBack)
         {
@@ -57,6 +70,7 @@ namespace Hortensia.Runtime
 
             if (keyBindingsPanel != null)
                 keyBindingsPanel.SetActive(false);
+            HideStylePanels();
             optionsPanelObject.SetActive(true);
         }
 
@@ -66,6 +80,7 @@ namespace Hortensia.Runtime
             optionsPanelObject.SetActive(false);
             if (keyBindingsPanel != null)
                 keyBindingsPanel.SetActive(false);
+            HideStylePanels();
         }
 
         // ----------------------------------------------------------------------
@@ -146,6 +161,7 @@ namespace Hortensia.Runtime
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scrollObject.AddComponent<ArrowKeyScroll>();
 
+            currentContent = optionsContent;
             PopulateOptionsRows();
 
             optionsStatusText = CreateText(
@@ -187,15 +203,12 @@ namespace Hortensia.Runtime
                 v => draft.fpsLimit = Mathf.RoundToInt(v));
             CreateSliderRow("FIELD OF VIEW", 60f, 110f, () => draft.fieldOfView, true,
                 v => draft.fieldOfView = v);
-            CreateSliderRow("MONITOR GAMMA", 0.5f, 2.5f, () => draft.gamma, false,
-                v => draft.gamma = v);
 
             CreateSectionLabel("GRAPHICS");
             CreateDropdownRow("SHADOW QUALITY",
                 new[] { "OFF", "LOW", "MEDIUM", "HIGH", "ULTRA" }, () => draft.shadowQuality,
                 i => draft.shadowQuality = i);
             CreateToggleRow("ANTI-ALIASING", () => draft.antiAliasing, v => draft.antiAliasing = v);
-            CreateToggleRow("RETRO FILTER", () => draft.retroFilter, v => draft.retroFilter = v);
 
             CreateSectionLabel("AUDIO");
             CreateSliderRow("MASTER VOLUME", 0f, 1f, () => audioDraft.master, false,
@@ -210,14 +223,10 @@ namespace Hortensia.Runtime
                 v => audioDraft.video = v);
 
             CreateSectionLabel("TEXT & SUBTITLES");
-            CreateSliderRow("FONT SIZE", 0.75f, 1.5f, () => draft.fontScale, false,
-                v => draft.fontScale = v);
-            CreateSliderRow("SUBTITLE SIZE", 0.75f, 1.5f, () => draft.subtitleScale, false,
-                v => draft.subtitleScale = v);
-            CreateSliderRow("SUBTITLE BACKGROUND OPACITY", 0f, 1f, () => draft.subtitleBackgroundOpacity, false,
-                v => draft.subtitleBackgroundOpacity = v);
             CreateToggleRow("SHOW SUBTITLES", () => draft.subtitlesEnabled, v => draft.subtitlesEnabled = v);
-            CreateToggleRow("SHOW IN-GAME TEXT & OBJECTIVE ARROW", () => draft.inGameTextEnabled, v => draft.inGameTextEnabled = v);
+            CreateButtonRow("SUBTITLE STYLE", "CUSTOMIZE", () => OpenStylePanel(true));
+            CreateToggleRow("SHOW IN-GAME TEXT", () => draft.inGameTextEnabled, v => draft.inGameTextEnabled = v);
+            CreateButtonRow("SCREEN TEXT STYLE", "CUSTOMIZE", () => OpenStylePanel(false));
         }
 
         // ----------------------------------------------------------------------
@@ -227,12 +236,22 @@ namespace Hortensia.Runtime
         private void LoadDraftIntoUi()
         {
             refreshUiFromDraft?.Invoke();
+            previewChanged?.Invoke();
         }
 
         private void MarkDirty()
         {
             draftDirty = true;
             UpdateApplyState();
+            previewChanged?.Invoke();
+        }
+
+        private void SetStatus(string message)
+        {
+            if (optionsStatusText != null)
+                optionsStatusText.text = message;
+            foreach (TMP_Text text in styleStatusTexts)
+                text.text = message;
         }
 
         private void UpdateApplyState()
@@ -240,10 +259,7 @@ namespace Hortensia.Runtime
             if (applyButton != null)
                 applyButton.interactable = draftDirty;
 
-            if (optionsStatusText != null)
-                optionsStatusText.text = draftDirty
-                    ? "UNSAVED CHANGES \u2014 PRESS APPLY TO SAVE."
-                    : string.Empty;
+            SetStatus(draftDirty ? "UNSAVED CHANGES \u2014 PRESS APPLY TO SAVE." : string.Empty);
         }
 
         private void OnApply()
@@ -253,8 +269,7 @@ namespace Hortensia.Runtime
             draft = GameSettings.CreateEditableCopy();
             draftDirty = false;
             LoadDraftIntoUi();
-            if (optionsStatusText != null)
-                optionsStatusText.text = "SETTINGS SAVED.";
+            SetStatus("SETTINGS SAVED.");
             if (applyButton != null)
                 applyButton.interactable = false;
         }
@@ -323,8 +338,7 @@ namespace Hortensia.Runtime
             audioDraft = AudioSettingsDraft.Defaults(AudioManager.Instance);
             LoadDraftIntoUi();
             MarkDirty();
-            if (optionsStatusText != null)
-                optionsStatusText.text = "DEFAULTS LOADED \u2014 PRESS APPLY TO SAVE.";
+            SetStatus("DEFAULTS LOADED \u2014 PRESS APPLY TO SAVE.");
         }
 
         private void OnOptionsBack()
@@ -614,6 +628,403 @@ namespace Hortensia.Runtime
             optionsPanelObject.SetActive(true);
         }
 
+        private void HideStylePanels()
+        {
+            if (subtitleStylePanel != null)
+                subtitleStylePanel.SetActive(false);
+            if (screenStylePanel != null)
+                screenStylePanel.SetActive(false);
+        }
+
+        private void OpenStylePanel(bool subtitles)
+        {
+            if (subtitles && subtitleStylePanel == null)
+                subtitleStylePanel = BuildStylePanel(true);
+            if (!subtitles && screenStylePanel == null)
+                screenStylePanel = BuildStylePanel(false);
+
+            optionsPanelObject.SetActive(false);
+            (subtitles ? subtitleStylePanel : screenStylePanel).SetActive(true);
+            LoadDraftIntoUi();
+            UpdateApplyState();
+        }
+
+        private void CloseStylePanel()
+        {
+            HideStylePanels();
+            optionsPanelObject.SetActive(true);
+        }
+
+        private GameObject BuildStylePanel(bool subtitles)
+        {
+            Transform parent = optionsPanelObject.transform.parent;
+            GameObject panel = CreatePanel(parent, subtitles ? "Subtitle Style" : "Screen Text Style",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-560f, -440f), new Vector2(560f, 440f),
+                new Color(0.035f, 0.03f, 0.024f, 0.98f));
+
+            TMP_Text header = CreateText(panel.transform, "Header", 44f, Vector2.zero, Vector2.zero,
+                TextAlignmentOptions.Top, new Color(0.88f, 0.84f, 0.72f));
+            header.text = subtitles ? "SUBTITLE STYLE" : "SCREEN TEXT STYLE";
+            SetTopStrip(header.rectTransform, 20f, 70f);
+
+            RectTransform previewArea = (RectTransform)new GameObject("Preview", typeof(RectTransform), typeof(Image), typeof(RectMask2D)).transform;
+            previewArea.SetParent(panel.transform, false);
+            SetTopStrip(previewArea, 80f, 300f);
+            Image backdrop = previewArea.GetComponent<Image>();
+            backdrop.sprite = BackdropSprite();
+            backdrop.raycastTarget = false;
+
+            TMP_Text previewTag = CreateText(previewArea, "Tag", 18f, new Vector2(10f, 6f), new Vector2(-10f, -6f),
+                TextAlignmentOptions.TopLeft, new Color(1f, 1f, 1f, 0.55f));
+            previewTag.text = "PREVIEW";
+
+            if (subtitles)
+                BuildSubtitlePreview(previewArea);
+            else
+                BuildScreenPreview(previewArea);
+
+            var scrollObject = new GameObject("Scroll View", typeof(RectTransform), typeof(Image), typeof(ScrollRect), typeof(RectMask2D));
+            scrollObject.transform.SetParent(panel.transform, false);
+            RectTransform scrollRect = (RectTransform)scrollObject.transform;
+            scrollRect.anchorMin = Vector2.zero;
+            scrollRect.anchorMax = Vector2.one;
+            scrollRect.offsetMin = new Vector2(40f, 150f);
+            scrollRect.offsetMax = new Vector2(-40f, -315f);
+            scrollObject.GetComponent<Image>().color = new Color(0.02f, 0.018f, 0.014f, 0.6f);
+
+            var contentObject = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            contentObject.transform.SetParent(scrollObject.transform, false);
+            RectTransform content = (RectTransform)contentObject.transform;
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = Vector2.one;
+            content.pivot = new Vector2(0.5f, 1f);
+            content.offsetMin = content.offsetMax = Vector2.zero;
+            VerticalLayoutGroup layout = contentObject.GetComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(24, 24, 16, 16);
+            layout.spacing = 10f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            contentObject.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            ScrollRect scroll = scrollObject.GetComponent<ScrollRect>();
+            scroll.content = content;
+            scroll.viewport = scrollRect;
+            scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 28f;
+            scrollObject.AddComponent<ArrowKeyScroll>();
+
+            RectTransform previousContent = currentContent;
+            currentContent = content;
+            PopulateStyleRows(subtitles);
+            currentContent = previousContent;
+
+            TMP_Text status = CreateText(panel.transform, "Status", 22f, Vector2.zero, Vector2.zero,
+                TextAlignmentOptions.Center, new Color(0.72f, 0.77f, 0.58f));
+            RectTransform statusRect = status.rectTransform;
+            statusRect.anchorMin = Vector2.zero;
+            statusRect.anchorMax = new Vector2(1f, 0f);
+            statusRect.pivot = new Vector2(0.5f, 0f);
+            statusRect.offsetMin = new Vector2(40f, 100f);
+            statusRect.offsetMax = new Vector2(-40f, 140f);
+            styleStatusTexts.Add(status);
+
+            CreateFooterButton(panel.transform, "BACK", new Vector2(-360f, 20f), CloseStylePanel);
+            CreateFooterButton(panel.transform, "DEFAULTS", new Vector2(0f, 20f), () => ResetStyle(subtitles));
+            CreateFooterButton(panel.transform, "APPLY", new Vector2(360f, 20f), OnApply);
+
+            panel.SetActive(false);
+            return panel;
+        }
+
+        private TextStyle GetStyle(bool subtitles) => subtitles ? draft.subtitleStyle : draft.screenStyle;
+
+        private void EditStyle(bool subtitles, Func<TextStyle, TextStyle> edit)
+        {
+            if (subtitles)
+                draft.subtitleStyle = edit(draft.subtitleStyle);
+            else
+                draft.screenStyle = edit(draft.screenStyle);
+        }
+
+        private void ResetStyle(bool subtitles)
+        {
+            EditStyle(subtitles, _ => subtitles ? TextStyleDefaults.SubtitleStyle : TextStyleDefaults.ScreenStyle);
+            LoadDraftIntoUi();
+            MarkDirty();
+            SetStatus("DEFAULT STYLE LOADED — PRESS APPLY TO SAVE.");
+        }
+
+        private void PopulateStyleRows(bool subtitles)
+        {
+            bool sub = subtitles;
+            float minScale = sub ? GameSettings.SubtitleMinScale : GameSettings.ScreenMinScale;
+            float maxScale = sub ? GameSettings.SubtitleMaxScale : GameSettings.ScreenMaxScale;
+            Func<float, string> percent = v => $"{Mathf.RoundToInt(v * 100f)}%";
+
+            CreateSectionLabel("TEXT");
+            CreateSliderRow("SIZE", minScale, maxScale, () => GetStyle(sub).scale, false,
+                v => EditStyle(sub, s => { s.scale = v; return s; }), percent);
+            CreateColorRow("COLOUR", () => GetStyle(sub).textColor,
+                c => EditStyle(sub, s => { s.textColor = c; return s; }));
+            CreateSliderRow("OPACITY", 0f, 1f, () => GetStyle(sub).textColor.a, false,
+                v => EditStyle(sub, s => { s.textColor.a = v; return s; }), percent);
+            CreateToggleRow("BOLD", () => GetStyle(sub).bold,
+                v => EditStyle(sub, s => { s.bold = v; return s; }));
+            CreateSliderRow("FONT WEIGHT", -1f, 1f, () => GetStyle(sub).thickness, false,
+                v => EditStyle(sub, s => { s.thickness = v; return s; }),
+                v => { int n = Mathf.RoundToInt(v * 100f); return n > 0 ? $"+{n}" : n.ToString(); });
+
+            CreateSectionLabel("OUTLINE");
+            CreateSliderRow("OUTLINE THICKNESS", 0f, 1f, () => GetStyle(sub).outlineWidth, false,
+                v => EditStyle(sub, s => { s.outlineWidth = v; return s; }), percent);
+            CreateColorRow("OUTLINE COLOUR", () => GetStyle(sub).outlineColor,
+                c => EditStyle(sub, s => { s.outlineColor = c; return s; }));
+
+            CreateSectionLabel(sub ? "SPEAKER NAME" : "MESSAGES");
+            CreateColorRow(sub ? "NAME COLOUR" : "MESSAGE COLOUR", () => GetStyle(sub).accentColor,
+                c => EditStyle(sub, s => { s.accentColor = c; return s; }));
+            CreateSliderRow(sub ? "NAME OPACITY" : "MESSAGE OPACITY", 0f, 1f, () => GetStyle(sub).accentColor.a, false,
+                v => EditStyle(sub, s => { s.accentColor.a = v; return s; }), percent);
+
+            CreateSectionLabel(sub ? "BACKGROUND" : "BUTTONS & LABELS");
+            CreateColorRow("BACKGROUND COLOUR", () => GetStyle(sub).backgroundColor,
+                c => EditStyle(sub, s => { s.backgroundColor = c; return s; }));
+            CreateSliderRow("BACKGROUND OPACITY", 0f, 1f, () => GetStyle(sub).backgroundColor.a, false,
+                v => EditStyle(sub, s => { s.backgroundColor.a = v; return s; }), percent);
+        }
+
+        private void CreateColorRow(string labelText, Func<Color> getter, Action<Color> setter)
+        {
+            CreateRow(labelText, labelText, out Transform anchor);
+
+            var swatchObject = new GameObject("Swatch", typeof(RectTransform), typeof(Image), typeof(Button));
+            swatchObject.transform.SetParent(anchor, false);
+            RectTransform swatchRect = (RectTransform)swatchObject.transform;
+            swatchRect.anchorMin = new Vector2(0f, 0f);
+            swatchRect.anchorMax = new Vector2(0.3f, 1f);
+            swatchRect.offsetMin = swatchRect.offsetMax = Vector2.zero;
+            Image swatch = swatchObject.GetComponent<Image>();
+
+            TMP_Text hex = CreateText(anchor, "Hex", 24f, Vector2.zero, Vector2.zero,
+                TextAlignmentOptions.Left, new Color(0.82f, 0.78f, 0.64f), authorialFont);
+            hex.rectTransform.anchorMin = new Vector2(0.34f, 0f);
+            hex.rectTransform.offsetMin = Vector2.zero;
+            hex.rectTransform.offsetMax = Vector2.zero;
+
+            var editorObject = new GameObject(labelText + " Editor", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            editorObject.transform.SetParent(currentContent, false);
+            VerticalLayoutGroup editorLayout = editorObject.GetComponent<VerticalLayoutGroup>();
+            editorLayout.padding = new RectOffset(40, 0, 0, 6);
+            editorLayout.spacing = 6f;
+            editorLayout.childControlWidth = true;
+            editorLayout.childControlHeight = true;
+            editorLayout.childForceExpandWidth = true;
+            editorLayout.childForceExpandHeight = false;
+
+            float h = 0f, s = 0f, v = 1f;
+            void Sync()
+            {
+                Color c = getter();
+                Color.RGBToHSV(c, out float nh, out float ns, out float nv);
+                if (ns > 0.001f && nv > 0.001f)
+                    h = nh;
+                if (nv > 0.001f)
+                    s = ns;
+                v = nv;
+                swatch.color = new Color(c.r, c.g, c.b, 1f);
+                hex.text = TextStyling.Hex(c) + "   ▼";
+            }
+            void Push()
+            {
+                Color c = Color.HSVToRGB(h, s, v);
+                c.a = getter().a;
+                setter(c);
+                swatch.color = new Color(c.r, c.g, c.b, 1f);
+                hex.text = TextStyling.Hex(c) + "   ▼";
+            }
+
+            refreshUiFromDraft += Sync;
+
+            RectTransform previousContent = currentContent;
+            currentContent = (RectTransform)editorObject.transform;
+            Slider hue = CreateSliderRow("HUE", 0f, 360f, () => h * 360f, false, x => { h = x / 360f; Push(); },
+                x => $"{Mathf.RoundToInt(x)}°");
+            Image hueBackground = hue.transform.Find("Background").GetComponent<Image>();
+            hueBackground.sprite = HueSprite();
+            hueBackground.color = Color.white;
+            hue.transform.Find("Fill Area").gameObject.SetActive(false);
+            CreateSliderRow("SATURATION", 0f, 1f, () => s, false, x => { s = x; Push(); },
+                x => $"{Mathf.RoundToInt(x * 100f)}%");
+            CreateSliderRow("BRIGHTNESS", 0f, 1f, () => v, false, x => { v = x; Push(); },
+                x => $"{Mathf.RoundToInt(x * 100f)}%");
+            CreatePresetRow(c =>
+            {
+                c.a = getter().a;
+                setter(c);
+                refreshUiFromDraft?.Invoke();
+                MarkDirty();
+            });
+            currentContent = previousContent;
+
+            editorObject.SetActive(false);
+            swatchObject.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                editorObject.SetActive(!editorObject.activeSelf);
+                hex.text = TextStyling.Hex(getter()) + (editorObject.activeSelf ? "   ▲" : "   ▼");
+            });
+        }
+
+        private void CreatePresetRow(Action<Color> pick)
+        {
+            CreateRow("Presets", "PRESETS", out Transform anchor);
+            HorizontalLayoutGroup row = anchor.gameObject.AddComponent<HorizontalLayoutGroup>();
+            row.spacing = 8f;
+            row.childControlWidth = true;
+            row.childControlHeight = true;
+            row.childForceExpandWidth = true;
+            row.childForceExpandHeight = true;
+
+            foreach (Color preset in PresetColors)
+            {
+                var swatchObject = new GameObject("Preset", typeof(RectTransform), typeof(Image), typeof(Button));
+                swatchObject.transform.SetParent(anchor, false);
+                swatchObject.GetComponent<Image>().color = preset;
+                Color captured = preset;
+                swatchObject.GetComponent<Button>().onClick.AddListener(() => pick(captured));
+            }
+        }
+
+        private void BuildSubtitlePreview(RectTransform area)
+        {
+            TMP_FontAsset font = DialogueRunner.ActiveFont != null ? DialogueRunner.ActiveFont : menuFont;
+            RectTransform box = (RectTransform)new GameObject("Box", typeof(RectTransform), typeof(Image), typeof(CanvasGroup)).transform;
+            box.SetParent(area, false);
+            box.anchorMin = box.anchorMax = box.pivot = new Vector2(0.5f, 0f);
+            box.anchoredPosition = new Vector2(0f, 16f);
+            Image background = box.GetComponent<Image>();
+            background.raycastTarget = false;
+            CanvasGroup group = box.GetComponent<CanvasGroup>();
+
+            TMP_Text speaker = CreateText(box, "Speaker", 20f, Vector2.zero, Vector2.zero, TextAlignmentOptions.Top, Color.white, font);
+            TMP_Text body = CreateText(box, "Body", 24f, Vector2.zero, Vector2.zero, TextAlignmentOptions.Top, Color.white, font);
+            body.textWrappingMode = TextWrappingModes.Normal;
+            speaker.text = "UNGARETTI";
+            body.text = "Sfòrilo... lumàrde scrènzia. Gòrvalo dù brùnzo.";
+
+            previewChanged += () =>
+            {
+                if (subtitleStylePanel == null || !subtitleStylePanel.activeSelf)
+                    return;
+                TextStyle style = draft.subtitleStyle;
+                const float preview = 0.55f;
+                float k = preview * style.scale;
+                Vector2 size = DialogueRunner.ActiveBoxSize * preview;
+                box.sizeDelta = size;
+                background.color = style.backgroundColor;
+                group.alpha = draft.subtitlesEnabled ? 1f : 0.3f;
+
+                float speakerSize = DialogueRunner.ActiveSpeakerSize * k;
+                float textSize = DialogueRunner.ActiveTextSize * k;
+                speaker.fontSize = speakerSize;
+                body.fontSize = textSize;
+                speaker.rectTransform.offsetMin = new Vector2(16f, size.y - 12f - speakerSize * 1.3f);
+                speaker.rectTransform.offsetMax = new Vector2(-16f, -12f);
+                body.rectTransform.offsetMin = new Vector2(16f + DialogueRunner.ActiveTextSize * preview, 10f);
+                body.rectTransform.offsetMax = new Vector2(-16f - DialogueRunner.ActiveTextSize * preview, -12f - speakerSize * 1.4f);
+                TextStyling.Apply(speaker, style, style.accentColor, DialogueRunner.ActiveBold);
+                TextStyling.Apply(body, style, style.textColor, DialogueRunner.ActiveBold);
+            };
+        }
+
+        private void BuildScreenPreview(RectTransform area)
+        {
+            TMP_FontAsset font = Resources.Load<TMP_FontAsset>("Fonts/OSerif-Regular") ?? menuFont;
+
+            Image button = CreatePreviewPlate(area, new Vector2(-230f, -20f));
+            TMP_Text buttonLabel = CreateText(button.transform, "Label", 30f, Vector2.zero, Vector2.zero, TextAlignmentOptions.Center, Color.white, font);
+            buttonLabel.text = "CONTINUE";
+
+            Image prompt = CreatePreviewPlate(area, new Vector2(230f, -20f));
+            TMP_Text promptLabel = CreateText(prompt.transform, "Label", 30f, Vector2.zero, Vector2.zero, TextAlignmentOptions.Center, Color.white, font);
+            promptLabel.text = "TALK";
+
+            TMP_Text message = CreateText(area, "Message", 22f, Vector2.zero, Vector2.zero, TextAlignmentOptions.Bottom, Color.white, font);
+            message.rectTransform.offsetMin = new Vector2(10f, 14f);
+            message.rectTransform.offsetMax = new Vector2(-10f, -10f);
+            message.text = "SLOT 01 SAVED.";
+
+            previewChanged += () =>
+            {
+                if (screenStylePanel == null || !screenStylePanel.activeSelf)
+                    return;
+                TextStyle style = draft.screenStyle;
+                float k = style.scale;
+                button.rectTransform.sizeDelta = new Vector2(380f, 64f);
+                button.color = style.backgroundColor;
+                buttonLabel.fontSize = 30f * k;
+                TextStyling.Apply(buttonLabel, style, style.textColor);
+
+                prompt.color = style.backgroundColor;
+                promptLabel.fontSize = 30f * k;
+                TextStyling.Apply(promptLabel, style, style.textColor);
+                prompt.rectTransform.sizeDelta = promptLabel.GetPreferredValues("TALK") + new Vector2(36f, 12f);
+
+                message.fontSize = 22f * k;
+                TextStyling.Apply(message, style, style.accentColor);
+                message.alpha = draft.inGameTextEnabled ? message.alpha : message.alpha * 0.3f;
+            };
+        }
+
+        private static Image CreatePreviewPlate(RectTransform area, Vector2 position)
+        {
+            RectTransform plate = (RectTransform)new GameObject("Plate", typeof(RectTransform), typeof(Image)).transform;
+            plate.SetParent(area, false);
+            plate.anchorMin = plate.anchorMax = plate.pivot = new Vector2(0.5f, 0.5f);
+            plate.anchoredPosition = position;
+            Image image = plate.GetComponent<Image>();
+            image.raycastTarget = false;
+            return image;
+        }
+
+        private static void SetTopStrip(RectTransform rect, float top, float bottom)
+        {
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.offsetMin = new Vector2(40f, -bottom);
+            rect.offsetMax = new Vector2(-40f, -top);
+        }
+
+        private static Sprite HueSprite()
+        {
+            if (hueSprite != null)
+                return hueSprite;
+            var texture = new Texture2D(64, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            for (int x = 0; x < 64; x++)
+                texture.SetPixel(x, 0, Color.HSVToRGB(x / 63f, 1f, 1f));
+            texture.Apply();
+            hueSprite = Sprite.Create(texture, new Rect(0f, 0f, 64f, 1f), new Vector2(0.5f, 0.5f));
+            return hueSprite;
+        }
+
+        private static Sprite BackdropSprite()
+        {
+            if (backdropSprite != null)
+                return backdropSprite;
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            texture.SetPixel(0, 0, new Color(0.16f, 0.14f, 0.1f));
+            texture.SetPixel(1, 0, new Color(0.3f, 0.22f, 0.12f));
+            texture.SetPixel(0, 1, new Color(0.55f, 0.62f, 0.68f));
+            texture.SetPixel(1, 1, new Color(0.82f, 0.74f, 0.55f));
+            texture.Apply();
+            backdropSprite = Sprite.Create(texture, new Rect(0f, 0f, 2f, 2f), new Vector2(0.5f, 0.5f));
+            return backdropSprite;
+        }
+
         private static string[] ResolutionOptionLabels()
         {
             Resolution[] resolutions = Screen.resolutions;
@@ -637,7 +1048,7 @@ namespace Hortensia.Runtime
         private void CreateSectionLabel(string text)
         {
             var rowObject = new GameObject(text, typeof(RectTransform), typeof(LayoutElement));
-            rowObject.transform.SetParent(optionsContent, false);
+            rowObject.transform.SetParent(currentContent, false);
             rowObject.GetComponent<LayoutElement>().preferredHeight = 46f;
 
             TMP_Text label = CreateStretchText(rowObject.transform, 30f,
@@ -649,7 +1060,7 @@ namespace Hortensia.Runtime
         private GameObject CreateRow(string name, string labelText, out Transform controlAnchor)
         {
             var rowObject = new GameObject(name, typeof(RectTransform), typeof(LayoutElement));
-            rowObject.transform.SetParent(optionsContent, false);
+            rowObject.transform.SetParent(currentContent, false);
             rowObject.GetComponent<LayoutElement>().preferredHeight = 60f;
             RectTransform row = (RectTransform)rowObject.transform;
 
@@ -680,9 +1091,10 @@ namespace Hortensia.Runtime
             return rowObject;
         }
 
-        private void CreateSliderRow(string labelText, float min, float max, Func<float> getter,
-            bool wholeNumbers, Action<float> setter)
+        private Slider CreateSliderRow(string labelText, float min, float max, Func<float> getter,
+            bool wholeNumbers, Action<float> setter, Func<float, string> format = null)
         {
+            Func<float, string> formatter = format ?? (v => FormatSliderValue(v, min, max, wholeNumbers));
             CreateRow(labelText, labelText, out Transform anchor);
 
             var sliderObject = new GameObject("Slider", typeof(RectTransform), typeof(Slider));
@@ -759,7 +1171,7 @@ namespace Hortensia.Runtime
 
             slider.onValueChanged.AddListener(v =>
             {
-                valueText.text = FormatSliderValue(v, min, max, wholeNumbers);
+                valueText.text = formatter(v);
                 setter(v);
                 MarkDirty();
             });
@@ -768,8 +1180,9 @@ namespace Hortensia.Runtime
             {
                 float value = Mathf.Clamp(getter(), min, max);
                 slider.SetValueWithoutNotify(value);
-                valueText.text = FormatSliderValue(value, min, max, wholeNumbers);
+                valueText.text = formatter(value);
             };
+            return slider;
         }
 
         private void CreateToggleRow(string labelText, Func<bool> getter, Action<bool> setter)
