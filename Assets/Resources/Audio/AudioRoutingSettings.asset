@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2aa1063ad8cbf4b8e98c0742b44eb863, type: 3}
+  m_Name: AudioRoutingSettings
+  m_EditorClassIdentifier: Assembly-CSharp::Hortensia.Runtime.AudioRoutingSettings
+  mixer: {fileID: 24100000, guid: 9d34b779e9be245e09d2d3ca6acbd5b9, type: 2}
+  voiceGroup: {fileID: -4615332791051267068, guid: 9d34b779e9be245e09d2d3ca6acbd5b9, type: 2}
+  musicGroup: {fileID: -600257624285190033, guid: 9d34b779e9be245e09d2d3ca6acbd5b9, type: 2}
+  soundEffectsGroup: {fileID: -7465125994779106378, guid: 9d34b779e9be245e09d2d3ca6acbd5b9, type: 2}
+  videoGroup: {fileID: 6547645062322409907, guid: 9d34b779e9be245e09d2d3ca6acbd5b9, type: 2}
+  defaultVoiceVolume: 0.35
+  defaultMusicVolume: 0.35
+  defaultSoundEffectsVolume: 0.35
+  defaultVideoVolume: 0.05
