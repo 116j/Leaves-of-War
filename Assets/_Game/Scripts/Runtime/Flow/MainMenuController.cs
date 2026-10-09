@@ -117,6 +117,11 @@ namespace Hortensia.Runtime
         [SerializeField, Range(0f, 1f)] private float goldLeafTint = 0.6f;
         [SerializeField, Min(0)] private int maxGoldLeaves = 1500;
         [SerializeField, Min(0.1f)] private float gustDuration = 0.8f;
+        [SerializeField]
+        private float leavesDriftBackTime = 8f;
+        [SerializeField]
+        private float returnLeafSpeed = 20f;
+
 
         [Header("Touch")]
         [Tooltip("Max seconds between the two taps of a double-tap (gust of wind).")]
@@ -167,6 +172,7 @@ namespace Hortensia.Runtime
         private struct Leaf
         {
             public Vector2 Pos;
+            public Vector2 FallPos;
             public Vector2 Vel;
             public Vector2 Half;
             public float Angle;
@@ -175,6 +181,9 @@ namespace Hortensia.Runtime
             public float Fall;
             public float Phase;
             public Color Tint;
+            public bool IsOffscreen;
+            public bool IsMovedByBroom;
+            public bool IsReturning;
         }
 
         private TMP_FontAsset handwritingFont;
@@ -224,6 +233,7 @@ namespace Hortensia.Runtime
         private float lastStrokeTime = -10f;
         private float lastStrokeSpeed;
         private int pushedThisStroke;
+        private float cursorIdleTime;
 
         private bool inputLocked;
         private bool starting;
@@ -290,6 +300,7 @@ namespace Hortensia.Runtime
                 HandleConfirm();
                 HandleDoubleTap();
                 RegrowLeaves();
+                TrackIdle();
             }
 
             SimulateLeaves(Mathf.Min(Time.unscaledDeltaTime, 0.05f));
@@ -754,6 +765,7 @@ namespace Hortensia.Runtime
                     goldLeafSize * goldWidth / longest * (lengthAlongX ? lengthStretch : widthStretch),
                     goldLeafSize * goldHeight / longest * (lengthAlongX ? widthStretch : lengthStretch)),
                 Angle = RandomRange(0f, Mathf.PI * 2f),
+                Phase = RandomRange(0f, Mathf.PI * 2f),
                 Shade = RandomRange(goldLeafBrightness.x, goldLeafBrightness.y),
                 Tint = SampleLeafColor()
             };
@@ -816,6 +828,38 @@ namespace Hortensia.Runtime
             SweepStroke(lastStrokePoint, point);
             lastStrokePoint = point;
         }
+        /// <summary>
+        /// Tracks the time when the player doesn't sweep 
+        /// </summary>
+        private void TrackIdle()
+        {
+            if (!ReadPointer(out Vector2 screen, out bool pressed) || pressed)
+            {
+                cursorIdleTime = 0f;
+                return;
+            }
+
+            cursorIdleTime += Time.unscaledDeltaTime;
+            if (cursorIdleTime >= leavesDriftBackTime)
+            {
+                cursorIdleTime = 0f;
+                ReturnLeaves();
+            }
+        }
+        /// <summary>
+        /// Starts returning leaves that were swept 
+        /// </summary>
+        private void ReturnLeaves()
+        {
+            for (int n = 0; n < leafCount; n++)
+            {
+                if (!leaves[n].IsMovedByBroom)
+                    continue;
+
+                leaves[n].IsReturning = true;
+            }
+            leavesMoving = true;
+        }
 
         private void SweepStroke(Vector2 from, Vector2 to)
         {
@@ -841,6 +885,14 @@ namespace Hortensia.Runtime
                         continue;
 
                     float side = Mathf.Sign(across);
+
+                    //position to return after sweep
+                    if (!leaf.IsMovedByBroom)
+                    {
+                        leaf.IsMovedByBroom = true;
+                        leaf.FallPos = leaf.Pos;
+                    }
+
                     if (Mathf.Abs(across) > broomHalfWidth * 0.82f && rng.NextDouble() < endSpill)
                     {
                         leaf.Pos = center + dir * Mathf.Max(along, 0f) + perp * side * (broomHalfWidth + RandomRange(0.5f, 2.5f));
@@ -851,7 +903,7 @@ namespace Hortensia.Runtime
                         leaf.Pos = center + dir * (broomHalfDepth + RandomRange(0f, pileDepth)) + perp * (across + RandomRange(-0.6f, 0.6f));
                         leaf.Vel = dir * kick * RandomRange(0.75f, 1.05f) + perp * kick * RandomRange(-0.12f, 0.12f);
                     }
-
+                    leaf.IsReturning = false;
                     leaf.Spin = RandomRange(-6f, 6f);
                     leaf.Angle += RandomRange(-0.4f, 0.4f);
                     leavesMoving = true;
@@ -889,7 +941,35 @@ namespace Hortensia.Runtime
             for (int n = 0; n < leafCount; n++)
             {
                 ref Leaf leaf = ref leaves[n];
-                if (leaf.Fall > 0f)
+                if (leaf.IsOffscreen && !leaf.IsReturning)
+                    continue;
+                //returns swept leavs to their fall positions with a bit of amplitude 
+                if (leaf.IsReturning)
+                {
+                    Vector2 toStart = leaf.FallPos - leaf.Pos;
+                    float dist = toStart.sqrMagnitude;
+                    Vector2 dir = toStart.normalized;
+
+                    if (dist < 0.5f)
+                    {
+                        leaf.Pos = leaf.FallPos;
+                        leaf.IsReturning = false;
+                        leaf.Vel = Vector2.zero;
+                        leaf.Spin = 0f;
+                        leaf.IsMovedByBroom = false;
+                    }
+                    else
+                    {
+                        leaf.Phase += dt * 3.2f;
+                        float sway = Mathf.Sin(leaf.Phase) * 30;
+                        float speedFactor = 0.7f + 0.6f * Mathf.PerlinNoise(leaf.Phase * 0.5f, 0f);
+                        leaf.Pos += dir * Mathf.Min(returnLeafSpeed * speedFactor * dt, dist) + new Vector2(-dir.y, dir.x) * sway * dt;
+                        leaf.Angle = Mathf.Lerp(leaf.Angle, Mathf.Atan2(dir.y, dir.x), dt * 4f);
+                        leaf.Angle += Mathf.Sin(leaf.Phase * 1.5f) * 1.5f * dt;
+                        leavesMoving = true;
+                    }
+                }
+                else if (leaf.Fall > 0f)
                 {
                     leaf.Phase += dt * 3.2f;
                     leaf.Pos += new Vector2(Mathf.Sin(leaf.Phase) * 16f, Mathf.Cos(leaf.Phase * 0.7f) * 5f) * leaf.Fall * dt;
@@ -920,18 +1000,12 @@ namespace Hortensia.Runtime
         {
             float maxX = leavesTexture.width + OffscreenMargin;
             float maxY = leavesTexture.height + OffscreenMargin;
-            int write = 0;
             for (int read = 0; read < leafCount; read++)
             {
                 Vector2 p = leaves[read].Pos;
-                if (p.x >= -OffscreenMargin && p.y >= -OffscreenMargin && p.x <= maxX && p.y <= maxY)
-                    leaves[write++] = leaves[read];
-            }
-
-            if (write != leafCount)
-            {
-                leafCount = write;
-                leavesDirty = true;
+                bool offscreen = p.x < -OffscreenMargin || p.y < -OffscreenMargin
+                      || p.x > maxX || p.y > maxY;
+                leaves[read].IsOffscreen = offscreen;
             }
         }
 
@@ -961,6 +1035,10 @@ namespace Hortensia.Runtime
             for (int n = 0; n < leafCount; n++)
             {
                 Leaf leaf = leaves[n];
+                //doesn't draw a leaf if it's beyond the screen
+                if (leaf.IsOffscreen && !leaf.IsReturning)
+                    continue;
+
                 float c = Mathf.Cos(leaf.Angle);
                 float s = Mathf.Sin(leaf.Angle);
                 float scale = 1f + leaf.Fall * leaf.Fall * 1.4f;

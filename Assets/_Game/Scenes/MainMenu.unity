@@ -292,7 +292,6 @@ MonoBehaviour:
   showCredits: 1
   fallbackFloorColor: {r: 0.36, g: 0.25, b: 0.16, a: 1}
   floorTiling: 2
-  leavesTiling: 3
   logoWidth: 900
   entryFont: {fileID: 11400000, guid: 11a2e1bb9652b9244aeb48a39f49f6d4, type: 2}
   entryFontFile: {fileID: 12800000, guid: 1591b6741c4c24147b5a632368ca4749, type: 3}
@@ -320,6 +319,7 @@ MonoBehaviour:
   panelBold: 1
   hintMessage: "Hold left mouse button and move \n(or scratch the screen) to sweep
     the leaves.\n\n Enter or space to blow them away."
+  hintMessageTouch: "Swipe to sweep the leaves  \xB7  Double-tap to blow them away"
   hintFont: {fileID: 11400000, guid: 11a2e1bb9652b9244aeb48a39f49f6d4, type: 2}
   hintFontFile: {fileID: 12800000, guid: 1591b6741c4c24147b5a632368ca4749, type: 3}
   hintBold: 1
@@ -336,8 +336,6 @@ MonoBehaviour:
   hintBorderColor: {r: 0, g: 0.019149873, b: 0.13207549, a: 0.85}
   maskResolution: {x: 320, y: 180}
   leafSpacing: 3
-  leafHalfLength: {x: 3, y: 4.5}
-  leafHalfWidth: {x: 1.8, y: 2.8}
   revealThreshold: 0.25
   regrowLeavesPerSecond: 30
   goldLeafFallTime: 2.5
@@ -348,6 +346,9 @@ MonoBehaviour:
   goldLeafTint: 0.6
   maxGoldLeaves: 1500
   gustDuration: 0.8
+  leavesDriftBackTime: 8
+  returnLeafSpeed: 25
+  doubleTapTime: 0.35
   broomHalfWidth: 43.4
   broomHalfDepth: 4
   pileDepth: 5
