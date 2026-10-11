@@ -8,7 +8,6 @@ TheCelticArtist
 Programming
 TheCelticArtist
 [Nome]
-[Nome]
 
 3D Art
 Niko
@@ -25,6 +24,15 @@ Tommaso Motteran
 
 Sound Design
 [Nome]
+
+TEXTURES
+
+White quill - RDNE Stock project (Pexels)
+Silver prize pen, Amsterdam 1755 - Rijksmuseum (Public Domain)
+Oak leaf - Petr Ganaj (Pexels)
+Gold foil - pxhere via rawpixel (CC0)
+"Fliederfarbene Iris" (c. 1835) - Leopold Zinnöger, Belvedere via rawpixel (CC0)
+Wood066 - ambientCG.com (CC0)
 
 Poems
 Giuseppe Ungaretti

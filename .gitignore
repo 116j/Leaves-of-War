@@ -97,3 +97,4 @@ Pulizia_LeavesOfWar.ps1
 # Cartella dello script di pulizia finita dentro Assets
 /[Aa]ssets/Pulizia/
 /[Aa]ssets/Pulizia.meta
+/Data/
