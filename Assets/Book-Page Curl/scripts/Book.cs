@@ -51,7 +51,6 @@ public class Book : MonoBehaviour {
     public Image Right;
     public Image RightNext;
     public UnityEvent OnFlip;
-    public static Action<int> CurrentPageChanged;
     float radius1, radius2;
     //Spine Bottom
     Vector3 sb;
@@ -69,6 +68,19 @@ public class Book : MonoBehaviour {
     //current flip mode
     FlipMode mode;
 
+
+    public static Action<int> CurrentPageCount;
+
+    public static Action<int> ForwardPage;
+
+    public static Action<int> BackwardPage;
+    public static Action OnMouseDragRight;
+
+    public static Action OnMouseDragLeft;
+
+    public static Action RestoreOriginalPageLeft;
+    public static Action RestoreOriginalPageRight;
+    int flipItr =1 ;
     void Start()
     {
         if (!canvas) canvas=GetComponentInParent<Canvas>();
@@ -96,6 +108,7 @@ public class Book : MonoBehaviour {
         ShadowLTR.rectTransform.sizeDelta = new Vector2(pageWidth, shadowPageHeight);
         ShadowLTR.rectTransform.pivot = new Vector2(0, (pageWidth / 2) / shadowPageHeight);
 
+        
     }
 
     private void CalcCurlCriticalPoints()
@@ -303,11 +316,12 @@ public class Book : MonoBehaviour {
 
         LeftNext.transform.SetAsFirstSibling();
         if (enableShadowEffect) Shadow.gameObject.SetActive(true);
+        OnMouseDragRight?.Invoke();
         UpdateBookRTLToPoint(f);
     }
     public void OnMouseDragRightPage()
     {
-        if (interactable)
+        if (interactable && flipItr != 5)
         DragRightPageToPoint(transformPoint(Input.mousePosition));
         
     }
@@ -337,11 +351,12 @@ public class Book : MonoBehaviour {
 
         RightNext.transform.SetAsFirstSibling();
         if (enableShadowEffect) ShadowLTR.gameObject.SetActive(true);
+        OnMouseDragLeft?.Invoke();
         UpdateBookLTRToPoint(f);
     }
     public void OnMouseDragLeftPage()
     {
-        if (interactable)
+        if (interactable && flipItr !=1)
         DragLeftPageToPoint(transformPoint(Input.mousePosition));
         
     }
@@ -350,19 +365,32 @@ public class Book : MonoBehaviour {
         if (interactable)
             ReleasePage();
     }
+
+
+
     public void ReleasePage()
     {
         if (pageDragging)
         {
             pageDragging = false;
+
             float distanceToLeft = Vector2.Distance(c, ebl);
             float distanceToRight = Vector2.Distance(c, ebr);
-            if (distanceToRight < distanceToLeft && mode == FlipMode.RightToLeft)
+
+            if (distanceToRight < distanceToLeft &&
+                mode == FlipMode.RightToLeft)
+            {
                 TweenBack();
-            else if (distanceToRight > distanceToLeft && mode == FlipMode.LeftToRight)
+            }
+            else if (distanceToRight > distanceToLeft &&
+                     mode == FlipMode.LeftToRight)
+            {
                 TweenBack();
+            }
             else
+            {
                 TweenForward();
+            }
         }
     }
     Coroutine currentCoroutine;
@@ -380,45 +408,73 @@ public class Book : MonoBehaviour {
     }
     void Flip()
     {
+        Debug.Log($"Before Flip itr Count {flipItr}");
         if (mode == FlipMode.RightToLeft)
+        {
             currentPage += 2;
+            flipItr++;
+       
+            ForwardPage?.Invoke(flipItr);
+        }
         else
+        {
             currentPage -= 2;
+            flipItr--;
+            BackwardPage?.Invoke(flipItr);
+        }
+        Debug.Log($"After Flip itr Count {flipItr}");
         LeftNext.transform.SetParent(BookPanel.transform, true);
         Left.transform.SetParent(BookPanel.transform, true);
         LeftNext.transform.SetParent(BookPanel.transform, true);
+
         Left.gameObject.SetActive(false);
         Right.gameObject.SetActive(false);
+
         Right.transform.SetParent(BookPanel.transform, true);
         RightNext.transform.SetParent(BookPanel.transform, true);
+
         UpdateSprites();
+
         Shadow.gameObject.SetActive(false);
         ShadowLTR.gameObject.SetActive(false);
-        CurrentPageChanged.Invoke(currentPage);
-        if (OnFlip != null)
-            OnFlip.Invoke();
+
+     
+
+        // Notify listeners only after a successful flip.
+        CurrentPageCount?.Invoke(flipItr);
     }
+
+
+ 
     public void TweenBack()
     {
         if (mode == FlipMode.RightToLeft)
         {
-            currentCoroutine = StartCoroutine(TweenTo(ebr,0.15f,
-                () =>
+            currentCoroutine = StartCoroutine(
+                TweenTo(ebr, 0.15f, () =>
                 {
                     UpdateSprites();
+
                     RightNext.transform.SetParent(BookPanel.transform);
                     Right.transform.SetParent(BookPanel.transform);
 
                     Left.gameObject.SetActive(false);
                     Right.gameObject.SetActive(false);
+
                     pageDragging = false;
-                }
-                ));
+
+                    // Restore text after the page returns.
+                    Debug.Log("Right Page Drag and release ");
+                    // Restore text after the page returns.
+                    RestoreOriginalPageRight?.Invoke();
+                   
+                })
+            );
         }
         else
         {
-            currentCoroutine = StartCoroutine(TweenTo(ebl, 0.15f,
-                () =>
+            currentCoroutine = StartCoroutine(
+                TweenTo(ebl, 0.15f, () =>
                 {
                     UpdateSprites();
 
@@ -427,9 +483,13 @@ public class Book : MonoBehaviour {
 
                     Left.gameObject.SetActive(false);
                     Right.gameObject.SetActive(false);
+
                     pageDragging = false;
-                }
-                ));
+                    Debug.Log("Left Page Drag and release ");
+                    RestoreOriginalPageLeft?.Invoke();
+
+                })
+            );
         }
     }
     public IEnumerator TweenTo(Vector3 to, float duration, System.Action onFinish)

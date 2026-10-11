@@ -1,0 +1,30 @@
+fileFormatVersion: 2
+guid: e68105bb7e21f9c409ba74f9d71f176c
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Roboto Condensed
+  fontNames:
+  - Roboto Condensed
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: ac2d1d092e4b2ec47953c04f9d812fc1, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 384538
+  packageName: UIFX - Starter Bundle
+  packageVersion: 2.1.3
+  assetPath: Assets/ChocDino/UIFX/Demos/Fonts/RobotoCondensed-Light.ttf
+  uploadId: 1013424
