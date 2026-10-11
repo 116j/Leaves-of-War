@@ -1,7 +1,10 @@
 using UnityEngine;
 
-public class AssignPoem : MonoBehaviour
+public class AssignPoem : RevealableObject
 {
+   [SerializeField]
+    private int _poemId;
+
     [SerializeField]
     protected string _assignedDate;
 
@@ -16,7 +19,18 @@ public class AssignPoem : MonoBehaviour
     protected string _assignedPoemText;
 
    public PoemInfo poemInfo;
-
+    protected override void OnRevealChanged(bool revealed)
+    {
+        if (revealed)
+        {
+            Debug.Log("Poem revealed!");
+            AddPoemInfo();
+        }
+        else
+        {
+            Debug.Log("Poem hidden!");
+        }
+    }
     private void Awake()
     {
         if (poemInfo == null)
@@ -28,17 +42,52 @@ public class AssignPoem : MonoBehaviour
 
         poemInfo._poemsList.Add(new PoemInfoContainer
         {
+            poemId = _poemId,
             poemName = _assignedPoemName,
             poemText = _assignedPoemText,
             poemDate = _assignedDate,
             poemPlace = _assignedPlace
-           
+
 
         });
     }
 
-   
 
+    void AddPoemInfo()
+    {
+        if (poemInfo == null)
+        {
+            Debug.LogError("PoemInfo is not assigned in AssignPoem script on " + gameObject.name);
+            poemInfo._poemsList = new System.Collections.Generic.List<PoemInfoContainer>();
+            return;
+        }
+
+        poemInfo._poemsList.Add(new PoemInfoContainer
+        {
+            poemId = _poemId,
+            poemName = _assignedPoemName,
+            poemText = _assignedPoemText,
+            poemDate = _assignedDate,
+            poemPlace = _assignedPlace
+
+
+        });
+    }
+
+
+    void RemovePoemInfo()
+    {
+        poemInfo._poemsList.Remove(new PoemInfoContainer
+        {
+            poemId = _poemId,
+            poemName = _assignedPoemName,
+            poemText = _assignedPoemText,
+            poemDate = _assignedDate,
+            poemPlace = _assignedPlace
+
+
+        });
+    }
 
 
 

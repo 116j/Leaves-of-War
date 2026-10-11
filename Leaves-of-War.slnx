@@ -1,5 +1,10 @@
 ﻿<Solution>
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="ChocDino.UIFX.csproj" />
   <Project Path="Hortensia.Narrative.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="ChocDino.UIFX.Demos.csproj" />
+  <Project Path="ChocDino.UIFX.TMP.csproj" />
+  <Project Path="ChocDino.UIFX.TMP.Editor.csproj" />
+  <Project Path="ChocDino.UIFX.Editor.csproj" />
 </Solution>

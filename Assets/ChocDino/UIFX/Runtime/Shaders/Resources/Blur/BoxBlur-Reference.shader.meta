@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: aebddd5b1ca417341bf170da48195c34
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 384538
+  packageName: UIFX - Starter Bundle
+  packageVersion: 2.1.3
+  assetPath: Assets/ChocDino/UIFX/Runtime/Shaders/Resources/Blur/BoxBlur-Reference.shader
+  uploadId: 1013424

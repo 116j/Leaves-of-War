@@ -11,6 +11,7 @@ public class PoemInfo : ScriptableObject
 [System.Serializable]
 public class PoemInfoContainer
 {
+    public int poemId;
     public string poemName;
     public string poemDate;
 

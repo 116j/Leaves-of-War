@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7b39b326d72b41b48b629acbfee7c6e4
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 384538
+  packageName: UIFX - Starter Bundle
+  packageVersion: 2.1.3
+  assetPath: Assets/ChocDino/UIFX/Editor/Scripts/Effects/Trail/TrailEffectEditor.cs
+  uploadId: 1013424
