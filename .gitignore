@@ -90,3 +90,10 @@ Pulizia_LeavesOfWar.ps1
 # Scena di test dei dialoghi
 /[Aa]ssets/**/DialogueTest*.unity
 /[Aa]ssets/**/DialogueTest*.unity.meta
+
+# File generati dagli IDE
+*.slnx
+
+# Cartella dello script di pulizia finita dentro Assets
+/[Aa]ssets/Pulizia/
+/[Aa]ssets/Pulizia.meta
