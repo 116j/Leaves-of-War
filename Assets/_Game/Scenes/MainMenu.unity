@@ -288,7 +288,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 702c10f35c4d74b92aa08d7baac47101, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Hortensia.Runtime.MainMenuController
-  newGameScene: Core 1
+  newGameScene: Level 1 - Milano
   showCredits: 1
   fallbackFloorColor: {r: 0.36, g: 0.25, b: 0.16, a: 1}
   floorTiling: 2

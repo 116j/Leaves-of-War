@@ -17,6 +17,7 @@ public class PoemInfoContainer
 
     public string poemPlace;
     public string poemText;
+    public AudioClip poemVoice;
 
    
 }

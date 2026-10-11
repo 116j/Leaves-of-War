@@ -98,3 +98,6 @@ Pulizia_LeavesOfWar.ps1
 /[Aa]ssets/Pulizia/
 /[Aa]ssets/Pulizia.meta
 /Data/
+# Scena di test dei dialoghi (solo in locale)
+/[Aa]ssets/_Game/Scenes/Test_Dialogue.unity
+/[Aa]ssets/_Game/Scenes/Test_Dialogue.unity.meta

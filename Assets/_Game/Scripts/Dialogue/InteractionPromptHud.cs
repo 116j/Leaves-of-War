@@ -58,7 +58,7 @@ namespace Hortensia.Runtime
             if (player == null)
                 player = FindAnyObjectByType<FirstPersonController>();
 
-            string prompt = GameSettings.Current.inGameTextEnabled && player != null && player.isActiveAndEnabled && !DialogueRunner.IsPlaying &&
+            string prompt = GameSettings.Current.inGameTextEnabled && player != null && player.isActiveAndEnabled && !DialogueRunner.IsPlaying && !DiaryInteraction.IsReading &&
                             (PauseController.Instance == null || !PauseController.Instance.IsPaused)
                 ? player.InteractionPrompt
                 : string.Empty;

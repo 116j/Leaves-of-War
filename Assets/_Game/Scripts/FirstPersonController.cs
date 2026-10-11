@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Hortensia.Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using UnityEngine.Rendering.Universal;
 
 [RequireComponent(typeof(CharacterController))]
@@ -47,12 +48,21 @@ public sealed class FirstPersonController : MonoBehaviour
         new RebindableAction("move_right", "MOVE RIGHT",    "Move",          4, "<Keyboard>/rightArrow", "Button", "a1000000-0000-4000-8000-000000000004"),
         new RebindableAction("sprint",     "SPRINT",        "Sprint",        0, "<Keyboard>/leftShift",  "Button", "a1000000-0000-4000-8000-00000000000a"),
         new RebindableAction("interact",   "INTERACT",      "Interact",      0, "<Keyboard>/e",          "Button", "a1000000-0000-4000-8000-000000000005"),
+        new RebindableAction("sweep",      "SWEEP (HOLD)",  "Sweep",         0, "<Mouse>/leftButton",    "Button", "a1000000-0000-4000-8000-00000000000d"),
+        new RebindableAction("diary",      "DIARY",         "Diary",         0, "<Keyboard>/i",          "Button", "a1000000-0000-4000-8000-00000000000b"),
+        new RebindableAction("write",      "WRITE (HOLD)",  "Write",         0, "<Keyboard>/t",          "Button", "a1000000-0000-4000-8000-00000000000c"),
         new RebindableAction("cursor",     "TOGGLE CURSOR", "Toggle Cursor", 0, CursorDefaultPath,       "Button", "a1000000-0000-4000-8000-000000000006"),
         new RebindableAction("pause",      "PAUSE",         "Pause",         0, PauseDefaultPath,        "Button", "a1000000-0000-4000-8000-000000000007"),
     };
 
     [Header("References")]
     [SerializeField] private Camera playerCamera;
+
+    [Header("Cursor")]
+    [SerializeField, Min(8f)] private float cursorSize = 256f;
+    [Tooltip("Image pixels from the top-left corner: centre of the bristle tips.")]
+    [SerializeField] private Vector2 cursorHotspot = new Vector2(191f, 7f);
+    [SerializeField, Range(0f, 0.3f)] private float cursorPressSquash = 0.08f;
 
     [Header("Movement")]
     [SerializeField] private float walkSpeed = 3.2f;
@@ -91,16 +101,29 @@ public sealed class FirstPersonController : MonoBehaviour
     public bool IsGrounded => controller != null && controller.isGrounded;
     public InputAction PauseAction { get; private set; }
     public InputAction InteractAction => interactAction;
+    public InputAction DiaryAction { get; private set; }
+    public InputAction SweepAction { get; private set; }
+    public InputAction LookAction => lookAction;
+    public InputAction WriteAction { get; private set; }
 
     public string InteractionPrompt =>
         focusedInteractableComponent != null ? focusedInteractable.Prompt : string.Empty;
 
     private static bool IsLocked =>
         DialogueRunner.LocksPlayer ||
+        DiaryInteraction.IsReading ||
         (PauseController.Instance != null && PauseController.Instance.IsPaused);
+
+    private const string CursorPath = "UI/CustomCursor";
+    private Canvas cursorCanvas;
+    private RectTransform cursorRect;
+    private RawImage cursorImage;
+    private float cursorSquash;
+    private Texture2D blankCursor;
 
     private void Awake()
     {
+        BuildCursor();
         controller = GetComponent<CharacterController>();
         if (playerCamera == null)
             playerCamera = GetComponentInChildren<Camera>();
@@ -113,6 +136,9 @@ public sealed class FirstPersonController : MonoBehaviour
         pointerClickAction = inputActions.FindAction("Pointer Click");
         cursorToggleAction = inputActions.FindAction("Toggle Cursor");
         PauseAction = inputActions.FindAction("Pause");
+        DiaryAction = inputActions.FindAction("Diary");
+        SweepAction = inputActions.FindAction("Sweep");
+        WriteAction = inputActions.FindAction("Write");
         ApplySettings();
     }
 
@@ -125,6 +151,8 @@ public sealed class FirstPersonController : MonoBehaviour
         InputSystem.onDeviceChange += HandleInputDeviceChange;
         GameSettings.Applied += ApplySettings;
         LockCursor(true);
+        if (blankCursor != null)
+            Cursor.SetCursor(blankCursor, Vector2.zero, CursorMode.Auto);
     }
 
     private void OnDisable()
@@ -134,6 +162,10 @@ public sealed class FirstPersonController : MonoBehaviour
         inputActions?.Disable();
         SetFocusedInteractable(null);
         LockCursor(false);
+        if (cursorImage != null)
+            cursorImage.enabled = false;
+        if (blankCursor != null)
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     }
 
     private void OnDestroy()
@@ -234,7 +266,8 @@ public sealed class FirstPersonController : MonoBehaviour
             return;
         }
 
-        if (lookAction.controls.Count > 0)
+        bool sweeping = SweepAction != null && SweepAction.IsPressed() && BroomSweeper.Ready;
+        if (lookAction.controls.Count > 0 && !sweeping)
         {
             Vector2 delta = lookAction.ReadValue<Vector2>() * mouseSensitivity;
             transform.Rotate(0f, delta.x, 0f);
@@ -242,8 +275,9 @@ public sealed class FirstPersonController : MonoBehaviour
             playerCamera.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
 
-        UpdateMovement();
-        UpdateInteraction(!recapturedCursor);
+        if (!DiaryInteraction.IsWriting)
+            UpdateMovement();
+        UpdateInteraction(!recapturedCursor && !sweeping && !DiaryInteraction.IsWriting);
     }
 
     private void UpdateMovement()
@@ -318,6 +352,9 @@ public sealed class FirstPersonController : MonoBehaviour
         map.AddAction("Interact", InputActionType.Button, "<Keyboard>/e", expectedControlLayout: "Button")
             .AddBinding("<Mouse>/leftButton");
         map.AddAction("Pointer Click", InputActionType.Button, "<Mouse>/leftButton", expectedControlLayout: "Button");
+        map.AddAction("Sweep", InputActionType.Button, "<Mouse>/leftButton", expectedControlLayout: "Button");
+        map.AddAction("Diary", InputActionType.Button, "<Keyboard>/i", expectedControlLayout: "Button");
+        map.AddAction("Write", InputActionType.Button, "<Keyboard>/t", expectedControlLayout: "Button");
         map.AddAction("Toggle Cursor", InputActionType.Button, CursorDefaultPath, expectedControlLayout: "Button");
         map.AddAction("Pause", InputActionType.Button, PauseDefaultPath, expectedControlLayout: "Button");
 
@@ -355,6 +392,91 @@ public sealed class FirstPersonController : MonoBehaviour
         focusedInteractable = interactable;
         focusedInteractableComponent = component;
         InteractionPromptChanged?.Invoke(InteractionPrompt);
+    }
+
+    private void LateUpdate() => UpdateCursor();
+
+    public float Yaw => transform.eulerAngles.y;
+    public float Pitch => pitch;
+
+    public void Place(Vector3 position, float yaw, float newPitch)
+    {
+        bool wasEnabled = controller.enabled;
+        controller.enabled = false;
+        transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+        controller.enabled = wasEnabled;
+        pitch = Mathf.Clamp(newPitch, -lookLimit, lookLimit);
+        if (playerCamera != null)
+            playerCamera.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    public void LookAt(Vector3 point)
+    {
+        Vector3 flat = point - transform.position;
+        flat.y = 0f;
+        if (flat.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(flat.normalized, Vector3.up);
+        if (playerCamera == null)
+            return;
+        Vector3 direction = point - playerCamera.transform.position;
+        float horizontal = new Vector2(direction.x, direction.z).magnitude;
+        pitch = Mathf.Clamp(-Mathf.Atan2(direction.y, horizontal) * Mathf.Rad2Deg, -lookLimit, lookLimit);
+        playerCamera.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    private void BuildCursor()
+    {
+        Texture2D texture = Resources.Load<Texture2D>(CursorPath);
+        if (texture == null)
+            return;
+
+        var canvasObject = new GameObject("Cursor", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        canvasObject.transform.SetParent(transform, false);
+        cursorCanvas = canvasObject.GetComponent<Canvas>();
+        cursorCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        cursorCanvas.sortingOrder = 32000;
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var imageObject = new GameObject("Broom", typeof(RectTransform), typeof(RawImage));
+        imageObject.transform.SetParent(canvasObject.transform, false);
+        cursorRect = (RectTransform)imageObject.transform;
+        cursorRect.anchorMin = cursorRect.anchorMax = Vector2.zero;
+        cursorRect.sizeDelta = new Vector2(cursorSize * texture.width / texture.height, cursorSize);
+        cursorRect.pivot = new Vector2(Mathf.Clamp01(cursorHotspot.x / texture.width), Mathf.Clamp01(1f - cursorHotspot.y / texture.height));
+        cursorImage = imageObject.GetComponent<RawImage>();
+        cursorImage.texture = texture;
+        cursorImage.raycastTarget = false;
+        cursorImage.enabled = false;
+
+        blankCursor = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+        blankCursor.SetPixels32(new Color32[32 * 32]);
+        blankCursor.Apply();
+    }
+
+    private void UpdateCursor()
+    {
+        if (cursorCanvas == null)
+            return;
+
+        Cursor.visible = false;
+        bool touch = Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed;
+        Mouse mouse = Mouse.current;
+        bool show = Cursor.lockState != CursorLockMode.Locked && (touch || mouse != null);
+        cursorImage.enabled = show;
+        if (!show)
+            return;
+
+        Vector2 screen = touch ? Touchscreen.current.primaryTouch.position.ReadValue() : mouse.position.ReadValue();
+        bool pressed = touch || mouse.leftButton.isPressed;
+        RectTransform canvasRect = (RectTransform)cursorCanvas.transform;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out Vector2 local))
+            cursorRect.anchoredPosition = local - canvasRect.rect.min;
+
+        cursorSquash = Mathf.Lerp(cursorSquash, pressed ? cursorPressSquash : 0f, 1f - Mathf.Exp(-20f * Time.unscaledDeltaTime));
+        cursorRect.localScale = new Vector3(1f + cursorSquash * 0.5f, 1f - cursorSquash, 1f);
     }
 
     private static void LockCursor(bool locked)

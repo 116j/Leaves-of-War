@@ -9,7 +9,7 @@ namespace Hortensia.Runtime
 
         private const string AutosaveKey = "leavesofwar.autosave";
         private const string SlotKey = "leavesofwar.slot.";
-        private static readonly string[] NotLevels = { "Boot", "MainMenu", "Title", "Title 1" };
+        private static readonly string[] NotLevels = { "Boot", "MainMenu" };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()

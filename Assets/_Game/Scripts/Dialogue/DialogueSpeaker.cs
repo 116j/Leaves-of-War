@@ -40,6 +40,10 @@ namespace Hortensia.Runtime
         {
             if (animator == null)
                 animator = GetComponentInChildren<Animator>();
+            if (animator != null)
+                animator.applyRootMotion = false;
+            foreach (SkinnedMeshRenderer skin in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                skin.updateWhenOffscreen = true;
             lookAtPlayer = GetComponentInChildren<LookAtPlayer>();
             if (voiceSource != null)
             {

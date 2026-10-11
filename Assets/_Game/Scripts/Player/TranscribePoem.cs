@@ -1,246 +1,616 @@
-
-
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using ChocDino.UIFX;
+using Hortensia.Runtime;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class TranscribePoem : RevealableObject
 {
     public PoemInfo poemInfo;
 
-    [SerializeField]
-    protected TextMeshProUGUI _assignedDateCurrent;
+    [SerializeField] protected TextMeshProUGUI _assignedDateCurrent;
+    [SerializeField] protected TextMeshProUGUI _assignedNameCurrent;
+    [SerializeField] protected TextMeshProUGUI _assignedPlaceCurrent;
+    [SerializeField] protected TextMeshProUGUI _assignedPoemTextCurrent;
+    [Tooltip("Right page: continuation of the current poem.")]
+    [SerializeField] protected TextMeshProUGUI _assignedPoemTextCurrentNext;
+    [SerializeField] protected TextMeshProUGUI _assignedDateOld;
+    [SerializeField] protected TextMeshProUGUI _assignedNameOld;
+    [SerializeField] protected TextMeshProUGUI _assignedPlaceOld;
+    [SerializeField] protected TextMeshProUGUI _assignedPoemTextOld;
+    [Tooltip("Continuation of the old poem on the other side of the turning page.")]
+    [SerializeField] protected TextMeshProUGUI _assignedPoemTextOldNext;
 
-    [SerializeField]
-    protected TextMeshProUGUI _assignedNameCurrent;
+    [Header("Transcription")]
+    [SerializeField] private int _firstPoemId = 1;
+    [Tooltip("Seconds of holding needed to dissolve in one line of text.")]
+    [SerializeField, Min(0.05f)] private float _secondsPerLine = 0.6f;
+    [Tooltip("Minimum seconds of holding for each section (date, title, place, pages).")]
+    [SerializeField, Min(0.05f)] private float _minSectionSeconds = 0.8f;
+    [Tooltip("Flip if the dissolve goes from bottom to top.")]
+    [SerializeField] private bool _invertDirection = false;
+    [SerializeField, Min(0f)] private float _sectionPause = 0.35f;
+    [Tooltip("The leaves still on the floor vanish when a poem is found.")]
+    [SerializeField] private bool _clearLeavesWhenFound = true;
+    [Tooltip("Single header line: {0} date, {1} place, {2} title.")]
+    [SerializeField] private string _headerFormat = "{0}, {1}, {2}";
+    [Tooltip("Header font size compared to the poem text.")]
+    [SerializeField, Range(0.3f, 1.5f)] private float _headerScale = 0.7f;
+    [Header("Audio")]
+    [Tooltip("Looping pen-on-paper sound while writing. Loaded from Resources/Audio/PenWriting when empty.")]
+    [SerializeField] private AudioClip _writingClip;
+    [SerializeField, Range(0f, 1f)] private float _writingVolume = 0.6f;
+    [SerializeField, Range(0f, 1f)] private float _voiceVolume = 1f;
 
-    [SerializeField]
-    protected TextMeshProUGUI _assignedPlaceCurrent;
+    [Header("Look Away")]
+    [Tooltip("Seconds the poem can stay unseen during a transcription before the wind covers it again.")]
+    [SerializeField, Min(0.1f)] private float _lookAwaySeconds = 3f;
+    [Tooltip("Leaf coverage the wind brings back over the poem (1 = as at the start).")]
+    [SerializeField, Range(0.6f, 1f)] private float _recoverCoverage = 0.7f;
+    [Tooltip("Wind gust. Loaded from Resources/MainMenu/Gust when empty.")]
+    [SerializeField] private AudioClip _gustClip;
+    [SerializeField, Range(0f, 1f)] private float _gustVolume = 0.8f;
+    [Tooltip("Quiet mode: looking away never interrupts the transcription.")]
+    [SerializeField] private bool _immuneToLookingAway = false;
+    [SerializeField, Min(0f)] private float _lowerAfterRelease = 1f;
 
-    [SerializeField]
-    protected TextMeshProUGUI _assignedPoemTextCurrent;
+    [Header("Prompts")]
+    [SerializeField] private string _promptFormat = "HOLD {0} TO TRANSCRIBE";
+    [SerializeField, Min(8f)] private float _promptSize = 30f;
 
-    [SerializeField]
-    protected TextMeshProUGUI _assignedDateOld;
+    public static event Action<int> Transcribed;
+    public static event Action<int> TranscriptionStarted;
+    public static event Action<int> Gusted;
 
-    [SerializeField]
-    protected TextMeshProUGUI _assignedNameOld;
+    public bool PendingTranscription => pending.Count > 0;
+    public bool IsTranscribing { get; private set; }
+    public static bool AnyTranscribing { get; private set; }
+    public TMP_FontAsset PoemFont => _assignedPoemTextCurrent != null ? _assignedPoemTextCurrent.font : null;
 
-    [SerializeField]
-    protected TextMeshProUGUI _assignedPlaceOld;
-
-    [SerializeField]
-    protected TextMeshProUGUI _assignedPoemTextOld;
-
-    int currentp=1;
+    private int currentp = 1;
+    private Book book;
+    private readonly HashSet<int> transcribed = new HashSet<int>();
+    private readonly HashSet<int> pending = new HashSet<int>();
+    private readonly Dictionary<TextMeshProUGUI, float> baseSizes = new Dictionary<TextMeshProUGUI, float>();
+    private FirstPersonController player;
+    private TextMeshProUGUI prompt;
+    private AudioSource writingSource;
+    private AudioSource voiceSource;
+    private bool writing;
+    private AssignPoem activePoem;
+    private DiaryInteraction diary;
+    private float unseenTime;
+    private float releasedTime;
+    private float liftProgress;
+    private bool started;
+    private bool voicePaused;
+    private float notWritingTime;
+    private bool poemSeen;
+    private bool voiceStarted;
 
     private void OnEnable()
     {
-       
         Book.OnMouseDragRight += OnDragRightPage;
-        Book.OnMouseDragLeft += OnDragLefttPage;
-
-
+        Book.OnMouseDragLeft += OnDragLeftPage;
         Book.RestoreOriginalPageLeft += ResetLeftPage;
         Book.RestoreOriginalPageRight += ResetRightPage;
-
         Book.ForwardPage += OnForwardPage;
         Book.BackwardPage += OnBackwardPage;
     }
 
     private void OnDisable()
     {
-      
         Book.OnMouseDragRight -= OnDragRightPage;
-        Book.OnMouseDragLeft -= OnDragLefttPage;
-
+        Book.OnMouseDragLeft -= OnDragLeftPage;
         Book.RestoreOriginalPageLeft -= ResetLeftPage;
         Book.RestoreOriginalPageRight -= ResetRightPage;
-
         Book.ForwardPage -= OnForwardPage;
         Book.BackwardPage -= OnBackwardPage;
     }
+
     private void Start()
     {
+        currentp = _firstPoemId;
+        book = _assignedPoemTextCurrent != null ? _assignedPoemTextCurrent.GetComponentInParent<Book>(true) : null;
+        if (book == null)
+            book = FindAnyObjectByType<Book>(FindObjectsInactive.Include);
+        if (book != null)
+            book.interactable = true;
+        if (_assignedPoemTextCurrentNext == null && book != null && book.RightNext != null)
+            _assignedPoemTextCurrentNext = book.RightNext.GetComponentInChildren<TextMeshProUGUI>(true);
 
-       // Testing 
-       OnFlipPage();
-    }
-  
-
-    protected override void OnRevealChanged(bool revealed)
-    {
-        if (revealed)
+        PrepareBody(_assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+        PrepareBody(_assignedPoemTextOld, _assignedPoemTextOldNext);
+        foreach (TextMeshProUGUI header in new[] { _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent, _assignedDateOld, _assignedNameOld, _assignedPlaceOld })
         {
-            Debug.Log("Poem revealed!");
+            if (header == null)
+                continue;
+            header.overflowMode = TextOverflowModes.Overflow;
+            header.textWrappingMode = TextWrappingModes.NoWrap;
+            header.enableAutoSizing = false;
+            TextMeshProUGUI body = _assignedPoemTextCurrent != null ? _assignedPoemTextCurrent : _assignedPoemTextOld;
+            if (body != null)
+                header.fontSize = body.fontSize * _headerScale;
+        }
+        foreach (TextDissolve dissolve in FindObjectsByType<TextDissolve>(FindObjectsInactive.Include))
+        {
+            dissolve.StopAllCoroutines();
+            dissolve.enabled = false;
+        }
+        foreach (TextMeshProUGUI text in AllTexts())
+        {
+            text.text = string.Empty;
+            text.maxVisibleWords = 99999;
+            SetReveal(text, 1f);
+        }
+        foreach (TextMeshProUGUI text in CurrentTexts())
+        {
+            DissolveFilter filter = text.GetComponent<DissolveFilter>();
+            if (filter == null)
+                continue;
+            filter.Direction = DissolveDirection.Vertical;
+            filter.DirectionInvert = _invertDirection;
+        }
+
+        player = FindAnyObjectByType<FirstPersonController>();
+        prompt = ScreenPrompt.Create(transform, "Transcription Prompt", _promptSize, 40f);
+
+        if (_writingClip == null)
+            _writingClip = Resources.Load<AudioClip>("Audio/PenWriting");
+        writingSource = gameObject.AddComponent<AudioSource>();
+        writingSource.clip = _writingClip;
+        writingSource.loop = true;
+        writingSource.playOnAwake = false;
+        writingSource.volume = 0f;
+        AudioManager.Route(writingSource, AudioBus.SoundEffects);
+
+        diary = FindAnyObjectByType<DiaryInteraction>();
+        if (_gustClip == null)
+            _gustClip = Resources.Load<AudioClip>("MainMenu/Gust");
+
+        voiceSource = gameObject.AddComponent<AudioSource>();
+        voiceSource.playOnAwake = false;
+        voiceSource.volume = _voiceVolume;
+        AudioManager.Route(voiceSource, AudioBus.Voice);
+    }
+
+    private void Update()
+    {
+        UpdateWritingSound();
+        float dt = Time.unscaledDeltaTime;
+        bool playing = Time.timeScale > 0f && !DialogueRunner.LocksPlayer;
+        bool open = activePoem != null && !transcribed.Contains(activePoem.PoemId) || IsTranscribing;
+        poemSeen = activePoem != null && activePoem.IsRevealed && Gaze.IsSeen(activePoem.Footprint, 6f);
+        bool holding = Holding() && playing && !DiaryInteraction.IsReading;
+
+        if (open && diary != null && diary.HasDiary)
+        {
+            if (holding && poemSeen && !DiaryInteraction.IsWriting)
+            {
+                diary.BeginWriting();
+                FollowerLeaf.Spawn();
+            }
+            if (DiaryInteraction.IsWriting && !diary.Busy && !IsTranscribing && pending.Contains(activePoem.PoemId))
+            {
+                currentp = activePoem.PoemId;
+                StartTranscription();
+            }
+
+            releasedTime = holding ? 0f : releasedTime + dt;
+            if (DiaryInteraction.IsWriting && !diary.Busy && (releasedTime > _lowerAfterRelease || !activePoem.IsRevealed))
+                diary.EndWriting();
+
+            if (started && !_immuneToLookingAway && playing && activePoem.IsRevealed)
+            {
+                unseenTime = poemSeen ? 0f : unseenTime + dt;
+                if (unseenTime >= _lookAwaySeconds)
+                    Gust();
+            }
+        }
+
+        if (voiceStarted)
+        {
+            notWritingTime = CanWrite() ? 0f : notWritingTime + dt;
+            if (!voicePaused && notWritingTime > 0.3f && voiceSource.isPlaying)
+            {
+                voiceSource.Pause();
+                voicePaused = true;
+            }
+            else if (voicePaused && notWritingTime <= 0f)
+            {
+                voiceSource.UnPause();
+                voicePaused = false;
+            }
+        }
+
+        bool showPrompt = open && activePoem.IsRevealed && playing && !DiaryInteraction.IsReading && !(holding && DiaryInteraction.IsWriting);
+        ScreenPrompt.Show(prompt, showPrompt, string.Format(_promptFormat, ScreenPrompt.KeyName(player != null ? player.WriteAction : null, "T")));
+    }
+
+    private void Gust()
+    {
+        unseenTime = 0f;
+        if (LeafField.Instance != null)
+            LeafField.Instance.Cover(activePoem, _recoverCoverage);
+        if (_gustClip != null)
+            AudioSource.PlayClipAtPoint(_gustClip, activePoem.Footprint.center, _gustVolume);
+        if (diary != null)
+            diary.EndWriting();
+        Gusted?.Invoke(activePoem.PoemId);
+    }
+
+    private void PlayVoice(AudioClip clip)
+    {
+        if (clip == null || voiceSource == null)
+            return;
+        voiceSource.Stop();
+        voiceSource.clip = clip;
+        voiceSource.volume = _voiceVolume;
+        voiceSource.Play();
+    }
+
+    private void UpdateWritingSound()
+    {
+        if (writingSource == null || writingSource.clip == null)
+            return;
+        float target = writing && CanWrite() ? _writingVolume : 0f;
+        writingSource.volume = Mathf.MoveTowards(writingSource.volume, target, Time.unscaledDeltaTime * 6f);
+        if (writingSource.volume > 0.001f && !writingSource.isPlaying)
+        {
+            writingSource.time = UnityEngine.Random.Range(0f, writingSource.clip.length * 0.9f);
+            writingSource.Play();
+        }
+        else if (writingSource.volume <= 0.001f && writingSource.isPlaying)
+        {
+            writingSource.Stop();
+        }
+    }
+
+    private bool Holding()
+    {
+        InputAction write = player != null ? player.WriteAction : null;
+        if (write != null)
+            return write.IsPressed();
+        return Keyboard.current != null && Keyboard.current.tKey.isPressed;
+    }
+
+    public bool IsTranscribed(int poemId) => transcribed.Contains(poemId);
+
+    public bool IsPoemUncovered => activePoem != null && activePoem.IsRevealed;
+
+    public void OnPoemRevealed(AssignPoem poem)
+    {
+        if (poem == null || !LevelFlow.PoemAllowed || transcribed.Contains(poem.PoemId) && !IsTranscribing)
+            return;
+        activePoem = poem;
+        if (!transcribed.Contains(poem.PoemId))
+            pending.Add(poem.PoemId);
+        unseenTime = 0f;
+        if (_clearLeavesWhenFound && LeafField.Instance != null)
+            LeafField.Instance.ClearRemaining();
+    }
+
+    public void StartTranscription()
+    {
+        if (IsTranscribing || !pending.Remove(currentp))
+            return;
+        StartCoroutine(Transcribe(currentp));
+    }
+
+    private IEnumerator Transcribe(int poemId)
+    {
+        PoemInfoContainer poem = Find(poemId);
+        if (poem == null)
+            yield break;
+
+        IsTranscribing = true;
+        AnyTranscribing = true;
+        transcribed.Add(poemId);
+        if (book != null)
+            book.interactable = false;
+        var sections = new[] { HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent) }
+            .Where(t => t != null)
+            .Concat(new[] { _assignedPoemTextCurrent, _assignedPoemTextCurrentNext }.Where(t => t != null))
+            .ToList();
+        foreach (TextMeshProUGUI text in sections)
+            SetReveal(text, 0f);
+
+        SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+        SplitBody(poem.poemText, _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+        sections = sections.Where(t => !string.IsNullOrWhiteSpace(t.text)).ToList();
+
+        voiceStarted = false;
+        started = false;
+        int index = 0;
+        foreach (TextMeshProUGUI text in sections)
+        {
+            if (string.IsNullOrWhiteSpace(text.text))
+                continue;
+            text.ForceMeshUpdate(true);
+            float duration = Mathf.Max(_minSectionSeconds, text.textInfo.lineCount * _secondsPerLine);
+            float t = 0f;
+            writing = true;
+            while (t < 1f)
+            {
+                if (CanWrite())
+                {
+                    t += Time.unscaledDeltaTime / duration;
+                    started = true;
+                    if (!voiceStarted)
+                    {
+                        voiceStarted = true;
+                        PlayVoice(poem.poemVoice);
+                        TranscriptionStarted?.Invoke(poemId);
+                    }
+                }
+                SetReveal(text, Mathf.Clamp01(t));
+                if (activePoem != null)
+                    activePoem.SetLifted((index + Mathf.Clamp01(t)) / sections.Count);
+                yield return null;
+            }
+            index++;
+            writing = false;
+            if (text != sections[sections.Count - 1])
+                yield return Wait(_sectionPause);
+        }
+        writing = false;
+
+        IsTranscribing = false;
+        AnyTranscribing = false;
+        started = false;
+        voiceStarted = false;
+        voicePaused = false;
+        if (book != null)
+            book.interactable = true;
+        Transcribed?.Invoke(poemId);
+        yield return new WaitForSecondsRealtime(1f);
+        if (diary != null)
+            diary.EndWriting();
+    }
+
+    private static void SetReveal(TextMeshProUGUI text, float reveal)
+    {
+        DissolveFilter filter = text.GetComponent<DissolveFilter>();
+        if (filter != null)
+        {
+            filter.Strength = 1f - reveal;
+            text.alpha = 1f;
         }
         else
         {
-            Debug.Log("Poem hidden!");
+            text.alpha = reveal;
         }
     }
 
-    void OnDragRightPage()
+    private bool CanWrite() => Time.timeScale > 0f && DiaryInteraction.IsWriting && diary != null && !diary.Busy &&
+        Holding() && poemSeen && activePoem != null && activePoem.IsRevealed;
+
+    private IEnumerator Wait(float seconds)
+    {
+        float t = 0f;
+        while (t < seconds)
+        {
+            if (Time.timeScale > 0f && DiaryInteraction.IsWriting)
+                t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+    }
+
+    private float Height(TextMeshProUGUI text)
+    {
+        Canvas canvas = text.canvas != null ? text.canvas.rootCanvas : null;
+        return canvas != null ? canvas.transform.InverseTransformPoint(text.rectTransform.position).y : text.rectTransform.position.y;
+    }
+
+    private IEnumerable<TextMeshProUGUI> CurrentTexts() => new[]
+    {
+        _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent, _assignedPoemTextCurrent, _assignedPoemTextCurrentNext
+    }.Where(t => t != null);
+
+    private IEnumerable<TextMeshProUGUI> AllTexts() => new[]
+    {
+        _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent, _assignedPoemTextCurrent, _assignedPoemTextCurrentNext,
+        _assignedDateOld, _assignedNameOld, _assignedPlaceOld, _assignedPoemTextOld, _assignedPoemTextOldNext
+    }.Where(t => t != null);
+
+    private static void PrepareBody(TextMeshProUGUI first, TextMeshProUGUI second)
+    {
+        foreach (TextMeshProUGUI text in new[] { first, second })
+        {
+            if (text == null)
+                continue;
+            text.linkedTextComponent = null;
+            text.enableAutoSizing = false;
+            text.overflowMode = TextOverflowModes.Overflow;
+            text.verticalAlignment = VerticalAlignmentOptions.Top;
+        }
+    }
+
+    private void SplitBody(string body, TextMeshProUGUI first, TextMeshProUGUI second)
+    {
+        if (first == null)
+            return;
+        if (!baseSizes.TryGetValue(first, out float size))
+            baseSizes[first] = size = first.fontSize;
+
+        for (float f = 1f; f >= 0.55f; f -= 0.05f)
+        {
+            first.fontSize = size * f;
+            if (second != null)
+                second.fontSize = size * f;
+            Split(body, first, second);
+            if (Fits(first) && (second == null || Fits(second)))
+                return;
+        }
+    }
+
+    private static bool Fits(TextMeshProUGUI text)
+    {
+        TMP_TextInfo info = text.textInfo;
+        if (info.lineCount == 0)
+            return true;
+        return info.lineInfo[info.lineCount - 1].descender >= text.rectTransform.rect.yMin + text.margin.w - 0.0001f;
+    }
+
+    private static void Split(string body, TextMeshProUGUI first, TextMeshProUGUI second)
+    {
+        body ??= string.Empty;
+        first.maxVisibleWords = 99999;
+        first.overflowMode = TextOverflowModes.Overflow;
+        first.text = body;
+        first.ForceMeshUpdate(true, true);
+
+        int cut = body.Length;
+        if (second != null)
+        {
+            float bottom = first.rectTransform.rect.yMin + first.margin.w;
+            TMP_TextInfo info = first.textInfo;
+            for (int i = 0; i < info.lineCount; i++)
+            {
+                if (info.lineInfo[i].descender >= bottom - 0.0001f)
+                    continue;
+                while (i > 1 && !IsBlank(info, i - 1) && !EndsLine(info, i - 1))
+                    i--;
+                int character = info.lineInfo[i].firstCharacterIndex;
+                if (character >= 0 && character < info.characterCount)
+                    cut = Mathf.Clamp(info.characterInfo[character].index, 0, body.Length);
+                break;
+            }
+        }
+
+        first.text = body.Substring(0, cut).TrimEnd();
+        first.ForceMeshUpdate(true, true);
+        if (second == null)
+            return;
+
+        second.maxVisibleWords = 99999;
+        second.overflowMode = TextOverflowModes.Overflow;
+        second.text = body.Substring(cut).TrimStart(' ', '\n', '\r', '\t');
+        second.ForceMeshUpdate(true, true);
+    }
+
+    private static bool IsBlank(TMP_TextInfo info, int line) => info.lineInfo[line].visibleCharacterCount == 0;
+
+    private static bool EndsLine(TMP_TextInfo info, int line)
+    {
+        int last = info.lineInfo[line].lastCharacterIndex;
+        return last >= 0 && last < info.characterCount && info.characterInfo[last].character == '\n';
+    }
+
+    private TextMeshProUGUI HeaderLine(params TextMeshProUGUI[] headers) =>
+        headers.Where(t => t != null).OrderByDescending(t => Height(t)).FirstOrDefault();
+
+    private void SetHeader(PoemInfoContainer poem, TextMeshProUGUI date, TextMeshProUGUI name, TextMeshProUGUI place)
+    {
+        TextMeshProUGUI line = HeaderLine(date, name, place);
+        foreach (TextMeshProUGUI header in new[] { date, name, place })
+        {
+            if (header == null)
+                continue;
+            header.maxVisibleWords = 99999;
+            header.text = header == line
+                ? string.Format(_headerFormat, (poem.poemDate ?? "").Trim(), (poem.poemPlace ?? "").Trim(), (poem.poemName ?? "").Trim())
+                : string.Empty;
+        }
+    }
+
+    private PoemInfoContainer Find(int poemId)
+    {
+        if (poemInfo == null || poemInfo._poemsList == null)
+            return null;
+        return poemInfo._poemsList.LastOrDefault(p => p.poemId == poemId);
+    }
+
+    protected override void OnRevealChanged(bool revealed) { }
+
+    private void OnDragRightPage()
     {
         InitPoemOldPoem(currentp);
-        InitPoemOldDesc(currentp+1);
+        InitPoemOldDesc(currentp + 1);
         InitPoemCurrentPoem(currentp + 1);
-
-        Debug.Log("Drag Right Page");
     }
 
-    void ResetLeftPage()
+    private void OnDragLeftPage()
     {
-        Debug.Log("After Left Page  Relase Cuurent page info " + currentp);
-        InitPoemCurrentDesc(currentp);
-    }
-
-    void ResetRightPage()
-    {
-        Debug.Log("After Right Page  Relase Cuurent page info " + currentp);
-        InitPoemCurrentPoem(currentp);
-    }
-
-    void OnForwardPage(int index)
-    {
-        currentp = index;
-
-        Debug.Log($"Forward flip completed. Poem index: {currentp}");
-
-        OnFlipPage();
-    }
-
-    void OnBackwardPage(int index)
-    {
-        currentp = index;
-
-        Debug.Log($"Backward flip completed. Poem index: {currentp}");
-
-        OnFlipPage();
-    }
-
-    void OnDragLefttPage()
-    {
-        InitPoemOldPoem(currentp -1);
+        InitPoemOldPoem(currentp - 1);
         InitPoemOldDesc(currentp);
-        InitPoemCurrentDesc(currentp-1);
-
-        Debug.Log("Drag Right Page");
+        InitPoemCurrentDesc(currentp - 1);
     }
 
-    void OnFlipPage()
+    private void ResetLeftPage() => InitPoemCurrentDesc(currentp);
+
+    private void ResetRightPage() => InitPoemCurrentPoem(currentp);
+
+    private void OnForwardPage(int index)
+    {
+        currentp = index;
+        OnFlipPage();
+    }
+
+    private void OnBackwardPage(int index)
+    {
+        currentp = index;
+        OnFlipPage();
+    }
+
+    private void OnFlipPage()
     {
         InitPoemCurrentDesc(currentp);
         InitPoemCurrentPoem(currentp);
-
-        Debug.Log($"Flip Page Done. Current index: {currentp}");
+        if (DiaryInteraction.IsReading)
+            StartTranscription();
     }
 
-    // Left Page (Live)
-    void InitPoemCurrentDesc(int poemIndex)
+    private void InitPoemCurrentDesc(int poemIndex)
     {
-        if (poemInfo == null || poemInfo._poemsList == null)
-            return;
-
-        for (int i = 0; i < poemInfo._poemsList.Count; i++)
-        {
-            if (poemInfo._poemsList[i].poemId == poemIndex)
-            {
-                if (_assignedDateCurrent != null)
-                    _assignedDateCurrent.text = poemInfo._poemsList[i].poemDate;
-
-                if (_assignedNameCurrent != null)
-                    _assignedNameCurrent.text = poemInfo._poemsList[i].poemName;
-
-                if (_assignedPlaceCurrent != null)
-                    _assignedPlaceCurrent.text = poemInfo._poemsList[i].poemPlace;
-
-                break;
-            }
-        }
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        if (poem != null)
+            SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+        else
+            Clear(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
     }
 
-    // Right Page (Live)
-    void InitPoemCurrentPoem(int poemIndex)
+    private void InitPoemCurrentPoem(int poemIndex)
     {
-        if (poemInfo == null || poemInfo._poemsList == null)
-            return;
-
-        for (int i = 0; i < poemInfo._poemsList.Count; i++)
-        {
-            if (poemInfo._poemsList[i].poemId == poemIndex)
-            {
-                if (_assignedPoemTextCurrent != null)
-                    _assignedPoemTextCurrent.text = poemInfo._poemsList[i].poemText;
-
-                break;
-            }
-        }
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        if (poem != null)
+            SplitBody(poem.poemText, _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+        else
+            Clear(_assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
     }
 
-    // Left Page (Old)
-    void InitPoemOldDesc(int poemIndex)
+    private void InitPoemOldDesc(int poemIndex)
     {
-        if (poemInfo == null || poemInfo._poemsList == null)
-            return;
-
-        for (int i = 0; i < poemInfo._poemsList.Count; i++)
-        {
-            if (poemInfo._poemsList[i].poemId == poemIndex)
-            {
-                if (_assignedDateOld != null)
-                    _assignedDateOld.text = poemInfo._poemsList[i].poemDate;
-
-                if (_assignedNameOld != null)
-                    _assignedNameOld.text = poemInfo._poemsList[i].poemName;
-
-                if (_assignedPlaceOld != null)
-                    _assignedPlaceOld.text = poemInfo._poemsList[i].poemPlace;
-
-                break;
-            }
-        }
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        if (poem != null)
+            SetHeader(poem, _assignedDateOld, _assignedNameOld, _assignedPlaceOld);
+        else
+            Clear(_assignedDateOld, _assignedNameOld, _assignedPlaceOld);
     }
-  
 
-    // Right Page (Old)
-    void InitPoemOldPoem(int poemIndex)
+    private void InitPoemOldPoem(int poemIndex)
     {
-        Debug.Log("Old Poem Loading...");
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        if (poem != null)
+            SplitBody(poem.poemText, _assignedPoemTextOld, _assignedPoemTextOldNext);
+        else
+            Clear(_assignedPoemTextOld, _assignedPoemTextOldNext);
+    }
 
-        if (poemInfo == null || poemInfo._poemsList == null)
-            return;
-
-        for (int i = 0; i < poemInfo._poemsList.Count; i++)
-        {
-            if (poemInfo._poemsList[i].poemId == poemIndex)
-            {
-                if (_assignedPoemTextOld != null)
-                {
-                    _assignedPoemTextOld.text =
-                        poemInfo._poemsList[i].poemText;
-
-                    Debug.Log(
-                  "Old Poem Loading Success [Loop]... " +
-                  _assignedPoemTextOld.text.ToString()
-              );
-                }
-
-                Debug.Log(
-                    "Old Poem Loading Success... " +
-                    poemInfo._poemsList[i].poemText
-                );
-
-                return;
-            }
-        }
-
-        Debug.LogWarning(
-            "Old Poem Loading Failed. Poem ID: " + poemIndex
-        );
+    private static void Clear(params TextMeshProUGUI[] texts)
+    {
+        foreach (TextMeshProUGUI text in texts)
+            if (text != null)
+                text.text = string.Empty;
     }
 
     private void OnApplicationQuit()
     {
-        poemInfo._poemsList.Clear();
+        if (poemInfo != null && poemInfo._poemsList != null)
+            poemInfo._poemsList.Clear();
     }
 }

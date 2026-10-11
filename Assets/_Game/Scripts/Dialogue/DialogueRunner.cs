@@ -368,6 +368,11 @@ namespace Hortensia.Runtime
             textOpacity = style.textColor.a;
             TextStyling.Apply(speakerText, style, style.accentColor, bold);
             TextStyling.Apply(bodyText, style, style.textColor, bold);
+            bodyText.enableAutoSizing = true;
+            bodyText.fontSizeMax = body;
+            bodyText.fontSizeMin = body * 0.45f;
+            bodyText.textWrappingMode = TextWrappingModes.Normal;
+            bodyText.overflowMode = TextOverflowModes.Overflow;
             speakerText.gameObject.SetActive(show);
             bodyText.gameObject.SetActive(show);
             borderLines.ForEach(line => line.enabled = show);

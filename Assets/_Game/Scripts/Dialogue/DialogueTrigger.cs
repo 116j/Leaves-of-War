@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -17,6 +18,9 @@ namespace Hortensia.Runtime
 
         private bool played;
 
+        public event Action Finished;
+        public bool HasPlayed => played;
+
         public string Prompt => CanPlay ? prompt : string.Empty;
 
         private bool CanPlay => lines != null && lines.Length > 0 && !(playOnce && played) && !DialogueRunner.IsPlaying;
@@ -25,9 +29,19 @@ namespace Hortensia.Runtime
 
         public void ResetPlayed() => played = false;
 
+        public void SetLines(DialogueLine[] newLines)
+        {
+            lines = newLines ?? new DialogueLine[0];
+            played = false;
+        }
+
         public void Play()
         {
-            if (CanPlay && DialogueRunner.GetOrCreate().Play(lines, () => onFinished?.Invoke()))
+            if (CanPlay && DialogueRunner.GetOrCreate().Play(lines, () =>
+                {
+                    onFinished?.Invoke();
+                    Finished?.Invoke();
+                }))
                 played = true;
         }
 
