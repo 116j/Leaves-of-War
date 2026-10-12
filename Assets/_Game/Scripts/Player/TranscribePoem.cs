@@ -613,15 +613,15 @@ public class TranscribePoem : RevealableObject
         InitPoemCurrentOldPoem(currentp);
         InitPoemOldCurrentPoem(currentp + 1);
         InitPoemOldDesc(currentp + 1);
-        InitPoemCurrentPoem(currentp);
+        InitPoemCurrentDesc(currentp);
     }
 
     private void OnDragLeftPage()
     {
         InitPoemOldCurrentPoem(currentp);
         InitPoemCurrentOldPoem(currentp - 1);
-        InitPoemCurrentDesc(currentp);
-        InitPoemOldDesc(currentp - 1);
+        InitPoemCurrentDesc(currentp - 1);
+        InitPoemOldDesc(currentp);
     }
 
     private void ResetLeftPage() => InitPoemCurrentDesc(currentp);
@@ -682,7 +682,7 @@ public class TranscribePoem : RevealableObject
             ApplyProgressToTexts(poem.poemId);
         }
         else
-            Clear(_assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+            Clear(_assignedPoemTextCurrent, _assignedPoemTextOldNext);
     }
 
     private void InitPoemOldDesc(int poemIndex)
@@ -721,7 +721,7 @@ public class TranscribePoem : RevealableObject
             ApplyProgressToOldTexts(poem.poemId);
         }
         else
-            Clear(_assignedPoemTextOld, _assignedPoemTextOldNext);
+            Clear(_assignedPoemTextOld, _assignedPoemTextCurrentNext);
     }
 
     private void ApplyProgressToTexts(int poemId)
