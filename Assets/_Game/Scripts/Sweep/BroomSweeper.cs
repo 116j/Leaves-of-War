@@ -6,6 +6,10 @@ public class BroomSweeper : MonoBehaviour
 {
     [Tooltip("The broom held by the player camera.")]
     [SerializeField] private Transform broom;
+    [Tooltip("The tip of the broom")]
+    [SerializeField] private Transform broomTip;
+    [Tooltip("Floor layer mask")]
+    [SerializeField] private LayerMask floorLayer;
 
     [Header("Sweeping")]
     [Tooltip("Metres the broom head moves per pixel of mouse movement.")]
@@ -119,8 +123,8 @@ public class BroomSweeper : MonoBehaviour
             offset = Mathf.Clamp(offset + delta.x * mouseSensitivity, -halfWidth, halfWidth);
             currentReach = Mathf.Clamp(currentReach + delta.y * mouseSensitivity, reachRange.x, reachRange.y);
 
-            Vector3 head = body.position + forward * currentReach + right * offset;
-            if (wasSweeping && dt > 0f)
+            Vector3 head = GetBroomTipWorldPosition();
+            if (wasSweeping && dt > 0f && weight >= 0.9f)
             {
                 headSpeed = Vector3.Distance(head, lastHead) / dt;
                 pushedTotal += LeafField.Instance.Push(lastHead, head, radius, forward, headSpeed);
@@ -154,11 +158,26 @@ public class BroomSweeper : MonoBehaviour
             return;
 
         float side = halfWidth > 0f ? offset / halfWidth : 0f;
-        Vector3 targetPosition = heldPosition + sweepPositionOffset + Vector3.right * side * swingShift + Vector3.forward * (currentReach - reach) * 0.2f;
+        Vector3 targetPosition = heldPosition + sweepPositionOffset + Vector3.right * side * swingShift + Vector3.up * (currentReach - reach) * 0.2f;
         Quaternion targetRotation = Quaternion.AngleAxis(swingAngle * side, Vector3.up) * heldRotation * Quaternion.Euler(sweepRotationOffset);
         float k = Mathf.SmoothStep(0f, 1f, weight);
         broom.localPosition = Vector3.Lerp(heldPosition, targetPosition, k);
         broom.localRotation = Quaternion.Slerp(heldRotation, targetRotation, k);
+    }
+
+    private Vector3 GetBroomTipWorldPosition()
+    {
+        Vector3 tipPos = broomTip!=null? broomTip.position : broom.position;
+        Vector3 tipScreen = HeldItemsCamera.Overlay.WorldToViewportPoint(tipPos);
+
+        if (tipScreen.z <= 0f)
+            tipScreen = new Vector3(0.5f, 0.15f, 1f);
+
+        Ray ray = Camera.main.ViewportPointToRay(tipScreen);
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f, floorLayer))
+            return hit.point;
+
+        return ray.GetPoint(10f);
     }
 
     private void UpdateAudio(bool sweeping, float dt)
@@ -177,5 +196,14 @@ public class BroomSweeper : MonoBehaviour
         {
             source.Stop();
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!Application.isPlaying) return;
+
+        Vector3 head = GetBroomTipWorldPosition();
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(head, radius);
     }
 }

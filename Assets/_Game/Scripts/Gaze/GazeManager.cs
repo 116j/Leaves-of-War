@@ -21,6 +21,8 @@ public class GazeManager : MonoBehaviour
     float _tickTimer;
     float _originFOV;
 
+    Coroutine _checkCorutine;
+
     private void Awake()
     {
         if (Instance == null)
@@ -38,7 +40,7 @@ public class GazeManager : MonoBehaviour
         if (_tickTimer >= _tickTime)
         {
             _tickTimer = 0;
-            StartCoroutine(CheckObservables());
+            _checkCorutine ??= StartCoroutine(CheckObservables());
         }
     }
     /// <summary>
@@ -70,6 +72,8 @@ public class GazeManager : MonoBehaviour
                 yield return null;
             }
         }
+
+        _checkCorutine = null;
     }
     /// <summary>
     /// Checks visibility for <paramref name="observable"/> and sets its seen state 

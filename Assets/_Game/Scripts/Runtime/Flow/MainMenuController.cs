@@ -861,6 +861,15 @@ namespace Hortensia.Runtime
             leavesMoving = true;
         }
 
+        private void StopReturning()
+        {
+            for (int n = 0; n < leafCount; n++)
+            {
+                if (leaves[n].IsReturning)
+                    leaves[n].IsReturning = false;
+            }
+        }
+
         private void SweepStroke(Vector2 from, Vector2 to)
         {
             Vector2 dir = lastStrokeDir;
@@ -903,7 +912,6 @@ namespace Hortensia.Runtime
                         leaf.Pos = center + dir * (broomHalfDepth + RandomRange(0f, pileDepth)) + perp * (across + RandomRange(-0.6f, 0.6f));
                         leaf.Vel = dir * kick * RandomRange(0.75f, 1.05f) + perp * kick * RandomRange(-0.12f, 0.12f);
                     }
-                    leaf.IsReturning = false;
                     leaf.Spin = RandomRange(-6f, 6f);
                     leaf.Angle += RandomRange(-0.4f, 0.4f);
                     leavesMoving = true;
@@ -912,6 +920,7 @@ namespace Hortensia.Runtime
                 }
             }
 
+            StopReturning();
             RemoveOffscreenLeaves();
             leavesDirty = true;
 
@@ -1211,7 +1220,10 @@ namespace Hortensia.Runtime
             }
 
             starting = true;
-            StartCoroutine(Gust(() => SceneManager.LoadScene(newGameScene)));
+            StartCoroutine(Gust(() =>
+            {
+                StartCoroutine(FadeScreen.Instance.DarkenScreen(1f, () => SceneManager.LoadScene(newGameScene)));
+            }));
         }
 
         private void ContinueGame()

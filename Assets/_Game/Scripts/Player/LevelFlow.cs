@@ -133,43 +133,48 @@ public class LevelFlow : MonoBehaviour
 
     private void Start()
     {
-        objective = ScreenPrompt.Create(transform, "Objective", objectiveSize, 50f, true);
-        PoemAllowed = Array.FindIndex(steps, s => s != null && s.waitFor == Condition.PoemFound) < 0;
-        player = FindAnyObjectByType<FirstPersonController>();
-        diary = FindAnyObjectByType<DiaryInteraction>();
-        sweeper = FindAnyObjectByType<BroomSweeper>();
-        transcribe = FindAnyObjectByType<TranscribePoem>();
-        if (character != null)
+        StartCoroutine(FadeScreen.Instance.DarkenScreen(0f, () =>
         {
-            character.SetLines(new DialogueLine[0]);
-            character.Finished += OnTalked;
-        }
-        if (broom != null)
-            broom.Available = false;
-        if (character != null && Array.Exists(steps, s => s != null && s.action == StepAction.CharacterEnters))
-        {
-            Transform body = character.transform.root;
-            characterSpot = body.position;
-            characterSpotRotation = body.rotation;
-            body.gameObject.SetActive(false);
-        }
+            objective = ScreenPrompt.Create(transform, "Objective", objectiveSize, 50f, true);
+            PoemAllowed = Array.FindIndex(steps, s => s != null && s.waitFor == Condition.PoemFound) < 0;
+            player = FindAnyObjectByType<FirstPersonController>();
+            diary = FindAnyObjectByType<DiaryInteraction>();
+            sweeper = FindAnyObjectByType<BroomSweeper>();
+            transcribe = FindAnyObjectByType<TranscribePoem>();
+            if (character != null)
+            {
+                character.SetLines(new DialogueLine[0]);
+                character.Finished += OnTalked;
+            }
+            if (broom != null)
+                broom.Available = false;
+            if (character != null && Array.Exists(steps, s => s != null && s.action == StepAction.CharacterEnters))
+            {
+                Transform body = character.transform.root;
+                characterSpot = body.position;
+                characterSpotRotation = body.rotation;
+                body.gameObject.SetActive(false);
+            }
 
-        if (Carry.Active && player != null)
-        {
-            Carry.Active = false;
-            Blink(false);
-            Transform entry = entryAnchor != null ? entryAnchor : transform;
-            player.Place(new Vector3(entry.position.x, player.transform.position.y, entry.position.z), entry.eulerAngles.y + Carry.Yaw, Carry.Pitch);
-        }
-        else if (lookAtCharacterOnStart && player != null && character != null)
-        {
-            player.LookAt(LookPoint());
-        }
+            if (Carry.Active && player != null)
+            {
+                Carry.Active = false;
+                Blink(false);
+                Transform entry = entryAnchor != null ? entryAnchor : transform;
+                player.Place(new Vector3(entry.position.x, player.transform.position.y, entry.position.z), entry.eulerAngles.y + Carry.Yaw, Carry.Pitch);
+            }
+            else if (lookAtCharacterOnStart && player != null && character != null)
+            {
+                player.LookAt(LookPoint());
+            }
 
-        if (followerLeafFromStart)
-            FollowerLeaf.Spawn();
-        TitleCard.Show(this, titleCard, transcribe != null ? transcribe.PoemFont : null);
-        StartCoroutine(Run());
+            if (followerLeafFromStart)
+                FollowerLeaf.Spawn();
+            TitleCard.Show(this, titleCard, transcribe != null ? transcribe.PoemFont : null);
+            StartCoroutine(Run());
+        }));
+
+        
     }
 
     private Vector3 LookPoint()
@@ -385,7 +390,8 @@ public class LevelFlow : MonoBehaviour
     {
         if (nextLoad != null || string.IsNullOrEmpty(nextScene))
             return;
-        nextLoad = SceneManager.LoadSceneAsync(nextScene, LoadSceneMode.Single);
+
+        StartCoroutine(FadeScreen.Instance.DarkenScreen(1f, () => nextLoad = SceneManager.LoadSceneAsync(nextScene, LoadSceneMode.Single)));
         if (nextLoad != null)
             nextLoad.allowSceneActivation = false;
     }

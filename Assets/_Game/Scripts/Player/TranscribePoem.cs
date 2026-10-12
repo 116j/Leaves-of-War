@@ -1,9 +1,9 @@
+using ChocDino.UIFX;
+using Hortensia.Runtime;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using ChocDino.UIFX;
-using Hortensia.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -76,6 +76,7 @@ public class TranscribePoem : RevealableObject
     private readonly HashSet<int> transcribed = new HashSet<int>();
     private readonly HashSet<int> pending = new HashSet<int>();
     private readonly Dictionary<TextMeshProUGUI, float> baseSizes = new Dictionary<TextMeshProUGUI, float>();
+    private readonly Dictionary<int, int> poemsSectionProgress = new();
     private FirstPersonController player;
     private TextMeshProUGUI prompt;
     private AudioSource writingSource;
@@ -91,6 +92,7 @@ public class TranscribePoem : RevealableObject
     private float notWritingTime;
     private bool poemSeen;
     private bool voiceStarted;
+    private Coroutine transcriptionCoroutine;
 
     private void OnEnable()
     {
@@ -155,6 +157,7 @@ public class TranscribePoem : RevealableObject
             filter.Direction = DissolveDirection.Vertical;
             filter.DirectionInvert = _invertDirection;
         }
+        OnFlipPage();
 
         player = FindAnyObjectByType<FirstPersonController>();
         prompt = ScreenPrompt.Create(transform, "Transcription Prompt", _promptSize, 40f);
@@ -202,7 +205,9 @@ public class TranscribePoem : RevealableObject
 
             releasedTime = holding ? 0f : releasedTime + dt;
             if (DiaryInteraction.IsWriting && !diary.Busy && (releasedTime > _lowerAfterRelease || !activePoem.IsRevealed))
+            {
                 diary.EndWriting();
+            }
 
             if (started && !_immuneToLookingAway && playing && activePoem.IsRevealed)
             {
@@ -296,9 +301,9 @@ public class TranscribePoem : RevealableObject
 
     public void StartTranscription()
     {
-        if (IsTranscribing || !pending.Remove(currentp))
+        if (IsTranscribing || !pending.Remove(currentp) || transcriptionCoroutine != null)
             return;
-        StartCoroutine(Transcribe(currentp));
+        transcriptionCoroutine = StartCoroutine(Transcribe(currentp));
     }
 
     private IEnumerator Transcribe(int poemId)
@@ -309,27 +314,37 @@ public class TranscribePoem : RevealableObject
 
         IsTranscribing = true;
         AnyTranscribing = true;
-        transcribed.Add(poemId);
         if (book != null)
             book.interactable = false;
         var sections = new[] { HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent) }
             .Where(t => t != null)
             .Concat(new[] { _assignedPoemTextCurrent, _assignedPoemTextCurrentNext }.Where(t => t != null))
             .ToList();
-        foreach (TextMeshProUGUI text in sections)
-            SetReveal(text, 0f);
 
         SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
         SplitBody(poem.poemText, _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
         sections = sections.Where(t => !string.IsNullOrWhiteSpace(t.text)).ToList();
+        foreach (TextMeshProUGUI text in sections)
+        {
+            text.alpha = 1f;
+            SetReveal(text, 0f);
+        }
 
         voiceStarted = false;
         started = false;
+        int startIndex = poemsSectionProgress.TryGetValue(poemId, out int saved) ? saved : 0;
         int index = 0;
         foreach (TextMeshProUGUI text in sections)
         {
             if (string.IsNullOrWhiteSpace(text.text))
                 continue;
+            if (index < startIndex)
+            {
+                SetReveal(text, 1f);
+                index++;
+                continue;
+            }
+
             text.ForceMeshUpdate(true);
             float duration = Mathf.Max(_minSectionSeconds, text.textInfo.lineCount * _secondsPerLine);
             float t = 0f;
@@ -353,6 +368,7 @@ public class TranscribePoem : RevealableObject
                 yield return null;
             }
             index++;
+            poemsSectionProgress[poemId] = index;
             writing = false;
             if (text != sections[sections.Count - 1])
                 yield return Wait(_sectionPause);
@@ -366,10 +382,75 @@ public class TranscribePoem : RevealableObject
         voicePaused = false;
         if (book != null)
             book.interactable = true;
+
+        transcribed.Add(poemId);
         Transcribed?.Invoke(poemId);
         yield return new WaitForSecondsRealtime(1f);
+        transcriptionCoroutine = null;
         if (diary != null)
             diary.EndWriting();
+    }
+
+    public void CancelTranscription()
+    {
+        if (transcriptionCoroutine != null)
+        {
+            StopCoroutine(transcriptionCoroutine);
+            transcriptionCoroutine = null;
+
+
+            if (IsTranscribing && activePoem != null && !transcribed.Contains(activePoem.PoemId))
+                pending.Add(activePoem.PoemId);
+
+            IsTranscribing = false;
+            AnyTranscribing = false;
+            started = false;
+            writing = false;
+            if (book != null)
+                book.interactable = true;
+
+            if (activePoem != null)
+                ResetUnfinishedSections(activePoem.PoemId);
+        }
+    }
+
+    private void ResetUnfinishedSections(int poemId)
+    {
+        int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
+
+        TextMeshProUGUI header = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+        if (header != null)
+        {
+            if (progress >= 1)
+                SetReveal(header, 1f);
+            else
+            {
+                header.text = string.Empty;
+                SetReveal(header, 0f);
+            }
+        }
+
+        if (_assignedPoemTextCurrent != null)
+        {
+            if (progress >= 2)
+                SetReveal(_assignedPoemTextCurrent, 1f);
+            else
+            {
+                _assignedPoemTextCurrent.text = string.Empty;
+                SetReveal(_assignedPoemTextCurrent, 0f);
+            }
+        }
+
+        if (_assignedPoemTextCurrentNext != null)
+        {
+            if (progress >= 3)
+                SetReveal(_assignedPoemTextCurrentNext, 1f);
+            else
+            {
+                _assignedPoemTextCurrentNext.text = string.Empty;
+                SetReveal(_assignedPoemTextCurrentNext, 0f);
+            }
+        }
     }
 
     private static void SetReveal(TextMeshProUGUI text, float reveal)
@@ -529,16 +610,18 @@ public class TranscribePoem : RevealableObject
 
     private void OnDragRightPage()
     {
-        InitPoemOldPoem(currentp);
+        InitPoemCurrentOldPoem(currentp);
+        InitPoemOldCurrentPoem(currentp + 1);
         InitPoemOldDesc(currentp + 1);
-        InitPoemCurrentPoem(currentp + 1);
+        InitPoemCurrentPoem(currentp);
     }
 
     private void OnDragLeftPage()
     {
-        InitPoemOldPoem(currentp - 1);
-        InitPoemOldDesc(currentp);
-        InitPoemCurrentDesc(currentp - 1);
+        InitPoemOldCurrentPoem(currentp);
+        InitPoemCurrentOldPoem(currentp - 1);
+        InitPoemCurrentDesc(currentp);
+        InitPoemOldDesc(currentp - 1);
     }
 
     private void ResetLeftPage() => InitPoemCurrentDesc(currentp);
@@ -557,55 +640,131 @@ public class TranscribePoem : RevealableObject
         OnFlipPage();
     }
 
-    private void OnFlipPage()
+    public void OnFlipPage()
     {
         InitPoemCurrentDesc(currentp);
         InitPoemCurrentPoem(currentp);
-        if (DiaryInteraction.IsReading)
-            StartTranscription();
     }
 
     private void InitPoemCurrentDesc(int poemIndex)
     {
-        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) || poemsSectionProgress.ContainsKey(poemIndex) ?
+            Find(poemIndex) : null;
         if (poem != null)
+        {
             SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+            ApplyProgressToTexts(poem.poemId);
+        }
         else
             Clear(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
     }
 
     private void InitPoemCurrentPoem(int poemIndex)
     {
-        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) || poemsSectionProgress.ContainsKey(poemIndex) ?
+            Find(poemIndex) : null;
         if (poem != null)
+        {
             SplitBody(poem.poemText, _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+            ApplyProgressToTexts(poem.poemId);
+        }
+        else
+            Clear(_assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+    }
+
+    private void InitPoemCurrentOldPoem(int poemIndex)
+    {
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) || poemsSectionProgress.ContainsKey(poemIndex) ?
+            Find(poemIndex) : null;
+        if (poem != null)
+        {
+            SplitBody(poem.poemText, _assignedPoemTextCurrent, _assignedPoemTextOldNext);
+            ApplyProgressToTexts(poem.poemId);
+        }
         else
             Clear(_assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
     }
 
     private void InitPoemOldDesc(int poemIndex)
     {
-        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) || poemsSectionProgress.ContainsKey(poemIndex) ?
+            Find(poemIndex) : null;
         if (poem != null)
+        {
             SetHeader(poem, _assignedDateOld, _assignedNameOld, _assignedPlaceOld);
+            ApplyProgressToOldTexts(poemIndex);
+        }
         else
             Clear(_assignedDateOld, _assignedNameOld, _assignedPlaceOld);
     }
 
     private void InitPoemOldPoem(int poemIndex)
     {
-        PoemInfoContainer poem = transcribed.Contains(poemIndex) ? Find(poemIndex) : null;
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) || poemsSectionProgress.ContainsKey(poemIndex) ?
+            Find(poemIndex) : null;
         if (poem != null)
+        {
             SplitBody(poem.poemText, _assignedPoemTextOld, _assignedPoemTextOldNext);
+            ApplyProgressToOldTexts(poem.poemId);
+        }
         else
             Clear(_assignedPoemTextOld, _assignedPoemTextOldNext);
+    }
+
+    private void InitPoemOldCurrentPoem(int poemIndex)
+    {
+        PoemInfoContainer poem = transcribed.Contains(poemIndex) || poemsSectionProgress.ContainsKey(poemIndex) ?
+            Find(poemIndex) : null;
+        if (poem != null)
+        {
+            SplitBody(poem.poemText, _assignedPoemTextOld, _assignedPoemTextCurrentNext);
+            ApplyProgressToOldTexts(poem.poemId);
+        }
+        else
+            Clear(_assignedPoemTextOld, _assignedPoemTextOldNext);
+    }
+
+    private void ApplyProgressToTexts(int poemId)
+    {
+        TextMeshProUGUI header;
+        if (!poemsSectionProgress.TryGetValue(poemId, out int progress))
+        {
+            header = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+            if (header != null) SetReveal(header, 0f);
+            if (_assignedPoemTextCurrent != null) SetReveal(_assignedPoemTextCurrent, 0f);
+            if (_assignedPoemTextCurrentNext != null) SetReveal(_assignedPoemTextCurrentNext, 0f);
+            return;
+        }
+
+        header = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+        if (header != null)
+            SetReveal(header, progress >= 1 ? 1f : 0f);
+
+        if (_assignedPoemTextCurrent != null)
+            SetReveal(_assignedPoemTextCurrent, progress >= 2 ? 1f : 0f);
+
+        if (_assignedPoemTextCurrentNext != null)
+            SetReveal(_assignedPoemTextCurrentNext, progress >= 3 ? 1f : 0f);
+    }
+
+    private void ApplyProgressToOldTexts(int poemId)
+    {
+        int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
+
+        TextMeshProUGUI header = HeaderLine(_assignedDateOld, _assignedNameOld, _assignedPlaceOld);
+        if (header != null) SetReveal(header, progress >= 1 ? 1f : 0f);
+        if (_assignedPoemTextOld != null) SetReveal(_assignedPoemTextOld, progress >= 2 ? 1f : 0f);
+        if (_assignedPoemTextOldNext != null) SetReveal(_assignedPoemTextOldNext, progress >= 3 ? 1f : 0f);
     }
 
     private static void Clear(params TextMeshProUGUI[] texts)
     {
         foreach (TextMeshProUGUI text in texts)
             if (text != null)
+            {
                 text.text = string.Empty;
+                SetReveal(text, 1f);
+            }
     }
 
     private void OnApplicationQuit()

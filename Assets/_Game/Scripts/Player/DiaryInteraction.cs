@@ -1,5 +1,7 @@
-using System.Collections;
+using ChocDino.UIFX;
 using Hortensia.Runtime;
+using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -78,7 +80,11 @@ public class DiaryInteraction : KeyboardControl
     public void EndWriting()
     {
         if (IsWriting && !busy)
+            {
+            if (transcribe != null)
+                transcribe.CancelTranscription();
             StartCoroutine(Close());
+        }
     }
 
     private void Start()
@@ -309,6 +315,9 @@ public class DiaryInteraction : KeyboardControl
             ShowClosed(false);
         }
 
+        if (transcribe != null)
+            transcribe.OnFlipPage();
+
         if (!writing)
         {
             previousLock = Cursor.lockState;
@@ -335,10 +344,10 @@ public class DiaryInteraction : KeyboardControl
                 pageCanvas.enabled = false;
         }
 
-        yield return Move(diary.localPosition, diary.localRotation, heldPosition, heldRotation, broomHiddenOffset, Vector3.zero);
-
         IsReading = false;
         IsWriting = false;
+        yield return Move(diary.localPosition, diary.localRotation, heldPosition, heldRotation, broomHiddenOffset, Vector3.zero);
+
         busy = false;
     }
 
@@ -389,9 +398,13 @@ public class DiaryInteraction : KeyboardControl
         page.localPosition = source.InverseTransformPoint(leftPage.position);
         page.localRotation = Quaternion.Inverse(source.rotation) * leftPage.rotation;
         page.localScale = Vector3.one;
-        foreach (MonoBehaviour behaviour in page.GetComponentsInChildren<MonoBehaviour>(true))
-            if (!(behaviour is Graphic))
-                Destroy(behaviour);
+        var originalFilters = leftPage.GetComponentsInChildren<DissolveFilter>(true);
+        var copyFilters = page.GetComponentsInChildren<DissolveFilter>(true);
+        for (int i = 0; i < copyFilters.Length && i < originalFilters.Length; i++)
+            copyFilters[i].Strength = originalFilters[i].Strength;
+        //foreach (MonoBehaviour behaviour in page.GetComponentsInChildren<MonoBehaviour>(true))
+        //    if (!(behaviour is Graphic) && !(behaviour is DissolveFilter))
+        //        Destroy(behaviour);
 
         hinge.localRotation = current;
         leftPage.gameObject.SetActive(false);

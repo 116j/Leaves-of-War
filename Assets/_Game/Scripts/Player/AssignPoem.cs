@@ -64,8 +64,8 @@ public class AssignPoem : RevealableObject
 
         Renderer body = GetComponent<Renderer>();
         footprint = body != null ? body.bounds : new Bounds(transform.position, new Vector3(2f, 0.1f, 2f));
-        if (body != null)
-            body.enabled = false;
+        //if (body != null)
+        //    body.enabled = false;
         foreach (Collider c in GetComponents<Collider>())
             c.enabled = false;
     }
@@ -100,6 +100,7 @@ public class AssignPoem : RevealableObject
         floorText.enableAutoSizing = true;
         floorText.fontSizeMin = 0.05f;
         floorText.fontSizeMax = 4f;
+        floorText.lineSpacing = 5f;
         floorText.textWrappingMode = TextWrappingModes.Normal;
         floorText.color = new Color(_floorColor.r, _floorColor.g, _floorColor.b, 1f);
         floorText.ForceMeshUpdate();

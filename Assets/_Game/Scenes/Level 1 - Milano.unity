@@ -4280,38 +4280,15 @@ GameObject:
   - component: {fileID: 502691900}
   - component: {fileID: 502691899}
   - component: {fileID: 502691898}
-  - component: {fileID: 502691897}
+  - component: {fileID: 502691902}
   - component: {fileID: 502691901}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 'Note1 '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!136 &502691897
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 502691896}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5000001
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
 --- !u!23 &502691898
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4368,7 +4345,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 502691896}
-  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!4 &502691900
 Transform:
   m_ObjectHideFlags: 0
@@ -4379,7 +4356,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.05, z: 0}
-  m_LocalScale: {x: 1.1999999, y: 0.36499146, z: 1.5999997}
+  m_LocalScale: {x: 0.37, y: 0.12, z: 1.16}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -4402,15 +4379,36 @@ MonoBehaviour:
   _assignedDate: 1914-1915
   _assignedPoemName: Agonia
   _assignedPlace: Milano
-  _assignedPoemText: "Morire come le allodole assetate\n\nsul miraggio\n\nO come
-    la quaglia\n\npassato il mare\n\nnei primi cespugli\n\nperch\xE8 di volare\n\nnon
-    ha pi\xF9 voglia\n\nMa non vivere di lamento\n\ncome un cardellino accecato"
+  _assignedPoemText: "Morire come le allodole assetate\nsul miraggio\nO come la quaglia\npassato
+    il mare\nnei primi cespugli\nperch\xE8 di volare\nnon ha pi\xF9 voglia\nMa non
+    vivere di lamento\ncome un cardellino accecato"
   _poemVoice: {fileID: 8300000, guid: c3cdc3b8fcaee0147aceff5fede07314, type: 3}
   poemInfo: {fileID: 11400000, guid: b79b9d6bac85cbf4194496d185b690f6, type: 2}
   _floorColor: {r: 0.12, g: 0.08, b: 0.05, a: 0.85}
   _floorPadding: 0.12
   _shimmer: 0.35
   _fadeSeconds: 2.5
+--- !u!65 &502691902
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 502691896}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &523586396
 GameObject:
   m_ObjectHideFlags: 0
@@ -4832,14 +4830,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 587431194}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0.17450753, w: 0.98465586}
-  m_LocalPosition: {x: 0.042, y: -0.025, z: 0.25}
-  m_LocalScale: {x: 0.005, y: 0.06, z: 0.005}
+  m_LocalRotation: {x: 0.14240219, y: -0.023036612, z: 0.9786759, w: 0.14623426}
+  m_LocalPosition: {x: 0.759, y: -0.35, z: 2.591}
+  m_LocalScale: {x: 0.065, y: 0.65, z: 0.065}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1630818658}
   m_Father: {fileID: 252448444}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 20.1}
+  m_LocalEulerAnglesHint: {x: 4.976, y: 15.844, z: 163.696}
 --- !u!1 &587859349
 GameObject:
   m_ObjectHideFlags: 0
@@ -5429,7 +5427,7 @@ MonoBehaviour:
   _interactionKey: 105
   diary: {fileID: 956923918}
   broom: {fileID: 587431198}
-  broomHiddenOffset: {x: 0, y: -0.25, z: 0}
+  broomHiddenOffset: {x: 0, y: -1.5, z: 0}
   transitionSeconds: 0.45
   flipSeconds: 0.5
   openClip: {fileID: 8300000, guid: ce54e35ccdf7e374ea52881fdfc37453, type: 3}
@@ -5438,7 +5436,7 @@ MonoBehaviour:
   closeImpact: 0.17
   screenFill: 0.74
   writingFill: 0.5
-  writingDrop: 0.3
+  writingDrop: 0.24
   pageFill: 0.95
   startInHand: 1
   startClosed: 1
@@ -6779,15 +6777,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BroomSweeper
   broom: {fileID: 587431198}
-  mouseSensitivity: 0.004
-  halfWidth: 0.9
-  reachRange: {x: 0.8, y: 1.9}
-  reach: 1.25
-  radius: 0.35
-  sweepPositionOffset: {x: 0, y: -0.12, z: 0.15}
-  sweepRotationOffset: {x: 25, y: 0, z: 0}
+  broomTip: {fileID: 1874579333}
+  floorLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  mouseSensitivity: 0.01
+  halfWidth: 5
+  reachRange: {x: 2, y: 6}
+  reach: 4
+  radius: 0.25
+  sweepPositionOffset: {x: -0.4, y: -0.3, z: 0.3}
+  sweepRotationOffset: {x: -40, y: 0, z: 0}
   swingAngle: 25
-  swingShift: 0.25
+  swingShift: 0.734
   blendSpeed: 8
   sweepClip: {fileID: 8300000, guid: c341b4565e43af74c9cd2f581c35c67f, type: 3}
   volume: 0.6
@@ -7479,8 +7481,8 @@ Transform:
   m_GameObject: {fileID: 956923913}
   serializedVersion: 2
   m_LocalRotation: {x: -0.66000164, y: -0, z: -0, w: 0.75126415}
-  m_LocalPosition: {x: -0.79, y: -0.04, z: 1.45}
-  m_LocalScale: {x: 1, y: 0.1, z: 1}
+  m_LocalPosition: {x: -1.099, y: -0.839, z: 2.543}
+  m_LocalScale: {x: 1.2, y: 0.1, z: 1.2}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 881769627}
@@ -9888,6 +9890,95 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1456773388}
   m_CullTransparentMesh: 1
+--- !u!1 &1465772339
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1465772340}
+  - component: {fileID: 1465772342}
+  - component: {fileID: 1465772341}
+  - component: {fileID: 1465772343}
+  m_Layer: 5
+  m_Name: DarkScreen
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1465772340
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1465772339}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2104716166}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1465772341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1465772339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1465772342
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1465772339}
+  m_CullTransparentMesh: 1
+--- !u!114 &1465772343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1465772339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d9dc0a86ce1d4a42affccacc76f609e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FadeScreen
+  _fadeTime: 0.6
 --- !u!1 &1499387250
 GameObject:
   m_ObjectHideFlags: 0
@@ -10882,7 +10973,8 @@ Transform:
   m_LocalPosition: {x: 0.49400032, y: -1.1437541, z: 0}
   m_LocalScale: {x: 7.6812735, y: 0.6568814, z: 1.425036}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1874579333}
   m_Father: {fileID: 587431198}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1658283990
@@ -11632,7 +11724,7 @@ Transform:
   m_GameObject: {fileID: 1821544167}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -1.85, y: 0, z: -0.45}
+  m_LocalPosition: {x: -1.85, y: 0, z: 0.392}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -11751,6 +11843,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1849945897}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1874579332
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1874579333}
+  m_Layer: 0
+  m_Name: Broom_tip
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1874579333
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1874579332}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.009, y: -0.5184, z: -0.12}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1630818658}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1894861138
 GameObject:
   m_ObjectHideFlags: 0
@@ -13113,6 +13236,109 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2101126989}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &2104716162
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2104716166}
+  - component: {fileID: 2104716165}
+  - component: {fileID: 2104716164}
+  - component: {fileID: 2104716163}
+  m_Layer: 5
+  m_Name: Canvas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2104716163
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2104716162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 0
+--- !u!114 &2104716164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2104716162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
+  m_UiScaleMode: 0
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 800, y: 600}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
+--- !u!223 &2104716165
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2104716162}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 0
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 500
+  m_TargetDisplay: 0
+--- !u!224 &2104716166
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2104716162}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1465772340}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 0}
 --- !u!1 &2127718912
 GameObject:
   m_ObjectHideFlags: 0
@@ -13292,3 +13518,4 @@ SceneRoots:
   - {fileID: 482120193}
   - {fileID: 152539960}
   - {fileID: 1821544170}
+  - {fileID: 2104716166}
