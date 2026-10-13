@@ -1,0 +1,429 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Hortensia.Runtime;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
+
+public sealed class DriveAudioImport : EditorWindow
+{
+    private const string Trash = "Assets/_Trash";
+    private const string VoiceFolder = "Assets/_Game/Audio/Voices/Ungaretti";
+    private const string PoemFolder = "Assets/_Game/Audio/Voices/Poems";
+    private const string AmbienceFolder = "Assets/_Game/Audio/Ambience";
+    private const string MusicFolder = "Assets/_Game/Audio/Music";
+    private const string Stinger = "STG_PoemFound";
+    private const string TitleMusic = "MUS_00_Title";
+    private const string TitleAmbience = "AMB_00_Title";
+
+    private sealed class Amb
+    {
+        public readonly string[] files;
+        public readonly LevelAudio.Mix mix;
+        public readonly float volume;
+
+        public Amb(LevelAudio.Mix mix, float volume, params string[] files)
+        {
+            this.files = files;
+            this.mix = mix;
+            this.volume = volume;
+        }
+    }
+
+    private sealed class LevelSound
+    {
+        public readonly string scene;
+        public readonly int poem;
+        public readonly string music;
+        public readonly Amb[] ambience;
+
+        public LevelSound(string scene, int poem, string music, params Amb[] ambience)
+        {
+            this.scene = scene;
+            this.poem = poem;
+            this.music = music;
+            this.ambience = ambience;
+        }
+    }
+
+    private static readonly LevelSound[] Levels =
+    {
+        new LevelSound("Milano", 1, "MUS_P1",
+            new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_01_Milano_Inside", "LVL1_Atmos_Inside"),
+            new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_01_Milano_Outside", "LVL1_Atmos_Outside")),
+        new LevelSound("Parigi", 2, "MUS_P2",
+            new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_02_Parigi_Inside"),
+            new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_02_Parigi_Outside")),
+        new LevelSound("Carso", 3, "MUS_P3",
+            new Amb(LevelAudio.Mix.Always, 0.6f, "AMB_03_Carso")),
+        new LevelSound("San Paolo", 4, "MUS_P4",
+            new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_04_SanPaolo_Inside"),
+            new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_04_SanPaolo_Outside")),
+        new LevelSound("Roma", 5, "MUS_P5"),
+        new LevelSound("Courton", 6, "MUS_06_FINALE"),
+    };
+
+    private Vector2 scroll;
+    private string report = "";
+
+    [MenuItem("Tools/Leaves of War/Drive Audio (voices, ambience, music)")]
+    private static void Open()
+    {
+        GetWindow<DriveAudioImport>("Drive Audio").minSize = new Vector2(560f, 420f);
+    }
+
+    private void OnGUI()
+    {
+        EditorGUILayout.HelpBox(
+            "1. From the Leaves of War Drive, download: voice acting/definitives/ungaretti, Sound design (AMB_ folders) and music/Lullaby/MP3s.\n" +
+            "2. Unzip them anywhere inside Assets (e.g. Assets/_Game/Audio/Import).\n" +
+            "3. Organize & Import, then Apply to all scenes.", MessageType.None);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("1. Organize & Import", GUILayout.Height(28f)))
+                Organize();
+            if (GUILayout.Button("2. Apply to all scenes", GUILayout.Height(28f)))
+                ApplyAll();
+        }
+
+        UngarettiLines.Refresh();
+        scroll = EditorGUILayout.BeginScrollView(scroll);
+        if (!string.IsNullOrEmpty(report))
+            EditorGUILayout.HelpBox(report, MessageType.Info);
+        EditorGUILayout.LabelField("Files", EditorStyles.boldLabel);
+        foreach (string file in Expected())
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                AudioClip clip = UngarettiLines.Clip(file);
+                EditorGUILayout.LabelField(clip != null ? "✓" : "–", GUILayout.Width(16f));
+                EditorGUILayout.LabelField(file, GUILayout.Width(220f));
+                EditorGUILayout.LabelField(clip != null ? AssetDatabase.GetAssetPath(clip) : "missing", EditorStyles.miniLabel);
+            }
+        EditorGUILayout.EndScrollView();
+    }
+
+    private static IEnumerable<string> Expected()
+    {
+        foreach (UngarettiLines.Line line in UngarettiLines.All)
+            foreach (UngarettiLines.Piece piece in line.pieces)
+                yield return piece.file;
+        for (int i = 1; i <= 6; i++)
+            yield return "UNG_poesia" + i;
+        yield return TitleMusic;
+        yield return TitleAmbience;
+        yield return Stinger;
+        foreach (LevelSound level in Levels)
+        {
+            yield return level.music;
+            foreach (Amb amb in level.ambience)
+                yield return amb.files[0];
+        }
+        yield return "MUS_07_CREDITS";
+    }
+
+    private static string Destination(string name)
+    {
+        string upper = name.ToUpperInvariant();
+        if (upper.StartsWith("UNG_POESIA"))
+            return PoemFolder;
+        if (upper.StartsWith("UNG_"))
+            return VoiceFolder;
+        if (upper.StartsWith("AMB_") || upper.StartsWith("LVL") && upper.Contains("ATMOS"))
+            return AmbienceFolder;
+        if (upper.StartsWith("MUS_") || upper.StartsWith("00_MUS_") || upper.StartsWith("STG_"))
+            return MusicFolder;
+        return null;
+    }
+
+    private void Organize()
+    {
+        var moved = new List<string>();
+        var duplicates = new List<string>();
+        foreach (string guid in AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets" }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.StartsWith(Trash))
+                continue;
+            string name = Path.GetFileName(path);
+            string folder = Destination(Path.GetFileNameWithoutExtension(path));
+            if (folder == null)
+                continue;
+            string target = folder + "/" + name;
+            if (Path.GetDirectoryName(path).Replace('\\', '/') != folder)
+            {
+                EnsureFolder(folder);
+                if (File.Exists(target))
+                {
+                    string trash = Trash + "/Audio Duplicates/" + name;
+                    EnsureFolder(Trash + "/Audio Duplicates");
+                    AssetDatabase.MoveAsset(path, AssetDatabase.GenerateUniqueAssetPath(trash));
+                    duplicates.Add(name);
+                    path = target;
+                }
+                else
+                {
+                    string error = AssetDatabase.MoveAsset(path, target);
+                    if (string.IsNullOrEmpty(error))
+                    {
+                        moved.Add(name);
+                        path = target;
+                    }
+                }
+            }
+            Configure(path, folder);
+        }
+        RemoveEmptyFolders("Assets/_Game/Audio");
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        UngarettiLines.Refresh();
+        report = "Moved " + moved.Count + " files into Assets/_Game/Audio." +
+            (duplicates.Count > 0 ? "\n" + duplicates.Count + " copies already present went to " + Trash + "/Audio Duplicates." : "") +
+            "\nMissing: " + Expected().Count(f => UngarettiLines.Clip(f) == null) + " (see the list).";
+    }
+
+    private static void Configure(string path, string folder)
+    {
+        if (!(AssetImporter.GetAtPath(path) is AudioImporter importer))
+            return;
+        bool voice = folder == VoiceFolder || folder == PoemFolder;
+        bool longClip = folder == AmbienceFolder || folder == MusicFolder && !Path.GetFileName(path).StartsWith("STG_");
+        AudioImporterSampleSettings settings = importer.defaultSampleSettings;
+        settings.loadType = voice ? AudioClipLoadType.DecompressOnLoad : longClip ? AudioClipLoadType.Streaming : AudioClipLoadType.CompressedInMemory;
+        settings.compressionFormat = AudioCompressionFormat.Vorbis;
+        settings.quality = voice ? 0.75f : 0.6f;
+        importer.defaultSampleSettings = settings;
+        importer.forceToMono = voice;
+        importer.loadInBackground = longClip;
+        importer.SaveAndReimport();
+    }
+
+    private void ApplyAll()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            return;
+        UngarettiLines.Refresh();
+        string active = SceneManager.GetActiveScene().path;
+        var lines = new List<string>();
+        var paths = EditorBuildSettings.scenes.Select(s => s.path).Where(File.Exists).ToList();
+        foreach (string path in Directory.GetFiles("Assets/_Game/Scenes", "Level *.unity").Select(p => p.Replace('\\', '/')))
+            if (!paths.Contains(path))
+                paths.Add(path);
+
+        foreach (string path in paths)
+        {
+            Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+            string name = Path.GetFileNameWithoutExtension(path);
+            var done = new List<string>();
+            LevelSound level = Levels.FirstOrDefault(l => name.Contains(l.scene));
+            if (level != null)
+            {
+                done.Add(ApplyLevelAudio(scene, level));
+                done.Add(ApplyPoemVoice(scene, level.poem));
+            }
+            MainMenuController menu = Object.FindAnyObjectByType<MainMenuController>(FindObjectsInactive.Include);
+            if (menu != null)
+                done.Add(ApplyMenu(menu));
+            int relinked = Relink(scene, out int voiced);
+            if (relinked > 0)
+                done.Add(relinked + " Ungaretti lines in English, " + voiced + " with Drive voice");
+            done.RemoveAll(string.IsNullOrEmpty);
+            if (done.Count == 0)
+                continue;
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            lines.Add(name + ": " + string.Join("; ", done) + ".");
+        }
+        if (!string.IsNullOrEmpty(active) && File.Exists(active))
+            EditorSceneManager.OpenScene(active, OpenSceneMode.Single);
+        report = lines.Count == 0 ? "Nothing to apply." : string.Join("\n", lines);
+        Debug.Log("Drive Audio\n" + report);
+    }
+
+    private static AudioClip First(params string[] files)
+    {
+        foreach (string file in files)
+        {
+            AudioClip clip = UngarettiLines.Clip(file);
+            if (clip != null)
+                return clip;
+        }
+        return null;
+    }
+
+    private static string ApplyLevelAudio(Scene scene, LevelSound level)
+    {
+        LevelAudio audio = Object.FindAnyObjectByType<LevelAudio>(FindObjectsInactive.Include);
+        if (audio == null)
+        {
+            var go = new GameObject("Level Audio");
+            SceneManager.MoveGameObjectToScene(go, scene);
+            audio = go.AddComponent<LevelAudio>();
+        }
+        OpenableWindow window = Object.FindAnyObjectByType<OpenableWindow>(FindObjectsInactive.Include);
+        var so = new SerializedObject(audio);
+        var done = new List<string>();
+
+        AudioClip music = First(level.music);
+        if (music != null)
+        {
+            so.FindProperty("music").objectReferenceValue = music;
+            so.FindProperty("musicMode").enumValueIndex = (int)LevelAudio.MusicMode.DuringTranscription;
+            done.Add("music " + music.name);
+        }
+        AudioClip stinger = First(Stinger);
+        if (stinger != null)
+            so.FindProperty("poemFoundStinger").objectReferenceValue = stinger;
+
+        var clips = level.ambience.Select(a => (amb: a, clip: First(a.files))).Where(a => a.clip != null).ToList();
+        if (clips.Count > 0 || level.ambience.Length == 0)
+        {
+            SerializedProperty list = so.FindProperty("ambience");
+            list.arraySize = clips.Count;
+            for (int i = 0; i < clips.Count; i++)
+            {
+                SerializedProperty entry = list.GetArrayElementAtIndex(i);
+                LevelAudio.Mix mix = window == null ? LevelAudio.Mix.Always : clips[i].amb.mix;
+                float volume = window == null && clips[i].amb.mix == LevelAudio.Mix.WindowOpen ? 0.2f : clips[i].amb.volume;
+                entry.FindPropertyRelative("clip").objectReferenceValue = clips[i].clip;
+                entry.FindPropertyRelative("mix").enumValueIndex = (int)mix;
+                entry.FindPropertyRelative("volume").floatValue = volume;
+                entry.FindPropertyRelative("source").objectReferenceValue = null;
+                entry.FindPropertyRelative("maxDistance").floatValue = 12f;
+            }
+            done.Add(clips.Count == 0 ? "no ambience yet" : "ambience " + string.Join(" + ", clips.Select(c => c.clip.name)));
+        }
+        so.FindProperty("window").objectReferenceValue = window;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return string.Join(", ", done);
+    }
+
+    private static string ApplyPoemVoice(Scene scene, int poem)
+    {
+        AudioClip clip = First("UNG_poesia" + poem);
+        if (clip == null)
+            return null;
+        int count = 0;
+        foreach (AssignPoem assign in Object.FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            var so = new SerializedObject(assign);
+            so.FindProperty("_poemVoice").objectReferenceValue = clip;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            count++;
+        }
+        return count > 0 ? "poem reading " + clip.name : null;
+    }
+
+    private static string ApplyMenu(MainMenuController menu)
+    {
+        var so = new SerializedObject(menu);
+        var done = new List<string>();
+        AudioClip music = First(TitleMusic);
+        AudioClip wind = First(TitleAmbience);
+        if (music != null)
+        {
+            so.FindProperty("menuMusic").objectReferenceValue = music;
+            done.Add("menu music " + music.name);
+        }
+        if (wind != null)
+        {
+            so.FindProperty("windAmbience").objectReferenceValue = wind;
+            done.Add("menu ambience " + wind.name);
+        }
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return string.Join(", ", done);
+    }
+
+    private static int Relink(Scene scene, out int voiced)
+    {
+        int lines = 0;
+        voiced = 0;
+        foreach (GameObject root in scene.GetRootGameObjects())
+            foreach (MonoBehaviour behaviour in root.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (behaviour == null)
+                    continue;
+                var so = new SerializedObject(behaviour);
+                var paths = new List<string>();
+                SerializedProperty it = so.GetIterator();
+                while (it.Next(true))
+                    if (it.name == "pieces" && it.isArray && it.propertyType == SerializedPropertyType.Generic)
+                        paths.Add(it.propertyPath);
+                bool changed = false;
+                foreach (string path in paths)
+                {
+                    SerializedProperty pieces = so.FindProperty(path);
+                    if (pieces == null || pieces.arraySize == 0)
+                        continue;
+                    if (pieces.arraySize == 1)
+                    {
+                        UngarettiLines.Line whole = UngarettiLines.FindLine(pieces.GetArrayElementAtIndex(0).FindPropertyRelative("text").stringValue);
+                        if (whole != null && whole.pieces.Length > 1)
+                        {
+                            float volume = pieces.GetArrayElementAtIndex(0).FindPropertyRelative("volume").floatValue;
+                            pieces.arraySize = whole.pieces.Length;
+                            for (int i = 0; i < whole.pieces.Length; i++)
+                            {
+                                SerializedProperty piece = pieces.GetArrayElementAtIndex(i);
+                                piece.FindPropertyRelative("text").stringValue = whole.pieces[i].italian;
+                                piece.FindPropertyRelative("volume").floatValue = volume;
+                            }
+                        }
+                    }
+                    bool any = false;
+                    for (int i = 0; i < pieces.arraySize; i++)
+                    {
+                        SerializedProperty piece = pieces.GetArrayElementAtIndex(i);
+                        SerializedProperty text = piece.FindPropertyRelative("text");
+                        SerializedProperty voice = piece.FindPropertyRelative("voice");
+                        if (text == null || voice == null)
+                            continue;
+                        UngarettiLines.Piece match = UngarettiLines.FindPiece(text.stringValue);
+                        if (match == null)
+                            continue;
+                        text.stringValue = match.english;
+                        AudioClip clip = UngarettiLines.Clip(match.file);
+                        if (clip != null)
+                        {
+                            voice.objectReferenceValue = clip;
+                            voiced++;
+                        }
+                        any = true;
+                    }
+                    if (any)
+                    {
+                        lines++;
+                        changed = true;
+                        string parent = path.Substring(0, path.Length - "pieces".Length);
+                        SerializedProperty speaker = so.FindProperty(parent + "speakerId");
+                        if (speaker != null && string.IsNullOrEmpty(speaker.stringValue))
+                            speaker.stringValue = "ungaretti";
+                    }
+                }
+                if (changed)
+                    so.ApplyModifiedPropertiesWithoutUndo();
+            }
+        return lines;
+    }
+
+    private static void EnsureFolder(string folder)
+    {
+        if (AssetDatabase.IsValidFolder(folder))
+            return;
+        string parent = Path.GetDirectoryName(folder).Replace('\\', '/');
+        EnsureFolder(parent);
+        AssetDatabase.CreateFolder(parent, Path.GetFileName(folder));
+    }
+
+    private static void RemoveEmptyFolders(string folder)
+    {
+        if (!AssetDatabase.IsValidFolder(folder))
+            return;
+        foreach (string sub in AssetDatabase.GetSubFolders(folder))
+            RemoveEmptyFolders(sub);
+        if (folder != "Assets/_Game/Audio" && AssetDatabase.GetSubFolders(folder).Length == 0 && !Directory.GetFiles(folder).Any(f => !f.EndsWith(".meta")))
+            AssetDatabase.DeleteAsset(folder);
+    }
+}

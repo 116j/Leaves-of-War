@@ -126,13 +126,6 @@ public static class LevelOneBuilder
             log.Add("WARNING: 'Script' object (diary and transcription) not found in Core.");
         }
 
-        GameObject plane = Root(level, "Plane");
-        if (plane != null && plane.GetComponent<InvisibleWalls>() == null)
-        {
-            plane.AddComponent<InvisibleWalls>();
-            log.Add("Invisible walls added around the Plane.");
-        }
-
         EditorSceneManager.CloseScene(test, true);
         EditorSceneManager.CloseScene(core1, true);
         EditorSceneManager.MarkSceneDirty(level);

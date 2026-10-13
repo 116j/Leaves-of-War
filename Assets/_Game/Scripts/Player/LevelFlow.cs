@@ -109,6 +109,7 @@ public class LevelFlow : MonoBehaviour
     private bool gustLinesPlayed;
     private bool moveWhenUnseen;
     private AsyncOperation nextLoad;
+    private bool leaving;
     private int stepPushed;
     private float stepTime;
     private float turnUnseen;
@@ -133,48 +134,57 @@ public class LevelFlow : MonoBehaviour
 
     private void Start()
     {
-        StartCoroutine(FadeScreen.Instance.DarkenScreen(0f, () =>
+        Setup();
+        if (FadeScreen.Instance != null)
+            StartCoroutine(FadeScreen.Instance.DarkenScreen(0f, Begin));
+        else
+            Begin();
+    }
+
+    private void Begin()
+    {
+        TitleCard.Show(this, titleCard, transcribe != null ? transcribe.PoemFont : null);
+        StartCoroutine(Run());
+    }
+
+    private void Setup()
+    {
+        objective = ScreenPrompt.Create(transform, "Objective", objectiveSize, 50f, true);
+        PoemAllowed = Array.FindIndex(steps, s => s != null && s.waitFor == Condition.PoemFound) < 0;
+        player = FindAnyObjectByType<FirstPersonController>();
+        diary = FindAnyObjectByType<DiaryInteraction>();
+        sweeper = FindAnyObjectByType<BroomSweeper>();
+        transcribe = FindAnyObjectByType<TranscribePoem>();
+        if (character != null)
         {
-            objective = ScreenPrompt.Create(transform, "Objective", objectiveSize, 50f, true);
-            PoemAllowed = Array.FindIndex(steps, s => s != null && s.waitFor == Condition.PoemFound) < 0;
-            player = FindAnyObjectByType<FirstPersonController>();
-            diary = FindAnyObjectByType<DiaryInteraction>();
-            sweeper = FindAnyObjectByType<BroomSweeper>();
-            transcribe = FindAnyObjectByType<TranscribePoem>();
-            if (character != null)
-            {
-                character.SetLines(new DialogueLine[0]);
-                character.Finished += OnTalked;
-            }
-            if (broom != null)
-                broom.Available = false;
-            if (character != null && Array.Exists(steps, s => s != null && s.action == StepAction.CharacterEnters))
-            {
-                Transform body = character.transform.root;
-                characterSpot = body.position;
-                characterSpotRotation = body.rotation;
-                body.gameObject.SetActive(false);
-            }
+            character.SetLines(new DialogueLine[0]);
+            character.Finished += OnTalked;
+        }
+        if (broom != null)
+            broom.Available = false;
+        if (character != null && Array.Exists(steps, s => s != null && s.action == StepAction.CharacterEnters))
+        {
+            Transform body = character.transform.root;
+            characterSpot = body.position;
+            characterSpotRotation = body.rotation;
+            body.gameObject.SetActive(false);
+        }
 
-            if (Carry.Active && player != null)
-            {
-                Carry.Active = false;
+        if (Carry.Active && player != null)
+        {
+            Carry.Active = false;
+            if (FadeScreen.Instance == null)
                 Blink(false);
-                Transform entry = entryAnchor != null ? entryAnchor : transform;
-                player.Place(new Vector3(entry.position.x, player.transform.position.y, entry.position.z), entry.eulerAngles.y + Carry.Yaw, Carry.Pitch);
-            }
-            else if (lookAtCharacterOnStart && player != null && character != null)
-            {
-                player.LookAt(LookPoint());
-            }
+            Transform entry = entryAnchor != null ? entryAnchor : transform;
+            player.Place(new Vector3(entry.position.x, player.transform.position.y, entry.position.z), entry.eulerAngles.y + Carry.Yaw, Carry.Pitch);
+        }
+        else if (lookAtCharacterOnStart && player != null && character != null)
+        {
+            player.LookAt(LookPoint());
+        }
 
-            if (followerLeafFromStart)
-                FollowerLeaf.Spawn();
-            TitleCard.Show(this, titleCard, transcribe != null ? transcribe.PoemFont : null);
-            StartCoroutine(Run());
-        }));
-
-        
+        if (followerLeafFromStart)
+            FollowerLeaf.Spawn();
     }
 
     private Vector3 LookPoint()
@@ -272,9 +282,7 @@ public class LevelFlow : MonoBehaviour
         Carry.Active = true;
         Carry.Yaw = Mathf.DeltaAngle(exit.eulerAngles.y, player.Yaw);
         Carry.Pitch = player.Pitch;
-        Blink(true);
-        if (nextLoad != null)
-            nextLoad.allowSceneActivation = true;
+        Leave();
         return true;
     }
 
@@ -390,10 +398,29 @@ public class LevelFlow : MonoBehaviour
     {
         if (nextLoad != null || string.IsNullOrEmpty(nextScene))
             return;
-
-        StartCoroutine(FadeScreen.Instance.DarkenScreen(1f, () => nextLoad = SceneManager.LoadSceneAsync(nextScene, LoadSceneMode.Single)));
+        nextLoad = SceneManager.LoadSceneAsync(nextScene, LoadSceneMode.Single);
         if (nextLoad != null)
             nextLoad.allowSceneActivation = false;
+    }
+
+    private void Leave()
+    {
+        if (leaving || nextLoad == null)
+            return;
+        leaving = true;
+        if (FadeScreen.Instance != null)
+            StartCoroutine(FadeScreen.Instance.DarkenScreen(1f, Activate));
+        else
+        {
+            Blink(true);
+            Activate();
+        }
+    }
+
+    private void Activate()
+    {
+        if (nextLoad != null)
+            nextLoad.allowSceneActivation = true;
     }
 
     private IEnumerator CharacterLeaves()

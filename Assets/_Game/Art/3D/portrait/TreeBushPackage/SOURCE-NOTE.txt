@@ -1,0 +1,10 @@
+Tree and bush source package
+============================
+
+Source: Tree_Bush_Asset_Package.unitypackage, supplied by the project director for garden production use.
+
+Imported allowlist: orange_bush.fbx, green_bush.fbx, bare_tree.fbx, orange_tree.fbx, and green_tree.fbx. The package's UniversalRenderPipelineGlobalSettings.asset was deliberately excluded before extraction because project render-pipeline settings are not art payload.
+
+No license or attribution file was included in the supplied package. Confirm redistribution rights with the director before distributing these assets outside this project.
+
+The checked-in FBXs are normalized, ground-pivoted, reduced copies. Their Bark/Foliage material names are assignment markers for project RetroLit materials; no source texture dependency is retained.

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59e7116e935d12d42a883b18493df7f5, type: 3}
+  m_Name: pocket_watch
+  m_EditorClassIdentifier: Assembly-CSharp::Hortensia.Narrative.InspectableItemDefinition
+  displayName: Pocket Watch
+  model: {fileID: -6689036041284674117, guid: e0be3e2868ad2e44bafec7efe1b39292, type: 3}
+  description: "Great-uncle Osmund's old pocket watch, \nstill keeping perfect time.\n\nI
+    find myself wondering how the years \npassed for a man who never had to feel
+    them."
+  scaleMultiplier: 1
+  modelRotationOffset: {x: -90, y: -180, z: 90}
+  targetChildName: 

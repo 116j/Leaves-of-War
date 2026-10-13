@@ -1,0 +1,40 @@
+Low poly game asset garden tools pack.
+It contains 12 diferrent models with diffuse textures.
+
+Package includes:
+
+Vase_01:96 verts, 188 tris.
+
+Vase_02:192 verts, 380 tris.
+
+Vase_03:208 verts, 412 tris.
+
+Vase_04:176 verts, 348 tris.
+
+Vase_05:160 verts, 316 tris.
+
+Scissor:384 verts, 744 tris.
+
+Mini_shovel:132 verts, 246 tris.
+
+Shovel:236 verts, 458 tris.
+
+Rastelo_01:348 verts, 568 tris.
+
+Rastelo_02:550 verts, 950 tris.
+
+water_can:422 verts, 792 tris.
+
+Wheelbarrow:1014 verts, 1884 tris.
+
+12 Diffuse textures(2k size).
+
+All the assets are free for any use but please don't resell them​ and Credit me (@CreativeSky2000).
+
+If you have any problems please contact me.
+
+Feel free to comment bellow.
+
+Hope you enjoy and thanks for buying 
+
+:D

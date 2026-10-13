@@ -34,6 +34,8 @@ public class TranscribePoem : RevealableObject
     [Tooltip("Flip if the dissolve goes from bottom to top.")]
     [SerializeField] private bool _invertDirection = false;
     [SerializeField, Min(0f)] private float _sectionPause = 0.35f;
+    [Tooltip("The transcription lasts exactly as long as the recorded reading of the poem (silence at the start and end excluded).")]
+    [SerializeField] private bool _matchVoiceLength = true;
     [Tooltip("The leaves still on the floor vanish when a poem is found.")]
     [SerializeField] private bool _clearLeavesWhenFound = true;
     [Tooltip("Single header line: {0} date, {1} place, {2} title.")]
@@ -248,13 +250,15 @@ public class TranscribePoem : RevealableObject
         Gusted?.Invoke(activePoem.PoemId);
     }
 
-    private void PlayVoice(AudioClip clip)
+    private void PlayVoice(AudioClip clip, float offset)
     {
         if (clip == null || voiceSource == null)
             return;
+        Vector2 range = VoiceTrim.Range(clip);
         voiceSource.Stop();
         voiceSource.clip = clip;
         voiceSource.volume = _voiceVolume;
+        voiceSource.time = Mathf.Clamp(range.x + offset, 0f, Mathf.Max(0f, clip.length - 0.05f));
         voiceSource.Play();
     }
 
@@ -333,6 +337,23 @@ public class TranscribePoem : RevealableObject
         voiceStarted = false;
         started = false;
         int startIndex = poemsSectionProgress.TryGetValue(poemId, out int saved) ? saved : 0;
+        float[] durations = new float[sections.Count];
+        for (int i = 0; i < sections.Count; i++)
+        {
+            sections[i].ForceMeshUpdate(true);
+            durations[i] = Mathf.Max(_minSectionSeconds, sections[i].textInfo.lineCount * _secondsPerLine);
+        }
+        float voiceLength = _matchVoiceLength ? VoiceTrim.Length(poem.poemVoice) : 0f;
+        if (voiceLength > 0f && sections.Count > 0)
+        {
+            float pauses = _sectionPause * (sections.Count - 1);
+            float scale = Mathf.Max(0.1f * sections.Count, voiceLength - pauses) / durations.Sum();
+            for (int i = 0; i < durations.Length; i++)
+                durations[i] *= scale;
+        }
+        float voiceOffset = 0f;
+        for (int i = 0; i < Mathf.Min(startIndex, durations.Length); i++)
+            voiceOffset += durations[i] + _sectionPause;
         int index = 0;
         foreach (TextMeshProUGUI text in sections)
         {
@@ -345,8 +366,7 @@ public class TranscribePoem : RevealableObject
                 continue;
             }
 
-            text.ForceMeshUpdate(true);
-            float duration = Mathf.Max(_minSectionSeconds, text.textInfo.lineCount * _secondsPerLine);
+            float duration = durations[index];
             float t = 0f;
             writing = true;
             while (t < 1f)
@@ -358,7 +378,7 @@ public class TranscribePoem : RevealableObject
                     if (!voiceStarted)
                     {
                         voiceStarted = true;
-                        PlayVoice(poem.poemVoice);
+                        PlayVoice(poem.poemVoice, voiceOffset);
                         TranscriptionStarted?.Invoke(poemId);
                     }
                 }

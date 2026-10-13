@@ -68,6 +68,8 @@ public class BroomSweeper : MonoBehaviour
             heldRotation = broom.localRotation;
         }
         currentReach = reach;
+        if (floorLayer.value == 0)
+            floorLayer = LayerMask.GetMask("Floor");
         HasBroom = startInHand;
         if (!HasBroom && broom != null)
             broom.gameObject.SetActive(false);
@@ -102,7 +104,7 @@ public class BroomSweeper : MonoBehaviour
     private bool CanSweep =>
         HasBroom && player != null && player.SweepAction != null && LeafField.Instance != null &&
         Cursor.lockState == CursorLockMode.Locked && Time.timeScale > 0f &&
-        !DiaryInteraction.IsRaised && !DialogueRunner.LocksPlayer &&
+        !DiaryInteraction.IsRaised && !DialogueRunner.LocksPlayer && !Examinable.IsOpen &&
         !(PauseController.Instance != null && PauseController.Instance.IsPaused);
 
     private void Update()
@@ -167,13 +169,17 @@ public class BroomSweeper : MonoBehaviour
 
     private Vector3 GetBroomTipWorldPosition()
     {
-        Vector3 tipPos = broomTip!=null? broomTip.position : broom.position;
-        Vector3 tipScreen = HeldItemsCamera.Overlay.WorldToViewportPoint(tipPos);
+        Camera view = Camera.main;
+        Camera overlay = HeldItemsCamera.Overlay != null ? HeldItemsCamera.Overlay : view;
+        if (view == null || overlay == null || broom == null)
+            return transform.position;
+        Vector3 tipPos = broomTip != null ? broomTip.position : broom.position;
+        Vector3 tipScreen = overlay.WorldToViewportPoint(tipPos);
 
         if (tipScreen.z <= 0f)
             tipScreen = new Vector3(0.5f, 0.15f, 1f);
 
-        Ray ray = Camera.main.ViewportPointToRay(tipScreen);
+        Ray ray = view.ViewportPointToRay(tipScreen);
         if (Physics.Raycast(ray, out RaycastHit hit, 100f, floorLayer))
             return hit.point;
 

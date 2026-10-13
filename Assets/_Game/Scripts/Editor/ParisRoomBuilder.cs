@@ -21,7 +21,7 @@ public static class ParisRoomBuilder
     private static readonly string[] Remove =
     {
         "Milano Room", "Carlo", "Level Flow", "Broom (pickup)", "Diary (pickup)",
-        "Note1", "Note2", "Note3", "Note4", "Note5", "Plane", "Cube", "Sphere", "Cylinder", "Follower Leaf"
+        "Note1", "Note2", "Note3", "Note4", "Note5", "Note6", "Plane", "Cube", "Sphere", "Cylinder", "Follower Leaf"
     };
 
     [MenuItem("Tools/Leaves of War/Build Level 2 - Parigi (Greybox)")]

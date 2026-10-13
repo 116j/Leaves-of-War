@@ -110,6 +110,7 @@ public sealed class FirstPersonController : MonoBehaviour
         focusedInteractableComponent != null ? focusedInteractable.Prompt : string.Empty;
 
     private static bool IsLocked =>
+        Examinable.IsOpen ||
         DialogueRunner.LocksPlayer ||
         DiaryInteraction.IsReading ||
         (PauseController.Instance != null && PauseController.Instance.IsPaused);

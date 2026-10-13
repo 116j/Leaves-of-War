@@ -37,6 +37,9 @@ namespace Hortensia.Runtime
         [SerializeField] private MusicMode musicMode = MusicMode.DuringTranscription;
         [SerializeField, Min(0f)] private float musicDelay = 0f;
         [SerializeField, Min(0.05f)] private float musicFade = 2f;
+        [Tooltip("Played once when the poem is uncovered under the leaves.")]
+        [SerializeField] private AudioClip poemFoundStinger;
+        [SerializeField, Range(0f, 1f)] private float stingerVolume = 0.8f;
 
         [Header("Ambience")]
         [SerializeField] private Ambience[] ambience = Array.Empty<Ambience>();
@@ -51,6 +54,8 @@ namespace Hortensia.Runtime
         private float musicTarget;
         private float elapsed;
         private bool musicStarted;
+        private TranscribePoem transcribe;
+        private bool poemWasUncovered;
 
         private void OnEnable()
         {
@@ -99,6 +104,7 @@ namespace Hortensia.Runtime
         {
             if (window == null)
                 window = FindAnyObjectByType<OpenableWindow>();
+            transcribe = FindAnyObjectByType<TranscribePoem>();
             sources = new AudioSource[ambience.Length];
             double syncStart = AudioSettings.dspTime + 0.1;
             for (int i = 0; i < ambience.Length; i++)
@@ -147,6 +153,11 @@ namespace Hortensia.Runtime
                 sources[i].volume = ambience[i].volume * fade * mix;
             }
 
+            bool uncovered = transcribe != null && transcribe.IsPoemUncovered;
+            if (uncovered && !poemWasUncovered && poemFoundStinger != null)
+                PlayStinger();
+            poemWasUncovered = uncovered;
+
             if (!musicStarted && musicMode == MusicMode.Always && music != null && elapsed >= musicDelay)
             {
                 musicStarted = true;
@@ -160,6 +171,20 @@ namespace Hortensia.Runtime
                 if (musicTarget <= 0f && musicSource.volume <= 0f && musicSource.isPlaying)
                     musicSource.Stop();
             }
+        }
+
+        private void PlayStinger()
+        {
+            var go = new GameObject("Poem Found Stinger");
+            go.transform.SetParent(transform, false);
+            AudioSource source = go.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.spatialBlend = 0f;
+            source.volume = stingerVolume;
+            source.clip = poemFoundStinger;
+            AudioManager.Route(source, AudioBus.Music);
+            source.Play();
+            Destroy(go, poemFoundStinger.length + 0.2f);
         }
 
         private void OnDestroy()

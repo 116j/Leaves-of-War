@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59e7116e935d12d42a883b18493df7f5, type: 3}
+  m_Name: gramophone
+  m_EditorClassIdentifier: Assembly-CSharp::Hortensia.Narrative.InspectableItemDefinition
+  displayName: Gramophone
+  model: {fileID: -6689036041284674117, guid: 3b6951a9b9ae258489437cac7f9e354d, type: 3}
+  description: "A green copper-horned gramophone, \nits only cylinder worn thin:
+    Vivaldi's L'inverno. \n\nOsmund called it his yearly ritual \u2014 \nhe understood
+    the ice a little better each time."
+  scaleMultiplier: 0.7
+  modelRotationOffset: {x: -90, y: 90, z: 0}
+  targetChildName: 

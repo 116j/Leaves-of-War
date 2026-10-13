@@ -445,9 +445,9 @@ MonoBehaviour:
   leafFriction: 4
   endSpill: 0.35
   minStroke: 0.73
-  menuMusic: {fileID: 0}
+  menuMusic: {fileID: 8300000, guid: ed01826a3bb1a1645bc5ab8b8a917c16, type: 3}
   musicVolume: 0.6
-  windAmbience: {fileID: 0}
+  windAmbience: {fileID: 8300000, guid: 74d06525b7f3835448acf4427766b860, type: 3}
   windVolume: 0.5
   sweepLoop: {fileID: 8300000, guid: c341b4565e43af74c9cd2f581c35c67f, type: 3}
   sweepVolume: 0.7

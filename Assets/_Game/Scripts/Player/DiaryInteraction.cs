@@ -35,6 +35,14 @@ public class DiaryInteraction : KeyboardControl
     [SerializeField] private bool startInHand = true;
     [Tooltip("Hold the diary closed and open the cover when reading.")]
     [SerializeField] private bool startClosed = true;
+    [Header("Book Model")]
+    [Tooltip("Optional material for the page block. Empty: plain paper.")]
+    [SerializeField] private Material pagesMaterial;
+    [SerializeField] private Color paperColor = new Color(0.93f, 0.89f, 0.8f);
+    [Tooltip("Cover board thickness, as a fraction of the book thickness.")]
+    [SerializeField, Range(0.05f, 0.4f)] private float boardThickness = 0.16f;
+    [Tooltip("How far the covers stick out past the pages, as a fraction of the page height.")]
+    [SerializeField, Range(0f, 0.1f)] private float boardOverhang = 0.025f;
 
     public static bool IsReading { get; private set; }
     public static bool IsWriting { get; private set; }
@@ -194,24 +202,53 @@ public class DiaryInteraction : KeyboardControl
         float width = Mathf.Abs(Vector3.Dot(size, wAxis));
         float thickness = Mathf.Abs(Vector3.Dot(size, nAxis));
         float height = Mathf.Abs(Vector3.Dot(size, sAxis));
-        Vector3 halfSize = Abs(wAxis) * width * 0.5f + Abs(nAxis) * thickness + Abs(sAxis) * height;
+        float half = width * 0.5f;
+        float board = Mathf.Clamp(thickness * boardThickness, 0.0015f, thickness * 0.4f);
+        float overhang = height * boardOverhang;
+        float pageWidth = Mathf.Max(half - overhang, half * 0.5f);
+        float pageHeight = Mathf.Max(height - overhang * 2f, height * 0.5f);
+        float pageThickness = thickness - board;
+        Material paper = PaperMaterial();
 
         rig = new GameObject("Diary Cover").transform;
         rig.SetParent(diary.parent, false);
         rig.gameObject.layer = diary.gameObject.layer;
 
-        Block("Back", rig, center + wAxis * width * 0.25f, halfSize);
+        Vector3 bottom = center - nAxis * thickness * 0.5f;
+        Block("Back Board", rig, bottom + wAxis * half * 0.5f + nAxis * board * 0.5f, Size(wAxis, nAxis, sAxis, half, board, height), null);
+        Block("Back Pages", rig, bottom + wAxis * pageWidth * 0.5f + nAxis * (board + pageThickness * 0.5f), Size(wAxis, nAxis, sAxis, pageWidth, pageThickness, pageHeight), paper);
+        Block("Back Spine", rig, center - wAxis * board * 0.5f, Size(wAxis, nAxis, sAxis, board, thickness, height), null);
 
         hinge = new GameObject("Hinge").transform;
         hinge.SetParent(rig, false);
         hinge.localPosition = center + nAxis * thickness * 0.5f;
         hinge.gameObject.layer = rig.gameObject.layer;
 
-        Block("Cover", hinge, wAxis * width * 0.25f + nAxis * thickness * 0.5f, halfSize);
+        Block("Front Pages", hinge, wAxis * pageWidth * 0.5f + nAxis * pageThickness * 0.5f, Size(wAxis, nAxis, sAxis, pageWidth, pageThickness, pageHeight), paper);
+        Block("Front Board", hinge, wAxis * half * 0.5f + nAxis * (thickness - board * 0.5f), Size(wAxis, nAxis, sAxis, half, board, height), null);
+        Block("Front Spine", hinge, -wAxis * board * 0.5f + nAxis * thickness * 0.5f, Size(wAxis, nAxis, sAxis, board, thickness, height), null);
         FollowDiary();
     }
 
-    private void Block(string name, Transform parent, Vector3 position, Vector3 size)
+    private static Vector3 Size(Vector3 w, Vector3 n, Vector3 h, float width, float thickness, float height) =>
+        Abs(w) * width + Abs(n) * thickness + Abs(h) * height;
+
+    private Material PaperMaterial()
+    {
+        if (pagesMaterial != null)
+            return pagesMaterial;
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null)
+            shader = diaryRenderer.sharedMaterial != null ? diaryRenderer.sharedMaterial.shader : Shader.Find("Standard");
+        var material = new Material(shader) { name = "Diary Pages" };
+        material.SetColor("_BaseColor", paperColor);
+        material.color = paperColor;
+        if (material.HasProperty("_Smoothness"))
+            material.SetFloat("_Smoothness", 0.05f);
+        return material;
+    }
+
+    private void Block(string name, Transform parent, Vector3 position, Vector3 size, Material material)
     {
         GameObject block = GameObject.CreatePrimitive(PrimitiveType.Cube);
         Destroy(block.GetComponent<Collider>());
@@ -221,7 +258,7 @@ public class DiaryInteraction : KeyboardControl
         block.transform.localPosition = position;
         block.transform.localScale = size;
         MeshRenderer renderer = block.GetComponent<MeshRenderer>();
-        renderer.sharedMaterials = diaryRenderer.sharedMaterials;
+        renderer.sharedMaterials = material != null ? new[] { material } : diaryRenderer.sharedMaterials;
         renderer.shadowCastingMode = diaryRenderer.shadowCastingMode;
         renderer.receiveShadows = diaryRenderer.receiveShadows;
     }
@@ -253,9 +290,9 @@ public class DiaryInteraction : KeyboardControl
     private void ShowClosed(bool closed)
     {
         if (rig != null)
-            rig.gameObject.SetActive(closed);
+            rig.gameObject.SetActive(true);
         if (diaryRenderer != null)
-            diaryRenderer.enabled = !closed;
+            diaryRenderer.enabled = rig == null && !closed;
         if (pageCanvas != null)
             pageCanvas.enabled = !closed;
     }
@@ -285,7 +322,7 @@ public class DiaryInteraction : KeyboardControl
 
     public override void OnKeyPressed(KeyCode keyCode)
     {
-        if (busy || diary == null || viewCamera == null)
+        if (busy || diary == null || viewCamera == null || Examinable.IsOpen)
             return;
         if (IsWriting)
             return;

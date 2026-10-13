@@ -12,24 +12,24 @@ public static class MilanoScriptSetup
 
     private static readonly Dictionary<string, (string speaker, string text)> Lines = new Dictionary<string, (string, string)>
     {
-        { "L1_01", (Ungaretti, "Milano. Insegno il francese ai ragazzi, e la sera il vento entra da questa finestra.") },
+        { "L1_01", (Ungaretti, "Milan. I teach French to the boys, and in the evening the wind comes in through this window.") },
         { "L1_02", (Carlo, "Professor! The window again. Half the trees of Milan are on my floor.") },
-        { "L1_03", (Ungaretti, "Mi scusi, signor Carlo. Mi piace sentire l'aria della strada.") },
+        { "L1_03", (Ungaretti, "Forgive me, Signor Carlo. I like to feel the air from the street.") },
         { "L1_04", (Carlo, "Then you sweep it. There's the broom.") },
         { "L1_05", (Carlo, "And that notebook you carry everywhere. Do you ever let it go?") },
-        { "L1_06", (Ungaretti, "Mai. La scopa in una mano, il quaderno nell'altra.") },
+        { "L1_06", (Ungaretti, "Never. The broom in one hand, the notebook in the other.") },
         { "L1_07", (Carlo, "Show me, then. What do you write in it?") },
-        { "L1_08", (Ungaretti, "Ancora niente. Le parole arrivano quando vogliono loro.") },
-        { "L1_09", (Ungaretti, "La sedia... era al tavolo.") },
+        { "L1_08", (Ungaretti, "Nothing yet. Words come when they please.") },
+        { "L1_09", (Ungaretti, "The chair... it was at the table.") },
         { "L1_10", (Carlo, "Of course it was. And now it's by the window. Things don't wait for you to look at them, Professor.") },
-        { "L1_11", (Ungaretti, "C'è qualcosa, sotto. Una pagina scritta.") },
-        { "L1_12", (Carlo, "Is that yours? It looks like your hand.") },
-        { "L1_13", (Ungaretti, "Non ricordo di averla scritta. Eppure è la mia scrittura.") },
-        { "L1_14", (Carlo, "Keep your eyes on it! Paper is like a cat, it runs as soon as you turn around.") },
+        { "L1_11", (Ungaretti, "There's something underneath. Words... as if written on the floor.") },
+        { "L1_12", (Carlo, "Words? I only see floorboards, Professor. You look like you've seen a ghost.") },
+        { "L1_13", (Ungaretti, "I don't remember writing them. And yet it's my handwriting.") },
+        { "L1_14", (Carlo, "Whatever you're looking at, keep your eyes on it. Things like that run as soon as you turn around.") },
         { "L1_15", (Carlo, "I don't understand poetry, Professor. But that one sounded like you.") },
-        { "L1_16", (Ungaretti, "Grazie, signor Carlo. È il complimento più bello che potesse farmi.") },
+        { "L1_16", (Ungaretti, "Thank you, Signor Carlo. That's the finest compliment you could pay me.") },
         { "L1_17", (Carlo, "I'll leave you to your leaves. Don't turn around too fast, or you won't know where you are.") },
-        { "L1_18", (Ungaretti, "Sento la stanza cambiare alle mie spalle. Come una pagina che si volta da sola.") }
+        { "L1_18", (Ungaretti, "I can feel the room changing behind me. Like a page turning by itself.") }
     };
 
     [MenuItem("Tools/Leaves of War/Setup Milano Script")]
@@ -103,7 +103,7 @@ public static class MilanoScriptSetup
         FillLines(so.FindProperty("firstGustLines"), new[] { "L1_14" }, ref missingVoices);
         so.ApplyModifiedProperties();
         log.Add("Level 1 follows the script: L1_01 to L1_18, " + plan.Length + " steps.");
-        log.Add(missingVoices == 0 ? "All voice clips found." : missingVoices + " voice clips not found yet (name the files L1_01 ... L1_18 and run this again).");
+        log.Add(missingVoices == 0 ? "All voice clips found." : missingVoices + " voice clips not found yet (Ungaretti: UNG_L1_track1... from the Drive; Carlo: Carlo - Milano - 01... or L1_02 ...; then run this again).");
 
         OpenableWindow window = Find<OpenableWindow>();
         if (window != null)
@@ -172,14 +172,38 @@ public static class MilanoScriptSetup
 
     private static AudioClip Voice(string id)
     {
-        foreach (string guid in AssetDatabase.FindAssets(id + " t:AudioClip"))
+        string speaker = Lines[id].speaker;
+        int order = Lines.Keys.Where(k => Lines[k].speaker == speaker).OrderBy(k => k, System.StringComparer.Ordinal).ToList().IndexOf(id) + 1;
+        string name = char.ToUpperInvariant(speaker[0]) + speaker.Substring(1);
+        UngarettiLines.Line script = speaker == Ungaretti ? UngarettiLines.Get("Ungaretti - Milano - " + order.ToString("00")) : null;
+        if (script != null)
+        {
+            UngarettiLines.Refresh();
+            AudioClip drive = UngarettiLines.Clip(script.pieces[0].file);
+            if (drive != null)
+                return drive;
+        }
+        string[] wanted =
+        {
+            Clean(id),
+            Clean(name + " - Milano - " + order.ToString("00")),
+            Clean(name + " - Milano - " + order)
+        };
+
+        AudioClip fallback = null;
+        foreach (string guid in AssetDatabase.FindAssets("t:AudioClip"))
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (System.IO.Path.GetFileNameWithoutExtension(path).Equals(id, System.StringComparison.OrdinalIgnoreCase))
+            string file = Clean(System.IO.Path.GetFileNameWithoutExtension(path));
+            if (file == wanted[0])
                 return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            if (fallback == null && (file == wanted[1] || file == wanted[2]))
+                fallback = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
         }
-        return null;
+        return fallback;
     }
+
+    private static string Clean(string s) => new string(s.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
 
     private static Transform Anchor(Transform room, string name, Vector3 local, float yaw)
     {

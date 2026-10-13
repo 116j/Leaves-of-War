@@ -177,12 +177,7 @@ namespace Hortensia.Runtime
             AudioSource source = speaker != null && speaker.VoiceSource != null ? speaker.VoiceSource : voice2D;
             bool hasVoice = piece.voice != null;
             if (hasVoice)
-            {
-                source.Stop();
-                source.clip = piece.voice;
-                source.volume = piece.Volume;
-                source.Play();
-            }
+                VoiceTrim.Play(source, piece.voice, piece.Volume);
 
             pieceText = piece.text ?? string.Empty;
             float fullReveal = pieceText.Length + fadeLetters;
@@ -203,7 +198,7 @@ namespace Hortensia.Runtime
                         ApplyReveal(shown);
                     }
 
-                    bool voiceDone = !hasVoice || !source.isPlaying;
+                    bool voiceDone = !hasVoice || VoiceTrim.Finished(source, piece.voice);
                     bool silentDone = hasVoice || elapsed >= silentPieceSeconds;
                     if (shown >= fullReveal && voiceDone && silentDone)
                         break;
