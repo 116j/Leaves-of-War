@@ -6,7 +6,7 @@ public class Observable : MonoBehaviour
     public bool IsSeen { get; private set; }
 
     [SerializeField]
-    float _changeDelay =0.6f;
+    float _changeDelay = 0.6f;
 
     public UnityEvent OnSeen;
     public UnityEvent OnUnseen;
@@ -16,7 +16,7 @@ public class Observable : MonoBehaviour
     public Renderer Renderer => _renderer;
 
     public float _unseenTime;
-    bool _gazeManagerAway = false;
+    bool _gazeManagerSeen = false;
 
     private void Start()
     {
@@ -26,24 +26,24 @@ public class Observable : MonoBehaviour
             Debug.Log("Seen");
             _unseenTime = 0f;
             IsSeen = true;
+            _gazeManagerSeen = true;
         });
 
         OnUnseen.AddListener(() =>
         {
             Debug.Log("Unseen");
             IsSeen = false;
-            _gazeManagerAway = true;
         });
     }
 
     private void Update()
     {
-        if (!IsSeen && _gazeManagerAway)
+        if (!IsSeen && _gazeManagerSeen)
         {
             _unseenTime += Time.deltaTime;
-            if(_unseenTime>= _changeDelay)
+            if (_unseenTime >= _changeDelay)
             {
-                _gazeManagerAway = false;
+                _gazeManagerSeen = false;
                 OnChangeAllowed.Invoke();
             }
         }

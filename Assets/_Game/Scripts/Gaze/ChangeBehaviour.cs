@@ -2,8 +2,6 @@ using UnityEngine;
 
 public abstract class ChangeBehaviour : MonoBehaviour
 {
-    public virtual void OnChange()
-    {
-
-    }
+    protected bool _changed;
+    public abstract void OnChange();
 }
