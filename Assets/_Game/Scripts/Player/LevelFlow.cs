@@ -4,7 +4,6 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class LevelFlow : MonoBehaviour
 {
@@ -21,7 +20,7 @@ public class LevelFlow : MonoBehaviour
         PoemTranscribed = 1 << 6,    // 64
         Wait = 1 << 7,               // 128
         TurnAround = 1 << 8,         // 256
-        PlayerLookingAtMovedObjectPlace = 1 << 9,        // 512
+        ObservableBehaviourChanged = 1 << 9,        // 512
     }
 
     public enum StepAction
@@ -48,6 +47,8 @@ public class LevelFlow : MonoBehaviour
         public DialogueLine[] lines = new DialogueLine[0];
         [Tooltip("Done after the lines.")]
         public StepAction action;
+        [Tooltip("The number of the observable witch will be used in an action.")]
+        public int observableIndex;
     }
 
     [Header("Level")]
@@ -67,7 +68,7 @@ public class LevelFlow : MonoBehaviour
 
     [Header("Objects")]
     [SerializeField] private PickupItem broom;
-    [SerializeField] private Observable movable;
+    [SerializeField] private Observable[] observables;
     [SerializeField] private Transform characterExitPoint;
     [Tooltip("Character Enters: where he waits outside the door.")]
     [SerializeField] private Transform characterOutside;
@@ -109,8 +110,9 @@ public class LevelFlow : MonoBehaviour
     private bool poemFound;
     private bool poemDone;
     private bool gustLinesPlayed;
-    private ChangeBehaviour objectMoved;
+    private ChangeBehaviour changeBehaviour;
     private AsyncOperation nextLoad;
+    private bool changeBehaviourSet;
     private bool leaving;
     private int stepPushed;
     private float stepTime;
@@ -157,9 +159,8 @@ public class LevelFlow : MonoBehaviour
         diary = FindAnyObjectByType<DiaryInteraction>();
         sweeper = FindAnyObjectByType<BroomSweeper>();
         transcribe = FindAnyObjectByType<TranscribePoem>();
-        if (movable != null)
+        if (observables != null)
         {
-            objectMoved = movable.GetComponent<ChangeBehaviour>();
         }
         if (character != null)
         {
@@ -232,7 +233,7 @@ public class LevelFlow : MonoBehaviour
             if (step.action == StepAction.CharacterEnters)
                 yield return CharacterEnters();
             else
-                Do(step.action);
+                Do(step);
         }
         objectiveText = null;
     }
@@ -282,8 +283,8 @@ public class LevelFlow : MonoBehaviour
                 case Condition.TurnAround:
                     done = done && TurnedAround();
                     break;
-                case Condition.PlayerLookingAtMovedObjectPlace:
-                    done = done && IsPlayerLookingAtMovedObjectPlace();
+                case Condition.ObservableBehaviourChanged:
+                    done = done && IsBehaviourChanged(step.observableIndex);
                     break;
             }
         }
@@ -321,17 +322,21 @@ public class LevelFlow : MonoBehaviour
         yield return new WaitUntil(() => finished);
     }
 
-    private bool IsPlayerLookingAtMovedObjectPlace()
+    private bool IsBehaviourChanged(int observableIndex)
     {
-        return objectMoved.Changed;
+        if (changeBehaviourSet)
+            return changeBehaviour.Changed;
+        else return false;
     }
 
-    private void Do(StepAction action)
+    private void Do(Step step)
     {
-        switch (action)
+        switch (step.action)
         {
             case StepAction.MoveObjectWhenUnseen:
-                movable.OnChangeAllowed.AddListener(objectMoved.OnChange);
+                changeBehaviourSet = true;
+                changeBehaviour = observables[step.observableIndex].GetComponent<ChangeBehaviour>();
+                observables[step.observableIndex].OnChangeAllowed.AddListener(changeBehaviour.OnChange);
                 break;
             case StepAction.ShowFollowerLeaf:
                 FollowerLeaf.Spawn();

@@ -541,7 +541,6 @@ GameObject:
   - component: {fileID: 46564052}
   - component: {fileID: 46564054}
   - component: {fileID: 46564053}
-  - component: {fileID: 46564055}
   m_Layer: 5
   m_Name: Book
   m_TagString: Untagged
@@ -626,22 +625,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 46564051}
   m_CullTransparentMesh: 1
---- !u!114 &46564055
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 46564051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a8a917fb06406646a9f871fc62733ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ReadingBlur
-  _globalVolume: {fileID: 832575518}
-  _normalFocalLength: 0
-  _readingFocalLength: 300
-  _transitionSeconds: 0.6
 --- !u!1 &59575426
 GameObject:
   m_ObjectHideFlags: 0
@@ -1597,7 +1580,8 @@ MonoBehaviour:
   exitAnchor: {fileID: 770923964}
   followerLeafFromStart: 0
   broom: {fileID: 1821544169}
-  movable: {fileID: 759814206}
+  observables:
+  - {fileID: 759814206}
   characterExitPoint: {fileID: 684811509}
   characterOutside: {fileID: 934085767}
   door: {fileID: 1521937636}
@@ -1621,12 +1605,14 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 5f21bb382c647994cbc3452abc3007c3, type: 3}
         volume: 0.55
     action: 0
+    observableIndex: 0
   - note: Carlo comes in
     waitFor: 128
     amount: 10
     objective: 
     lines: []
     action: 5
+    observableIndex: 0
   - note: Carlo complains
     waitFor: 1
     amount: 0
@@ -1648,12 +1634,14 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 1990ebccc19701c4297e61e9c53f4e0a, type: 3}
         volume: 0.55
     action: 0
+    observableIndex: 0
   - note: Broom
     waitFor: 2
     amount: 0
     objective: PICK UP THE BROOM
     lines: []
     action: 0
+    observableIndex: 0
   - note: Sweep by the bed
     waitFor: 4
     amount: 120
@@ -1675,6 +1663,7 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 1990ebccc19701c4297e61e9c53f4e0a, type: 3}
         volume: 0.55
     action: 0
+    observableIndex: 0
   - note: Notebook
     waitFor: 8
     amount: 0
@@ -1686,6 +1675,7 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 7253704ef6688964e840500b2088a18c, type: 3}
         volume: 0.55
     action: 1
+    observableIndex: 0
   - note: The chair
     waitFor: 528
     amount: 0
@@ -1703,6 +1693,7 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 84f3684ac40304d47a4650e03879912f, type: 3}
         volume: 0.55
     action: 2
+    observableIndex: 0
   - note: The big pile
     waitFor: 160
     amount: 0
@@ -1725,12 +1716,14 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 8916bfbe14b82ba41aba4d6944135282, type: 3}
         volume: 0.55
     action: 0
+    observableIndex: 0
   - note: Transcription
     waitFor: 64
     amount: 0
     objective: KEEP YOUR EYES ON THE POEM WHILE YOU TRANSCRIBE
     lines: []
     action: 0
+    observableIndex: 0
   - note: Silence, Carlo leaves
     waitFor: 128
     amount: 2.5
@@ -1754,6 +1747,7 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 84f3684ac40304d47a4650e03879912f, type: 3}
         volume: 0.55
     action: 3
+    observableIndex: 0
   - note: Alone
     waitFor: 128
     amount: 1.5
@@ -1765,12 +1759,14 @@ MonoBehaviour:
         voice: {fileID: 8300000, guid: 997878120cd517b4e9230decd038554c, type: 3}
         volume: 0.55
     action: 4
+    observableIndex: 0
   - note: Turn around
     waitFor: 256
     amount: 0
     objective: TURN AROUND
     lines: []
     action: 0
+    observableIndex: 0
   firstGustLines:
   - speakerId: carlo
     pieces:
@@ -5559,6 +5555,7 @@ GameObject:
   - component: {fileID: 681735466}
   - component: {fileID: 681735468}
   - component: {fileID: 681735470}
+  - component: {fileID: 681735471}
   m_Layer: 0
   m_Name: Script
   m_TagString: Untagged
@@ -5691,6 +5688,22 @@ MonoBehaviour:
     _dissolveStrength: 1
     _dissloveDelay: 0.1
     _dissolveDuration: 2
+--- !u!114 &681735471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 681735465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a8a917fb06406646a9f871fc62733ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReadingBlur
+  _globalVolume: {fileID: 832575518}
+  _normalFocalLength: 1
+  _readingFocalLength: 40
+  _transitionSeconds: 1
 --- !u!1 &684811508
 GameObject:
   m_ObjectHideFlags: 0

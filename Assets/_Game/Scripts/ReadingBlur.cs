@@ -11,7 +11,7 @@ public class ReadingBlur : MonoBehaviour
     [SerializeField] 
     float _readingFocalLength = 40;    
     [SerializeField] 
-    float _transitionSeconds = 1;
+    float _transitionSeconds = 0.6f;
 
     private DepthOfField _dof;
     private float _targetFocalLength;

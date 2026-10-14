@@ -11,6 +11,7 @@ public class RelocateChange : ChangeBehaviour
     {
         if(_nextPointIndex < _relolcatePoints.Length)
         {
+            _changed = false;
             Transform target = _relolcatePoints[_nextPointIndex];
             Bounds pointBounds = new Bounds(target.position, Vector3.one * 0.1f);
             if (Gaze.IsSeen(pointBounds))
@@ -18,6 +19,7 @@ public class RelocateChange : ChangeBehaviour
 
             transform.SetPositionAndRotation(target.position, target.rotation);
             _nextPointIndex++;
+            _changed = true;
         }
     }
 }
