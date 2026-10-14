@@ -1606,7 +1606,7 @@ MonoBehaviour:
         volume: 0.55
     action: 0
   - note: Carlo comes in
-    waitFor: 8
+    waitFor: 128
     amount: 10
     objective: 
     lines: []
@@ -1639,7 +1639,7 @@ MonoBehaviour:
     lines: []
     action: 0
   - note: Sweep by the bed
-    waitFor: 3
+    waitFor: 4
     amount: 120
     objective: HOLD {sweepKey} AND MOVE THE MOUSE TO SWEEP
     lines:
@@ -1660,7 +1660,7 @@ MonoBehaviour:
         volume: 0.55
     action: 0
   - note: Notebook
-    waitFor: 4
+    waitFor: 8
     amount: 0
     objective: PRESS {diaryKey} TO OPEN THE NOTEBOOK
     lines:
@@ -1671,7 +1671,7 @@ MonoBehaviour:
         volume: 0.55
     action: 1
   - note: The chair
-    waitFor: 5
+    waitFor: 528
     amount: 0
     objective: 
     lines:
@@ -1688,7 +1688,7 @@ MonoBehaviour:
         volume: 0.55
     action: 2
   - note: The big pile
-    waitFor: 6
+    waitFor: 160
     amount: 0
     objective: SWEEP THE BIG PILE IN THE MIDDLE OF THE ROOM
     lines:
@@ -1710,13 +1710,13 @@ MonoBehaviour:
         volume: 0.55
     action: 0
   - note: Transcription
-    waitFor: 7
+    waitFor: 64
     amount: 0
     objective: KEEP YOUR EYES ON THE POEM WHILE YOU TRANSCRIBE
     lines: []
     action: 0
   - note: Silence, Carlo leaves
-    waitFor: 8
+    waitFor: 128
     amount: 2.5
     objective: 
     lines:
@@ -1739,7 +1739,7 @@ MonoBehaviour:
         volume: 0.55
     action: 3
   - note: Alone
-    waitFor: 8
+    waitFor: 128
     amount: 1.5
     objective: 
     lines:
@@ -1750,7 +1750,7 @@ MonoBehaviour:
         volume: 0.55
     action: 4
   - note: Turn around
-    waitFor: 9
+    waitFor: 256
     amount: 0
     objective: TURN AROUND
     lines: []
@@ -6943,8 +6943,8 @@ MonoBehaviour:
   reachRange: {x: 2, y: 6}
   reach: 4
   radius: 0.25
-  sweepPositionOffset: {x: -0.4, y: -0.3, z: 0.3}
-  sweepRotationOffset: {x: -40, y: 0, z: 0}
+  sweepPositionOffset: {x: -0.4, y: -0.1, z: 0.3}
+  sweepRotationOffset: {x: 30, y: -30, z: 0}
   swingAngle: 25
   swingShift: 0.734
   blendSpeed: 8
@@ -7295,6 +7295,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 273640366}
+  - {fileID: 1874579333}
   m_Father: {fileID: 587431198}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &934085766
@@ -11370,8 +11371,7 @@ Transform:
   m_LocalPosition: {x: 0.49400032, y: -1.1437541, z: 0}
   m_LocalScale: {x: 7.6812735, y: 0.6568814, z: 1.425036}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1874579333}
+  m_Children: []
   m_Father: {fileID: 587431198}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1658283990
@@ -12260,12 +12260,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1874579332}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.009, y: -0.5184, z: -0.12}
+  m_LocalRotation: {x: -0, y: -0, z: 0.0000000037252903, w: 1}
+  m_LocalPosition: {x: 0.129, y: -0.335, z: -0.008}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1630818658}
+  m_Father: {fileID: 910953550}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1894861138
 GameObject:
@@ -13001,9 +13001,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e207f771dc7718f44b87dc2eba629c72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GazeManager
-  _occlusionMask:
-    serializedVersion: 2
-    m_Bits: 193
   _maxGazeDistance: 12
   _checksPerFrame: 5
 --- !u!4 &2016325568

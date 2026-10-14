@@ -1,24 +1,27 @@
+using Hortensia.Runtime;
 using System;
 using System.Collections;
-using Hortensia.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class LevelFlow : MonoBehaviour
 {
+    [Flags]
     public enum Condition
     {
-        None,
-        TalkToCharacter,
-        PickUpBroom,
-        SweepLeaves,
-        OpenNotebook,
-        CloseNotebook,
-        PoemFound,
-        PoemTranscribed,
-        Wait,
-        TurnAround
+        None = 0,
+        TalkToCharacter = 1 << 0,    // 1
+        PickUpBroom = 1 << 1,        // 2
+        SweepLeaves = 1 << 2,        // 4
+        OpenNotebook = 1 << 3,       // 8
+        CloseNotebook = 1 << 4,      // 16
+        PoemFound = 1 << 5,          // 32
+        PoemTranscribed = 1 << 6,    // 64
+        Wait = 1 << 7,               // 128
+        TurnAround = 1 << 8,         // 256
+        PlayerLookingAtMovedObjectPlace = 1 << 9,        // 512
     }
 
     public enum StepAction
@@ -103,11 +106,13 @@ public class LevelFlow : MonoBehaviour
     private DiaryInteraction diary;
     private BroomSweeper sweeper;
     private TranscribePoem transcribe;
+    private Vector3 beforeMovePlace;
     private bool talked;
     private bool poemFound;
     private bool poemDone;
     private bool gustLinesPlayed;
     private bool moveWhenUnseen;
+    private bool objectMoved;
     private AsyncOperation nextLoad;
     private bool leaving;
     private int stepPushed;
@@ -233,38 +238,56 @@ public class LevelFlow : MonoBehaviour
 
     private bool Done(Step step)
     {
-        switch (step.waitFor)
+        bool done = true;
+        foreach(Condition cond in Enum.GetValues(typeof(Condition)))
         {
-            case Condition.PickUpBroom:
-                if (broom != null)
-                    broom.Available = true;
-                return sweeper == null || sweeper.HasBroom;
-            case Condition.SweepLeaves:
-                return sweeper == null || sweeper.PushedTotal - stepPushed >= step.amount;
-            case Condition.OpenNotebook:
-                return DiaryInteraction.IsReading;
-            case Condition.CloseNotebook:
-                return !DiaryInteraction.IsRaised && (diary == null || !diary.Busy);
-            case Condition.PoemFound:
-                if (!PoemAllowed)
-                {
-                    PoemAllowed = true;
-                    foreach (AssignPoem poem in FindObjectsByType<AssignPoem>(FindObjectsSortMode.None))
-                        if (poem.IsRevealed && transcribe != null)
-                            transcribe.OnPoemRevealed(poem);
-                }
-                return poemFound;
-            case Condition.PoemTranscribed:
-                return poemDone;
-            case Condition.Wait:
-                if (Time.timeScale > 0f && !DialogueRunner.IsPlaying && !DiaryInteraction.IsRaised)
-                    activeTime += Time.deltaTime;
-                return activeTime >= step.amount;
-            case Condition.TurnAround:
-                return TurnedAround();
-            default:
-                return true;
+            if (cond == Condition.None) continue;
+            if (!step.waitFor.HasFlag(cond)) continue;
+
+            switch (cond)
+            {
+                case Condition.PickUpBroom:
+                    if (broom != null)
+                        broom.Available = true;
+                    done = done &&  sweeper == null || sweeper.HasBroom;
+                    break;
+                case Condition.SweepLeaves:
+                    done = done && sweeper == null || sweeper.PushedTotal - stepPushed >= step.amount;
+                    break;
+                case Condition.OpenNotebook:
+                    done = done && DiaryInteraction.IsReading;
+                    break;
+                case Condition.CloseNotebook:
+                    done = done && !DiaryInteraction.IsRaised && (diary == null || !diary.Busy);
+                    break;
+                case Condition.PoemFound:
+                    if (!PoemAllowed)
+                    {
+                        PoemAllowed = true;
+                        foreach (AssignPoem poem in FindObjectsByType<AssignPoem>(FindObjectsSortMode.None))
+                            if (poem.IsRevealed && transcribe != null)
+                                transcribe.OnPoemRevealed(poem);
+                    }
+                    done = done && poemFound;
+                    break;
+                case Condition.PoemTranscribed:
+                    done = done && poemDone;
+                    break;
+                case Condition.Wait:
+                    if (Time.timeScale > 0f && !DialogueRunner.IsPlaying && !DiaryInteraction.IsRaised)
+                        activeTime += Time.deltaTime;
+                    done = done && activeTime >= step.amount;
+                    break;
+                case Condition.TurnAround:
+                    done = done && TurnedAround();
+                    break;
+                case Condition.PlayerLookingAtMovedObjectPlace:
+                    done = done && IsPlayerLookingAtMovedObjectPlace();
+                    break;
+            }
         }
+
+        return done;
     }
 
     private bool TurnedAround()
@@ -295,6 +318,16 @@ public class LevelFlow : MonoBehaviour
         if (!DialogueRunner.GetOrCreate().Play(lines, () => finished = true))
             yield break;
         yield return new WaitUntil(() => finished);
+    }
+
+    private bool IsPlayerLookingAtMovedObjectPlace()
+    {
+        if (objectMoved)
+        {
+            Bounds pointBounds = new Bounds(beforeMovePlace, Vector3.one * 0.1f);
+            return Gaze.IsSeen(pointBounds);
+        }
+        return false;
     }
 
     private void Do(StepAction action)
@@ -506,6 +539,8 @@ public class LevelFlow : MonoBehaviour
         if (moveWhenUnseen && !Gaze.IsSeen(movable.gameObject))
         {
             moveWhenUnseen = false;
+            objectMoved = true;
+            beforeMovePlace = movable.transform.position;
             movable.SetPositionAndRotation(movableTarget.position, movableTarget.rotation);
         }
 
