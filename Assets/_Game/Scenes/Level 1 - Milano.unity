@@ -541,6 +541,7 @@ GameObject:
   - component: {fileID: 46564052}
   - component: {fileID: 46564054}
   - component: {fileID: 46564053}
+  - component: {fileID: 46564055}
   m_Layer: 5
   m_Name: Book
   m_TagString: Untagged
@@ -625,6 +626,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 46564051}
   m_CullTransparentMesh: 1
+--- !u!114 &46564055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 46564051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a8a917fb06406646a9f871fc62733ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReadingBlur
+  _globalVolume: {fileID: 832575518}
+  _normalFocalLength: 0
+  _readingFocalLength: 300
+  _transitionSeconds: 0.6
 --- !u!1 &59575426
 GameObject:
   m_ObjectHideFlags: 0
@@ -1580,8 +1597,7 @@ MonoBehaviour:
   exitAnchor: {fileID: 770923964}
   followerLeafFromStart: 0
   broom: {fileID: 1821544169}
-  movable: {fileID: 759814204}
-  movableTarget: {fileID: 1347171008}
+  movable: {fileID: 759814206}
   characterExitPoint: {fileID: 684811509}
   characterOutside: {fileID: 934085767}
   door: {fileID: 1521937636}
@@ -2243,7 +2259,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
+  m_RenderPostProcessing: 1
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -6450,6 +6466,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 759814204}
+  - component: {fileID: 759814206}
+  - component: {fileID: 759814205}
   m_Layer: 0
   m_Name: Bentwood Chair (moves)
   m_TagString: Untagged
@@ -6475,6 +6493,43 @@ Transform:
   - {fileID: 1283150380}
   m_Father: {fileID: 1499387251}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &759814205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 759814203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e75c6ec0ec72c14bb331fcbca7ed653, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RelocateChange
+  _relolcatePoints:
+  - {fileID: 1347171008}
+--- !u!114 &759814206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 759814203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30e28a900699bc64ab94f3248f8d6d4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Observable
+  _changeDelay: 0
+  OnSeen:
+    m_PersistentCalls:
+      m_Calls: []
+  OnUnseen:
+    m_PersistentCalls:
+      m_Calls: []
+  OnChangeAllowed:
+    m_PersistentCalls:
+      m_Calls: []
+  _unseenTime: 0
 --- !u!1 &770923963
 GameObject:
   m_ObjectHideFlags: 0
@@ -13500,7 +13555,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2104716163
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -21,6 +21,15 @@ public class Observable : MonoBehaviour
     private void Start()
     {
         _renderer = GetComponent<Renderer>();
+        if (_renderer == null)
+        {
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                _renderer = transform.GetChild(i).GetComponent<Renderer>();
+                if (_renderer != null && _renderer.enabled)
+                    break;
+            }
+        }
         OnSeen.AddListener(() =>
         {
             Debug.Log("Seen");

@@ -50,6 +50,7 @@ public class DiaryInteraction : KeyboardControl
     public bool HasDiary { get; private set; } = true;
 
     private FirstPersonController player;
+    private ReadingBlur blur;
     private Camera viewCamera;
     private Canvas pages;
     private Canvas pageCanvas;
@@ -100,6 +101,7 @@ public class DiaryInteraction : KeyboardControl
         player = FindAnyObjectByType<FirstPersonController>();
         viewCamera = player != null && player.PlayerCamera != null ? player.PlayerCamera : Camera.main;
         transcribe = FindAnyObjectByType<TranscribePoem>();
+        blur = GetComponent<ReadingBlur>();
         if (openClip == null)
             openClip = Resources.Load<AudioClip>("Audio/DiaryOpen");
         if (closeClip == null)
@@ -340,6 +342,8 @@ public class DiaryInteraction : KeyboardControl
         else
             IsReading = true;
 
+        if (blur != null)
+            blur.SetReading(!writing);
         GetReadingPose(out Vector3 position, out Quaternion rotation, writing ? writingFill : screenFill, writing ? writingDrop : 0f);
         yield return Move(heldPosition, heldRotation, position, rotation, Vector3.zero, broomHiddenOffset);
 
@@ -369,7 +373,8 @@ public class DiaryInteraction : KeyboardControl
         if (IsReading)
             Cursor.lockState = previousLock;
         Play(closeClip, rig != null ? Mathf.Max(0f, flipSeconds - closeImpact) : 0f);
-
+        if (blur != null)
+            blur.SetReading(false);
         if (rig != null)
         {
             SetCover(1f);
@@ -383,6 +388,7 @@ public class DiaryInteraction : KeyboardControl
 
         IsReading = false;
         IsWriting = false;
+
         yield return Move(diary.localPosition, diary.localRotation, heldPosition, heldRotation, broomHiddenOffset, Vector3.zero);
 
         busy = false;

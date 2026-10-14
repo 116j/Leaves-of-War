@@ -67,8 +67,7 @@ public class LevelFlow : MonoBehaviour
 
     [Header("Objects")]
     [SerializeField] private PickupItem broom;
-    [SerializeField] private Transform movable;
-    [SerializeField] private Transform movableTarget;
+    [SerializeField] private Observable movable;
     [SerializeField] private Transform characterExitPoint;
     [Tooltip("Character Enters: where he waits outside the door.")]
     [SerializeField] private Transform characterOutside;
@@ -106,13 +105,11 @@ public class LevelFlow : MonoBehaviour
     private DiaryInteraction diary;
     private BroomSweeper sweeper;
     private TranscribePoem transcribe;
-    private Vector3 beforeMovePlace;
     private bool talked;
     private bool poemFound;
     private bool poemDone;
     private bool gustLinesPlayed;
-    private bool moveWhenUnseen;
-    private bool objectMoved;
+    private ChangeBehaviour objectMoved;
     private AsyncOperation nextLoad;
     private bool leaving;
     private int stepPushed;
@@ -160,6 +157,10 @@ public class LevelFlow : MonoBehaviour
         diary = FindAnyObjectByType<DiaryInteraction>();
         sweeper = FindAnyObjectByType<BroomSweeper>();
         transcribe = FindAnyObjectByType<TranscribePoem>();
+        if (movable != null)
+        {
+            objectMoved = movable.GetComponent<ChangeBehaviour>();
+        }
         if (character != null)
         {
             character.SetLines(new DialogueLine[0]);
@@ -322,12 +323,7 @@ public class LevelFlow : MonoBehaviour
 
     private bool IsPlayerLookingAtMovedObjectPlace()
     {
-        if (objectMoved)
-        {
-            Bounds pointBounds = new Bounds(beforeMovePlace, Vector3.one * 0.1f);
-            return Gaze.IsSeen(pointBounds);
-        }
-        return false;
+        return objectMoved.Changed;
     }
 
     private void Do(StepAction action)
@@ -335,7 +331,7 @@ public class LevelFlow : MonoBehaviour
         switch (action)
         {
             case StepAction.MoveObjectWhenUnseen:
-                moveWhenUnseen = movable != null && movableTarget != null;
+                movable.OnChangeAllowed.AddListener(objectMoved.OnChange);
                 break;
             case StepAction.ShowFollowerLeaf:
                 FollowerLeaf.Spawn();
@@ -536,14 +532,6 @@ public class LevelFlow : MonoBehaviour
 
     private void Update()
     {
-        if (moveWhenUnseen && !Gaze.IsSeen(movable.gameObject))
-        {
-            moveWhenUnseen = false;
-            objectMoved = true;
-            beforeMovePlace = movable.transform.position;
-            movable.SetPositionAndRotation(movableTarget.position, movableTarget.rotation);
-        }
-
         if (transcribe != null && transcribe.IsPoemUncovered)
             poemFound = true;
 
