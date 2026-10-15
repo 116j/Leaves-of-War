@@ -922,7 +922,7 @@ public class TranscribePoem : RevealableObject
         if (poem != null)
         {
             SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
-            ApplyProgressToTexts(poem.poemId);
+            ApplyProgressToPageDesc(poem.poemId);
         }
         else
             Clear(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
@@ -935,7 +935,8 @@ public class TranscribePoem : RevealableObject
         if (poem != null)
         {
             SplitBody(BodyFor(poem), _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
-            ApplyProgressToTexts(poem.poemId);
+            ApplyProgressToPageText(poem.poemId);
+            ApplyProgressToPageNext(poem.poemId);
         }
         else
             Clear(_assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
@@ -948,7 +949,8 @@ public class TranscribePoem : RevealableObject
         if (poem != null)
         {
             SplitBody(BodyFor(poem), _assignedPoemTextCurrent, _assignedPoemTextOldNext);
-            ApplyProgressToTexts(poem.poemId);
+            ApplyProgressToPageText(poem.poemId);
+            ApplyProgressToOldPageNext(poem.poemId);
         }
         else
             Clear(_assignedPoemTextCurrent, _assignedPoemTextOldNext);
@@ -961,7 +963,7 @@ public class TranscribePoem : RevealableObject
         if (poem != null)
         {
             SetHeader(poem, _assignedDateOld, _assignedNameOld, _assignedPlaceOld);
-            ApplyProgressToOldTexts(poemIndex);
+            ApplyProgressToOldPageDesc(poemIndex);
         }
         else
             Clear(_assignedDateOld, _assignedNameOld, _assignedPlaceOld);
@@ -974,7 +976,8 @@ public class TranscribePoem : RevealableObject
         if (poem != null)
         {
             SplitBody(BodyFor(poem), _assignedPoemTextOld, _assignedPoemTextOldNext);
-            ApplyProgressToOldTexts(poem.poemId);
+            ApplyProgressToOldPageText(poem.poemId);
+            ApplyProgressToOldPageNext(poem.poemId);
         }
         else
             Clear(_assignedPoemTextOld, _assignedPoemTextOldNext);
@@ -987,43 +990,57 @@ public class TranscribePoem : RevealableObject
         if (poem != null)
         {
             SplitBody(BodyFor(poem), _assignedPoemTextOld, _assignedPoemTextCurrentNext);
-            ApplyProgressToOldTexts(poem.poemId);
+            ApplyProgressToOldPageText(poem.poemId);
+            ApplyProgressToPageNext(poem.poemId);
         }
         else
             Clear(_assignedPoemTextOld, _assignedPoemTextCurrentNext);
     }
 
-    private void ApplyProgressToTexts(int poemId)
+    private void ApplyProgressToPageText(int poemId)
     {
-        TextMeshProUGUI header;
-        if (!poemsSectionProgress.TryGetValue(poemId, out int progress))
-        {
-            header = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
-            if (header != null) SetReveal(header, 0f);
-            if (_assignedPoemTextCurrent != null) SetReveal(_assignedPoemTextCurrent, 0f);
-            if (_assignedPoemTextCurrentNext != null) SetReveal(_assignedPoemTextCurrentNext, 0f);
-            return;
-        }
-
-        header = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
-        if (header != null)
-            SetReveal(header, progress >= 1 ? 1f : 0f);
+        int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
 
         if (_assignedPoemTextCurrent != null)
             SetReveal(_assignedPoemTextCurrent, progress >= 2 ? 1f : 0f);
+    }
+    private void ApplyProgressToPageDesc(int poemId)
+    {
+        int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
+
+        TextMeshProUGUI header = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+        if (header != null)
+            SetReveal(header, progress >= 1 ? 1f : 0f);
+    }
+    private void ApplyProgressToPageNext(int poemId)
+    {
+        int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
 
         if (_assignedPoemTextCurrentNext != null)
             SetReveal(_assignedPoemTextCurrentNext, progress >= 3 ? 1f : 0f);
     }
 
-    private void ApplyProgressToOldTexts(int poemId)
+    private void ApplyProgressToOldPageDesc(int poemId)
     {
         int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
 
         TextMeshProUGUI header = HeaderLine(_assignedDateOld, _assignedNameOld, _assignedPlaceOld);
-        if (header != null) SetReveal(header, progress >= 1 ? 1f : 0f);
-        if (_assignedPoemTextOld != null) SetReveal(_assignedPoemTextOld, progress >= 2 ? 1f : 0f);
-        if (_assignedPoemTextOldNext != null) SetReveal(_assignedPoemTextOldNext, progress >= 3 ? 1f : 0f);
+        if (header != null) 
+            SetReveal(header, progress >= 1 ? 1f : 0f);
+    }
+    private void ApplyProgressToOldPageText(int poemId)
+    {
+        int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
+
+        if (_assignedPoemTextOld != null) 
+            SetReveal(_assignedPoemTextOld, progress >= 2 ? 1f : 0f);
+    }
+    private void ApplyProgressToOldPageNext(int poemId)
+    {
+        int progress = poemsSectionProgress.TryGetValue(poemId, out int p) ? p : 0;
+
+        if (_assignedPoemTextOldNext != null) 
+            SetReveal(_assignedPoemTextOldNext, progress >= 3 ? 1f : 0f);
     }
 
     private static void Clear(params TextMeshProUGUI[] texts)
