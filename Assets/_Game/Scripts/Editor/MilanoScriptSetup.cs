@@ -45,8 +45,6 @@ public static class MilanoScriptSetup
             return;
         }
 
-        Transform chair = room.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name.StartsWith("Bentwood Chair"));
-        Transform chairTarget = Anchor(room, "Chair By Window", new Vector3(-0.55f, 0f, 1.95f), 200f);
         Transform carloExit = Anchor(room, "Carlo Exit", new Vector3(1.2f, 0f, -2.3f), 180f);
         Transform exit = Anchor(room, "Exit Anchor (door)", new Vector3(1.2f, 0f, -2.0f), 180f);
         Transform outside = Anchor(room, "Carlo Outside", new Vector3(1.2f, 0f, -3.3f), 0f);
@@ -59,8 +57,6 @@ public static class MilanoScriptSetup
         so.FindProperty("exitAnchor").objectReferenceValue = exit;
         so.FindProperty("followerLeafFromStart").boolValue = false;
         so.FindProperty("broom").objectReferenceValue = broom;
-        so.FindProperty("movable").objectReferenceValue = chair;
-        so.FindProperty("movableTarget").objectReferenceValue = chairTarget;
         so.FindProperty("characterExitPoint").objectReferenceValue = carloExit;
         so.FindProperty("characterOutside").objectReferenceValue = outside;
         so.FindProperty("door").objectReferenceValue = door;
@@ -82,8 +78,8 @@ public static class MilanoScriptSetup
             ("Broom", LevelFlow.Condition.PickUpBroom, 0f, "PICK UP THE BROOM", new string[0], LevelFlow.StepAction.None),
             ("Sweep by the bed", LevelFlow.Condition.SweepLeaves, 120f, "HOLD {sweepKey} AND MOVE THE MOUSE TO SWEEP", new[] { "L1_05", "L1_06", "L1_07" }, LevelFlow.StepAction.None),
             ("Notebook", LevelFlow.Condition.OpenNotebook, 0f, "PRESS {diaryKey} TO OPEN THE NOTEBOOK", new[] { "L1_08" }, LevelFlow.StepAction.MoveObjectWhenUnseen),
-            ("The chair", LevelFlow.Condition.CloseNotebook, 0f, "", new[] { "L1_09", "L1_10" }, LevelFlow.StepAction.ShowFollowerLeaf),
-            ("The big pile", LevelFlow.Condition.PoemFound, 0f, "SWEEP THE BIG PILE IN THE MIDDLE OF THE ROOM", new[] { "L1_11", "L1_12", "L1_13" }, LevelFlow.StepAction.None),
+            ("The chair", LevelFlow.Condition.CloseNotebook | LevelFlow.Condition.ObservableBehaviourChanged, 0f, "", new[] { "L1_09", "L1_10" }, LevelFlow.StepAction.ShowFollowerLeaf),
+            ("The big pile", LevelFlow.Condition.PoemFound | LevelFlow.Condition.Wait, 0f, "SWEEP THE BIG PILE IN THE MIDDLE OF THE ROOM", new[] { "L1_11", "L1_12", "L1_13" }, LevelFlow.StepAction.None),
             ("Transcription", LevelFlow.Condition.PoemTranscribed, 0f, "KEEP YOUR EYES ON THE POEM WHILE YOU TRANSCRIBE", new string[0], LevelFlow.StepAction.None),
             ("Silence, Carlo leaves", LevelFlow.Condition.Wait, 2.5f, "", new[] { "L1_15", "L1_16", "L1_17" }, LevelFlow.StepAction.CharacterLeaves),
             ("Alone", LevelFlow.Condition.Wait, 1.5f, "", new[] { "L1_18" }, LevelFlow.StepAction.LoadNextLevel),
@@ -94,7 +90,7 @@ public static class MilanoScriptSetup
         {
             SerializedProperty step = steps.GetArrayElementAtIndex(i);
             step.FindPropertyRelative("note").stringValue = plan[i].note;
-            step.FindPropertyRelative("waitFor").enumValueIndex = (int)plan[i].wait;
+            step.FindPropertyRelative("waitFor").intValue = (int)plan[i].wait;
             step.FindPropertyRelative("amount").floatValue = plan[i].amount;
             step.FindPropertyRelative("objective").stringValue = plan[i].objective;
             step.FindPropertyRelative("action").enumValueIndex = (int)plan[i].action;

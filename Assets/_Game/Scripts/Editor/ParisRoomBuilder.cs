@@ -87,7 +87,7 @@ public static class ParisRoomBuilder
         }
 
         EditorUtility.DisplayDialog(LevelName,
-            "Paris greybox built and added to Build Settings after Level 1.\nRoom 3 x 5 m: two beds, washstand, desk with candle, shelf, chair with Moammed's coat, French window with balcony rail, door with transom.\nApollinaire, Moammed and the three fragments of In memoria come next.",
+            "Paris greybox built and added to Build Settings after Level 1.\nRoom 3 x 5 m: two beds, washstand, desk with candle, shelf, chair with Moammed's coat, French window with balcony rail, door with transom.\n\nNext: Tools > Leaves of War > Setup Paris Script (Apollinaire, Moammed, the three fragments of In memoria and the whole level flow).",
             "OK");
     }
 
@@ -208,7 +208,7 @@ public static class ParisRoomBuilder
         }
 
         entry = MilanoRoomBuilder.Group("Entry Anchor (door)", root);
-        entry.localPosition = new Vector3(0.9f, 0f, -1.4f);
+        entry.localPosition = new Vector3(0.15f, 0f, -1.75f);
         entry.localRotation = Quaternion.Euler(0f, 180f, 0f);
 
         root.gameObject.AddComponent<LevelAudio>();

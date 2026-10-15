@@ -153,7 +153,7 @@ public sealed class FirstPersonController : MonoBehaviour
         GameSettings.Applied += ApplySettings;
         LockCursor(true);
         if (blankCursor != null)
-            Cursor.SetCursor(blankCursor, Vector2.zero, CursorMode.Auto);
+            Cursor.SetCursor(blankCursor, Vector2.zero, CursorMode.ForceSoftware);
     }
 
     private void OnDisable()

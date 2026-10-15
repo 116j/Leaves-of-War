@@ -21,6 +21,9 @@ public class LevelFlow : MonoBehaviour
         Wait = 1 << 7,               // 128
         TurnAround = 1 << 8,         // 256
         ObservableBehaviourChanged = 1 << 9,        // 512
+        FragmentFound = 1 << 10,     // 1024
+        FragmentTranscribed = 1 << 11, // 2048
+        LookAtObservable = 1 << 12,  // 4096
     }
 
     public enum StepAction
@@ -30,7 +33,8 @@ public class LevelFlow : MonoBehaviour
         ShowFollowerLeaf,
         CharacterLeaves,
         LoadNextLevel,
-        CharacterEnters
+        CharacterEnters,
+        JoinFragments
     }
 
     [Serializable]
@@ -49,6 +53,8 @@ public class LevelFlow : MonoBehaviour
         public StepAction action;
         [Tooltip("The number of the observable witch will be used in an action.")]
         public int observableIndex;
+        [Tooltip("Fragment Found / Fragment Transcribed: which piece of the poem (1, 2, 3...).")]
+        public int fragment;
     }
 
     [Header("Level")]
@@ -82,6 +88,9 @@ public class LevelFlow : MonoBehaviour
     [SerializeField, Min(0.1f)] private float walkSpeed = 1.1f;
     [Tooltip("Turn the camera towards the character when the level starts.")]
     [SerializeField] private bool lookAtCharacterOnStart = false;
+    [Tooltip("Played from the exit when the next level starts loading (e.g. distant artillery behind the door).")]
+    [SerializeField] private AudioClip exitCue;
+    [SerializeField, Range(0f, 1f)] private float exitCueVolume = 0.7f;
 
     [Header("Script")]
     [SerializeField] private Step[] steps = new Step[0];
@@ -92,6 +101,7 @@ public class LevelFlow : MonoBehaviour
     [SerializeField, Min(8f)] private float objectiveSize = 34f;
 
     public static bool PoemAllowed { get; private set; } = true;
+    public static bool SweepBlocked { get; private set; }
 
     public static class Carry
     {
@@ -118,6 +128,8 @@ public class LevelFlow : MonoBehaviour
     private float stepTime;
     private float turnUnseen;
     private float activeTime;
+    private float lookTime;
+    private AssignPoem[] fragments = new AssignPoem[0];
     private Vector3 characterSpot;
     private Quaternion? doorClosed;
     private Quaternion characterSpotRotation;
@@ -154,11 +166,13 @@ public class LevelFlow : MonoBehaviour
     private void Setup()
     {
         objective = ScreenPrompt.Create(transform, "Objective", objectiveSize, 50f, true);
-        PoemAllowed = Array.FindIndex(steps, s => s != null && s.waitFor == Condition.PoemFound) < 0;
+        PoemAllowed = Array.FindIndex(steps, s => s != null && s.waitFor.HasFlag(Condition.PoemFound)) < 0;
+        SweepBlocked = false;
         player = FindAnyObjectByType<FirstPersonController>();
         diary = FindAnyObjectByType<DiaryInteraction>();
         sweeper = FindAnyObjectByType<BroomSweeper>();
         transcribe = FindAnyObjectByType<TranscribePoem>();
+        fragments = Array.FindAll(FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None), p => p.IsFragment);
         if (observables != null)
         {
         }
@@ -224,8 +238,11 @@ public class LevelFlow : MonoBehaviour
                 stepPushed = sweeper != null ? sweeper.PushedTotal : 0;
                 stepTime = Time.time;
                 activeTime = 0f;
+                lookTime = 0f;
                 turnUnseen = 0f;
+                SweepBlocked = step.waitFor.HasFlag(Condition.OpenNotebook);
                 yield return new WaitUntil(() => Done(step));
+                SweepBlocked = false;
                 objectiveText = null;
                 yield return PlayLines(step.lines);
             }
@@ -251,10 +268,10 @@ public class LevelFlow : MonoBehaviour
                 case Condition.PickUpBroom:
                     if (broom != null)
                         broom.Available = true;
-                    done = done &&  sweeper == null || sweeper.HasBroom;
+                    done = done && (sweeper == null || sweeper.HasBroom);
                     break;
                 case Condition.SweepLeaves:
-                    done = done && sweeper == null || sweeper.PushedTotal - stepPushed >= step.amount;
+                    done = done && (sweeper == null || sweeper.PushedTotal - stepPushed >= step.amount);
                     break;
                 case Condition.OpenNotebook:
                     done = done && DiaryInteraction.IsReading;
@@ -286,6 +303,28 @@ public class LevelFlow : MonoBehaviour
                 case Condition.ObservableBehaviourChanged:
                     done = done && IsBehaviourChanged(step.observableIndex);
                     break;
+                case Condition.FragmentFound:
+                {
+                    AssignPoem piece = Fragment(step.fragment);
+                    if (piece != null && transcribe != null && piece.IsRevealed && transcribe.ActivePoem != piece && !transcribe.IsTranscribing)
+                        transcribe.OnPoemRevealed(piece);
+                    done = done && (piece == null || transcribe == null || piece.IsRevealed && transcribe.ActivePoem == piece);
+                    break;
+                }
+                case Condition.FragmentTranscribed:
+                {
+                    AssignPoem piece = Fragment(step.fragment);
+                    done = done && (piece == null || transcribe == null || transcribe.FragmentsDone(piece.PoemId) >= step.fragment);
+                    break;
+                }
+                case Condition.LookAtObservable:
+                {
+                    bool seen = observables != null && step.observableIndex >= 0 && step.observableIndex < observables.Length &&
+                        observables[step.observableIndex] != null && observables[step.observableIndex].IsSeen;
+                    lookTime = seen && !DialogueRunner.IsPlaying ? lookTime + Time.deltaTime : 0f;
+                    done = done && lookTime >= 0.4f;
+                    break;
+                }
             }
         }
 
@@ -315,11 +354,30 @@ public class LevelFlow : MonoBehaviour
     {
         if (lines == null || lines.Length == 0)
             yield break;
-        yield return new WaitUntil(() => !DialogueRunner.IsPlaying);
+        yield return new WaitUntil(() => !DialogueRunner.IsPlaying && !TranscribePoem.IsVoicePlaying && (transcribe == null || !transcribe.IsJoining));
         bool finished = false;
         if (!DialogueRunner.GetOrCreate().Play(lines, () => finished = true))
             yield break;
         yield return new WaitUntil(() => finished);
+    }
+
+    private AssignPoem Fragment(int number) => Array.Find(fragments, p => p != null && p.Fragment == number);
+
+    private void PlayExitCue()
+    {
+        if (exitCue == null)
+            return;
+        Transform exit = exitAnchor != null ? exitAnchor : transform;
+        var go = new GameObject("Exit Cue");
+        go.transform.position = exit.position + Vector3.up * 1.5f - exit.forward * 2f;
+        AudioSource source = go.AddComponent<AudioSource>();
+        source.clip = exitCue;
+        source.volume = exitCueVolume;
+        source.spatialBlend = 0.7f;
+        source.maxDistance = 25f;
+        AudioManager.Route(source, AudioBus.SoundEffects);
+        source.Play();
+        Destroy(go, exitCue.length + 0.5f);
     }
 
     private bool IsBehaviourChanged(int observableIndex)
@@ -347,6 +405,11 @@ public class LevelFlow : MonoBehaviour
                 break;
             case StepAction.LoadNextLevel:
                 LoadNext();
+                PlayExitCue();
+                break;
+            case StepAction.JoinFragments:
+                if (transcribe != null && fragments.Length > 0)
+                    transcribe.JoinFragments(fragments[0].PoemId);
                 break;
         }
     }

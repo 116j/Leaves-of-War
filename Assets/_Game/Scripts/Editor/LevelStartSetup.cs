@@ -79,7 +79,7 @@ public static class LevelStartSetup
         EditorUtility.DisplayDialog("Level Start", string.Join("\n", log) + "\n\nSave the scene (Ctrl+S).", "OK");
     }
 
-    private static PickupItem BuildBroom(Transform held, Vector3 position, Quaternion rotation)
+    internal static PickupItem BuildBroom(Transform held, Vector3 position, Quaternion rotation)
     {
         GameObject root = Pickup("Broom (pickup)", position, rotation, PickupItem.Item.Broom, "PICK UP THE BROOM");
         if (held != null)

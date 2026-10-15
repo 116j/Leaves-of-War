@@ -67,6 +67,8 @@ namespace Hortensia.Runtime
             if (show)
             {
                 string text = string.Format(format, prompt);
+                if (BroomSweeper.Holding && !text.Contains("["))
+                    text = "[" + ScreenPrompt.KeyName(player.InteractAction, "E") + "] " + text;
                 if (label.text != text)
                 {
                     label.text = text;

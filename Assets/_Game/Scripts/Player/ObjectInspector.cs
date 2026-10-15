@@ -58,6 +58,8 @@ public sealed class ObjectInspector : MonoBehaviour
     private TMP_Text titleText;
     private TMP_Text descriptionText;
     private TMP_Text closeLabel;
+    private ScrollRect descriptionScroll;
+    private RectTransform descriptionArea;
 
     private Vector2 lastPointer;
     private bool dragging;
@@ -142,6 +144,8 @@ public sealed class ObjectInspector : MonoBehaviour
 
         titleText.text = item.DisplayName;
         descriptionText.text = item.Description;
+        if (descriptionScroll != null)
+            descriptionScroll.verticalNormalizedPosition = 1f;
         panel.SetActive(true);
 
         if (item.Voice != null)
@@ -235,8 +239,8 @@ public sealed class ObjectInspector : MonoBehaviour
             return;
         if (mouse.leftButton.wasPressedThisFrame)
         {
-            dragging = true;
             lastPointer = mouse.position.ReadValue();
+            dragging = previewRect == null || RectTransformUtility.RectangleContainsScreenPoint(previewRect, lastPointer, null);
         }
         else if (mouse.leftButton.wasReleasedThisFrame)
             dragging = false;
@@ -259,10 +263,26 @@ public sealed class ObjectInspector : MonoBehaviour
         float scroll = mouse.scroll.ReadValue().y;
         if (Mathf.Approximately(scroll, 0f))
             return;
-        if (previewRect == null || !RectTransformUtility.RectangleContainsScreenPoint(previewRect, mouse.position.ReadValue(), null))
+        Vector2 pointer = mouse.position.ReadValue();
+        if (descriptionArea != null && RectTransformUtility.RectangleContainsScreenPoint(descriptionArea, pointer, null))
+        {
+            ScrollDescription(Mathf.Sign(scroll));
+            return;
+        }
+        if (previewRect == null || !RectTransformUtility.RectangleContainsScreenPoint(previewRect, pointer, null))
             return;
         zoom = Mathf.Clamp(zoom - scroll * zoomSensitivity, minZoom, maxZoom);
         ApplyZoom();
+    }
+
+    private void ScrollDescription(float direction)
+    {
+        if (descriptionScroll == null || descriptionScroll.content == null || descriptionScroll.viewport == null)
+            return;
+        float overflow = descriptionScroll.content.rect.height - descriptionScroll.viewport.rect.height;
+        if (overflow <= 1f)
+            return;
+        descriptionScroll.verticalNormalizedPosition = Mathf.Clamp01(descriptionScroll.verticalNormalizedPosition + direction * 70f / overflow);
     }
 
     private static void EnsureEventSystem()
@@ -417,7 +437,7 @@ public sealed class ObjectInspector : MonoBehaviour
         TextMeshProUGUI description = descriptionObject.GetComponent<TextMeshProUGUI>();
         description.font = textFont;
         description.fontSize = descriptionSize;
-        description.alignment = TextAlignmentOptions.Top;
+        description.alignment = TextAlignmentOptions.TopLeft;
         description.color = new Color(0.9f, 0.86f, 0.74f);
         description.raycastTarget = false;
         description.textWrappingMode = TextWrappingModes.Normal;
@@ -430,8 +450,10 @@ public sealed class ObjectInspector : MonoBehaviour
         scroll.horizontal = false;
         scroll.vertical = true;
         scroll.movementType = ScrollRect.MovementType.Clamped;
-        scroll.scrollSensitivity = 20f;
+        scroll.scrollSensitivity = 0f;
         scrollObject.AddComponent<ArrowKeyScroll>();
+        descriptionScroll = scroll;
+        descriptionArea = (RectTransform)scrollObject.transform;
 
         var buttonObject = new GameObject("Close Button", typeof(RectTransform), typeof(Image), typeof(Button));
         buttonObject.transform.SetParent(panel.transform, false);
@@ -446,7 +468,7 @@ public sealed class ObjectInspector : MonoBehaviour
         closeLabel.text = "PUT DOWN";
 
         TMP_Text hint = Text(panel.transform, "DragHint", 20f, new Vector2(384f, 15f), new Vector2(-384f, -1030f), TextAlignmentOptions.Bottom, menuFont);
-        hint.text = "DRAG TO ROTATE, MOUSE WHEEL TO ZOOM IN OR OUT, ARROWS TO SCROLL THE TEXT";
+        hint.text = "DRAG THE OBJECT TO ROTATE IT, MOUSE WHEEL ON THE OBJECT TO ZOOM, ON THE TEXT (OR ARROWS) TO SCROLL IT";
 
         panel.SetActive(false);
     }

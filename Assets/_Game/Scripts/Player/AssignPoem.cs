@@ -26,6 +26,13 @@ public class AssignPoem : RevealableObject
 
     public PoemInfo poemInfo;
 
+    [Header("Fragment")]
+    [Tooltip("0 = a whole poem. 1, 2, 3... = this is that piece of a poem split across the room (same Poem Id on every piece).")]
+    [SerializeField, Min(0)] private int _fragment;
+    [SerializeField, Min(1)] private int _fragmentCount = 1;
+    [Tooltip("The lines of this piece: shown on the floor and written in the notebook. When every piece is transcribed they join into the whole poem (Assigned Poem Text, or all the pieces in order if that is empty).")]
+    [SerializeField, TextArea(2, 8)] private string _fragmentText;
+
     [Header("Floor Writing")]
     [SerializeField] private Color _floorColor = new Color(0.12f, 0.08f, 0.05f, 0.85f);
     [SerializeField, Range(0f, 0.4f)] private float _floorPadding = 0.12f;
@@ -33,6 +40,10 @@ public class AssignPoem : RevealableObject
     [SerializeField, Min(0.1f)] private float _fadeSeconds = 2.5f;
 
     public int PoemId => _poemId;
+    public int Fragment => _fragment;
+    public int FragmentCount => _fragmentCount;
+    public bool IsFragment => _fragment > 0;
+    public string FragmentText => _fragmentText;
     public override bool HasFootprint => true;
     public override Bounds Footprint => footprint;
 
@@ -52,7 +63,8 @@ public class AssignPoem : RevealableObject
         if (poemInfo._poemsList == null)
             poemInfo._poemsList = new List<PoemInfoContainer>();
 
-        poemInfo._poemsList.Add(new PoemInfoContainer
+        if (!IsFragment || _fragment == 1)
+            poemInfo._poemsList.Add(new PoemInfoContainer
         {
             poemId = _poemId,
             poemName = _assignedPoemName,
@@ -70,9 +82,23 @@ public class AssignPoem : RevealableObject
             c.enabled = false;
     }
 
-    private void OnEnable() => TranscribePoem.Transcribed += OnTranscribed;
+    private void OnEnable()
+    {
+        TranscribePoem.Transcribed += OnTranscribed;
+        TranscribePoem.FragmentTranscribed += OnFragmentTranscribed;
+    }
 
-    private void OnDisable() => TranscribePoem.Transcribed -= OnTranscribed;
+    private void OnDisable()
+    {
+        TranscribePoem.Transcribed -= OnTranscribed;
+        TranscribePoem.FragmentTranscribed -= OnFragmentTranscribed;
+    }
+
+    private void OnFragmentTranscribed(int poemId, int fragment)
+    {
+        if (poemId == _poemId && fragment == _fragment)
+            fading = true;
+    }
 
     private void Start() => BuildFloorText();
 
@@ -95,7 +121,9 @@ public class AssignPoem : RevealableObject
         TranscribePoem transcribe = FindAnyObjectByType<TranscribePoem>();
         if (transcribe != null && transcribe.PoemFont != null)
             floorText.font = transcribe.PoemFont;
-        floorText.text = "<size=125%>" + (_assignedPoemName ?? "").Trim() + "</size>\n\n" + (_assignedPoemText ?? "").Trim();
+        floorText.text = IsFragment
+            ? (_fragment == 1 ? "<size=125%>" + (_assignedPoemName ?? "").Trim() + "</size>\n\n" : "") + (_fragmentText ?? "").Trim()
+            : "<size=125%>" + (_assignedPoemName ?? "").Trim() + "</size>\n\n" + (_assignedPoemText ?? "").Trim();
         floorText.alignment = TextAlignmentOptions.Center;
         floorText.enableAutoSizing = true;
         floorText.fontSizeMin = 0.05f;

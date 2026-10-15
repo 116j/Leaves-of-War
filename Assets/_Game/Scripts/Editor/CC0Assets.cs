@@ -689,8 +689,10 @@ public sealed class CC0Assets : EditorWindow
             }
         }
 
+        int racks = CoatRackClothes.Apply(scene);
         EditorSceneManager.MarkSceneDirty(scene);
-        log.Add(placed + " models placed, " + textured + " greybox materials textured, " + papers + " papers, letters and drawings.");
+        log.Add(placed + " models placed, " + textured + " greybox materials textured, " + papers + " papers, letters and drawings" +
+            (racks > 0 ? ", clothes on " + racks + " coat rack(s)." : "."));
         if (missingSources.Count > 0)
             log.Add(missing + " placeholders still greybox, missing:\n  " + string.Join("\n  ", missingSources));
         log.Add("\nIf a model faces the wrong way, rotate its \"" + ModelChild + "\" child by 180 (Apply keeps it).");

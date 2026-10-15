@@ -117,7 +117,7 @@ namespace Hortensia.Runtime
                 fullScreen = true,
                 vSync = true,
                 fpsLimit = 60,
-                fieldOfView = 58f,
+                fieldOfView = 80f,
                 shadowQuality = 3,
                 antiAliasing = true,
                 subtitlesEnabled = true,

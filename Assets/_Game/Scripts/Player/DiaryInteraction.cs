@@ -43,6 +43,9 @@ public class DiaryInteraction : KeyboardControl
     [SerializeField, Range(0.05f, 0.4f)] private float boardThickness = 0.16f;
     [Tooltip("How far the covers stick out past the pages, as a fraction of the page height.")]
     [SerializeField, Range(0f, 0.1f)] private float boardOverhang = 0.025f;
+    [Header("Close Hint")]
+    [SerializeField] private string closeHint = "PRESS {0} TO CLOSE THE NOTEBOOK";
+    [SerializeField, Min(8f)] private float closeHintSize = 28f;
 
     public static bool IsReading { get; private set; }
     public static bool IsWriting { get; private set; }
@@ -51,6 +54,7 @@ public class DiaryInteraction : KeyboardControl
 
     private FirstPersonController player;
     private ReadingBlur blur;
+    private TMPro.TextMeshProUGUI closePrompt;
     private Camera viewCamera;
     private Canvas pages;
     private Canvas pageCanvas;
@@ -102,6 +106,7 @@ public class DiaryInteraction : KeyboardControl
         viewCamera = player != null && player.PlayerCamera != null ? player.PlayerCamera : Camera.main;
         transcribe = FindAnyObjectByType<TranscribePoem>();
         blur = GetComponent<ReadingBlur>();
+        closePrompt = ScreenPrompt.Create(transform, "Notebook Close Hint", closeHintSize, 40f);
         if (openClip == null)
             openClip = Resources.Load<AudioClip>("Audio/DiaryOpen");
         if (closeClip == null)
@@ -303,6 +308,7 @@ public class DiaryInteraction : KeyboardControl
     {
         IsReading = false;
         IsWriting = false;
+        ScreenPrompt.Show(closePrompt, false, null);
     }
 
     private void OnDestroy()
@@ -313,6 +319,9 @@ public class DiaryInteraction : KeyboardControl
 
     protected override void Update()
     {
+        bool hint = HasDiary && IsReading && !busy && !DialogueRunner.IsPlaying &&
+            !(PauseController.Instance != null && PauseController.Instance.IsPaused);
+        ScreenPrompt.Show(closePrompt, hint, string.Format(closeHint, ScreenPrompt.KeyName(player != null ? player.DiaryAction : null, "I")));
         if (!HasDiary)
             return;
         bool pressed = player != null && player.DiaryAction != null

@@ -1,29 +1,15 @@
 LEAVES OF WAR
 
-A game by TheCelticArtist
+MADE BY
 
-Team Lead, Game Design, 2D Art
-TheCelticArtist
-
-Programming
-TheCelticArtist
-[Nome]
-
-3D Art
-Niko
-[Nome]
-
-Voice Cast
-Giuseppe Ungaretti — Tommaso Motteran
-Guillaume Apollinaire — Usagi-Chan ASMR
-Carlo, Pietro, Rui, Leone, Lucien — Tommaso Motteran
-
-Music
-Benno Roch Jr.
-Tommaso Motteran
-
-Sound Design
-[Nome]
+TheCelticArtist — Team Lead, Developer, Game Designer & 2D Artist
+E2Dev — Developer
+Niko — 3D Artist
+MIDORIUZU — 3D Artist
+Tommaso Motteran — Voice Actor (Giuseppe Ungaretti and cast) & Music
+Usagi-Chan ASMR — Voice Actor (Guillaume Apollinaire)
+Benno Roch Jr. — Composer
+Brage J. Pedersen — Sound Designer
 
 TEXTURES
 
@@ -33,7 +19,8 @@ Oak leaf - Petr Ganaj (Pexels)
 Gold foil - pxhere via rawpixel (CC0)
 "Fliederfarbene Iris" (c. 1835) - Leopold Zinnöger, Belvedere via rawpixel (CC0)
 Wood066 - ambientCG.com (CC0)
-Old Wood Floor, Painted Plaster Wall, Patterned Plaster Wall, Plastered Wall, Worn Plaster Wall, Beige Wall 001, Wood Table Worn, Marble 01, Caban, Terrazzo Tiles, Herringbone Parquet, Weathered Planks, Weathered Brown Planks, Red Dirt Mud 01, Rock Face 03, Rocky Terrain, Forest Floor, Mud Forest - Poly Haven, polyhaven.com (CC0)
+Historic courtyard in San Fernando, Spain - Explorando la provincia de Cádiz (Pexels)
+Old Wood Floor, Brown Leather, Painted Plaster Wall, Patterned Plaster Wall, Plastered Wall, Worn Plaster Wall, Beige Wall 001, Wood Table Worn, Marble 01, Caban, Terrazzo Tiles, Herringbone Parquet, Weathered Planks, Weathered Brown Planks, Red Dirt Mud 01, Rock Face 03, Rocky Terrain, Forest Floor, Mud Forest - Poly Haven, polyhaven.com (CC0)
 
 3D MODELS
 
@@ -52,6 +39,7 @@ Textured LowPoly Trees - Quaternius, quaternius.com (CC0)
 "Potbelly Stove (Old Stove/Classic Stove)" - XsTerbEnX (CC BY 4.0)
 "Victorian Curtains" - Abdullah_Mohammed (CC BY 4.0)
 "Low Poly Garden Tools" - Zsky (CC BY 4.0)
+"Broom" - JmPrsh153 (CC BY 4.0)
 "PSX style modular walls & fences" - valsekamerplant (CC0)
 "Rocks (Natural 3D Low-Poly Props)" - Almighty Assets (custom licence)
 "Realistic HD Red Oak Leaf Litter 2036" - PlantCatalog (CC BY 4.0)

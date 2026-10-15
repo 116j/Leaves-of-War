@@ -42,6 +42,7 @@ public class BroomSweeper : MonoBehaviour
     public static bool Active { get; private set; }
     public static bool Ready { get; private set; }
     public bool HasBroom { get; private set; }
+    public static bool Holding { get; private set; }
     public int PushedTotal => pushedTotal;
 
     private FirstPersonController player;
@@ -91,6 +92,7 @@ public class BroomSweeper : MonoBehaviour
     {
         Active = false;
         Ready = false;
+        Holding = false;
         ScreenPrompt.Show(prompt, false, null);
     }
 
@@ -104,13 +106,14 @@ public class BroomSweeper : MonoBehaviour
     private bool CanSweep =>
         HasBroom && player != null && player.SweepAction != null && LeafField.Instance != null &&
         Cursor.lockState == CursorLockMode.Locked && Time.timeScale > 0f &&
-        !DiaryInteraction.IsRaised && !DialogueRunner.LocksPlayer && !Examinable.IsOpen &&
+        !DiaryInteraction.IsRaised && !DialogueRunner.LocksPlayer && !Examinable.IsOpen && !LevelFlow.SweepBlocked &&
         !(PauseController.Instance != null && PauseController.Instance.IsPaused);
 
     private void Update()
     {
         bool can = CanSweep;
         Ready = can;
+        Holding = HasBroom;
         bool sweeping = can && player.SweepAction.IsPressed();
         Active = sweeping;
         float dt = Time.deltaTime;

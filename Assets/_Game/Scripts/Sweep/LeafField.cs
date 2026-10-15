@@ -332,13 +332,19 @@ public class LeafField : MonoBehaviour
         UpdateCoverage();
     }
 
-    public void ClearRemaining(float spread = 0.8f)
+    public void ClearRemaining(float spread = 0.8f) => ClearRemainingExcept(null, spread);
+
+    public void ClearRemainingExcept(ICollection<RevealableObject> keep, float spread = 0.8f)
     {
         if (position == null)
             return;
+        var kept = keep == null ? new List<Rect>() : spots.Where(s => keep.Contains(s.Target)).Select(s => s.Rect).ToList();
         for (int i = 0; i < count; i++)
         {
             if (life[i] != Alive)
+                continue;
+            Vector2 flat = new Vector2(position[i].x, position[i].z);
+            if (kept.Any(r => r.Contains(flat)))
                 continue;
             life[i] = vanishDuration + Random.Range(0f, spread);
             velocity[i] = Vector2.zero;

@@ -394,6 +394,17 @@ public class Book : MonoBehaviour {
         }
     }
     Coroutine currentCoroutine;
+    public int Spread => flipItr;
+
+    public void ShowSpread(int index)
+    {
+        index = Mathf.Clamp(index, 1, 5);
+        currentPage = Mathf.Clamp((index - 1) * 2, 0, Mathf.Max(0, bookPages.Length));
+        flipItr = index;
+        UpdateSprites();
+        CurrentPageCount?.Invoke(flipItr);
+    }
+
     void UpdateSprites()
     {
         LeftNext.sprite= (currentPage > 0 && currentPage <= bookPages.Length) ? bookPages[currentPage-1] : background;

@@ -14,9 +14,9 @@ internal static class PaperProps
 
     private static readonly (string target, Kind kind, int seed, string caption)[] Targets =
     {
-        ("Folded Newspaper 1914", Kind.Newspaper, 1, "This morning's paper. All of Europe talks of nothing but war."),
-        ("Exercise Sheets", Kind.Exercise, 2, "My pupils' homework. They conjugate French verbs better than I can put my own thoughts in order."),
-        ("Letters and Envelopes", Kind.Letter, 3, "Moammed's letters. He wrote them at night, at this desk. He never sent them."),
+        ("Folded Newspaper 1914", Kind.Newspaper, 1, "This morning's paper. All of Europe talks of nothing but war.\n\n<b>MILAN — EVENING EDITION — 3 AUGUST 1914</b>\n\n<b>ITALY DECLARES ITS NEUTRALITY</b>\nThe Government announced last night that the Kingdom will take no part in the conflict now spreading across Europe. The Triple Alliance, the Council of Ministers declared, is a pact of defence, and the war Austria-Hungary has opened against Serbia is not a war of defence.\n\n<b>GERMANY AT WAR WITH RUSSIA AND FRANCE</b>\nTelegrams from Berlin confirm the general mobilisation. Trains full of soldiers leave the stations every hour. In Paris the crowds sing in the boulevards; in Vienna, in the squares.\n\n<b>IN THE CITY</b>\nLong queues outside the banks since dawn. The price of bread has risen by two centesimi. In the cafés of the Galleria, students argue until late into the night: some say Italy must stay out, others that she cannot stay out for long.\n\n<b>WEATHER</b>\nClear skies over Lombardy. Wind from the north in the evening."),
+        ("Exercise Sheets", Kind.Exercise, 2, "My pupils' homework. They conjugate French verbs better than I can put my own thoughts in order.\n\n<b>Exercise 12 — Conjugate in the present tense.</b>\n<i>être</i>: je suis, tu es, il est, nous sommes, vous êtes, ils sont.\n<i>avoir</i>: j'ai, tu as, il a, nous avons, vous avez, ils ont.\n<i>partir</i>: je pars, tu pars, il part, nous partons, vous partez, ils partent.\n<i>tomber</i>: je tombe, tu tombes, il tombe, nous tombons, vous tombez, ils tombent.\n\n<b>Exercise 13 — Translate into French.</b>\nThe leaves fall in the courtyard. — <i>Les feuilles tombent dans la cour.</i>\nMy brother leaves for the army. — <i>Mon frère part pour l'armée.</i>\nWe will write to him every week. — <i>Nous lui écrirons chaque semaine.</i>\n\n<color=#8b2a1a>In red ink, in the margin: Good. Watch the accents. — G.U.</color>"),
+        ("Letters and Envelopes", Kind.Letter, 3, "Moammed's letters. He wrote them at night, at this desk. He never sent them.\n\n<i>Paris, rue des Carmes, a winter night.</i>\n\nDear mother,\n\nHere they call me Marcel. I wear their coats, I speak their language, I drink coffee in their cafés and laugh when they laugh. But when I close my eyes I still hear the sea at Alexandria, and the voice of the muezzin over the roofs.\n\nI do not know how to tell you who I am now. I am no longer the son you remember, and I have not become anyone else.\n\nGiuseppe writes all night by the candle. He says that words can hold a man together. I try, but mine fall apart before the end of the page.\n\nI will write again tomorrow. Perhaps tomorrow I will send it.\n\n— M."),
         ("Drawing on Floor 1", Kind.Drawing, 11, "One of Antonietto's drawings. He always drew the sun bigger than the house."),
         ("Drawing on Floor 2", Kind.Drawing, 12, "Another drawing. All three of us, hand in hand."),
         ("Drawing on Wall 1", Kind.Drawing, 13, "He hung this one himself, crooked. No one has had the heart to straighten it."),
@@ -32,7 +32,10 @@ internal static class PaperProps
         "Un disegno di Antonietto. Il sole lo faceva sempre più grande della casa.",
         "Un altro disegno. Ci siamo tutti e tre, mano nella mano.",
         "L'aveva appeso lui, storto. Nessuno ha avuto il coraggio di raddrizzarlo.",
-        "Il giardino, con l'albero e le farfalle. Diceva che l'albero era suo."
+        "Il giardino, con l'albero e le farfalle. Diceva che l'albero era suo.",
+        "This morning's paper. All of Europe talks of nothing but war.",
+        "My pupils' homework. They conjugate French verbs better than I can put my own thoughts in order.",
+        "Moammed's letters. He wrote them at night, at this desk. He never sent them."
     };
 
     internal static int Apply(Scene scene, bool point)
