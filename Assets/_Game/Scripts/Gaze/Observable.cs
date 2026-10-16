@@ -38,7 +38,6 @@ public class Observable : MonoBehaviour
         }
         OnSeen.AddListener(() =>
         {
-            Debug.Log("Seen");
             _unseenTime = 0f;
             IsSeen = true;
             _gazeManagerSeen = true;
@@ -46,7 +45,6 @@ public class Observable : MonoBehaviour
 
         OnUnseen.AddListener(() =>
         {
-            Debug.Log("Unseen");
             IsSeen = false;
         });
     }

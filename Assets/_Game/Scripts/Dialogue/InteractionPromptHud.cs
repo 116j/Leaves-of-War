@@ -53,6 +53,9 @@ namespace Hortensia.Runtime
                 Instance = null;
         }
 
+        private string lastPrompt;
+        private bool lastHolding;
+
         private void Update()
         {
             if (player == null)
@@ -64,8 +67,10 @@ namespace Hortensia.Runtime
                 : string.Empty;
 
             bool show = !string.IsNullOrWhiteSpace(prompt);
-            if (show)
+            if (show && (prompt != lastPrompt || BroomSweeper.Holding != lastHolding))
             {
+                lastPrompt = prompt;
+                lastHolding = BroomSweeper.Holding;
                 string text = string.Format(format, prompt);
                 if (BroomSweeper.Holding && !text.Contains("["))
                     text = "[" + ScreenPrompt.KeyName(player.InteractAction, "E") + "] " + text;
@@ -85,6 +90,7 @@ namespace Hortensia.Runtime
 
         private void ApplyStyle()
         {
+            lastPrompt = null;
             TextStyle style = GameSettings.Current.screenStyle;
             label.fontSize = size * style.scale;
             plateImage.color = style.backgroundColor;

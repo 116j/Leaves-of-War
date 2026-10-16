@@ -160,7 +160,7 @@ public class BroomSweeper : MonoBehaviour
 
         bool inField = LeafField.Instance != null && LeafField.Instance.Area.Contains(new Vector3(body.position.x, LeafField.Instance.Area.center.y, body.position.z));
         bool hint = can && !sweeping && inField && pushedTotal < hintLeaves;
-        ScreenPrompt.Show(prompt, hint, string.Format(promptFormat, ScreenPrompt.KeyName(player != null ? player.SweepAction : null, "LMB")));
+        ScreenPrompt.Show(prompt, hint, hint ? string.Format(promptFormat, ScreenPrompt.KeyName(player != null ? player.SweepAction : null, "LMB")) : null);
     }
 
     private void UpdateBroom(bool sweeping, float dt)

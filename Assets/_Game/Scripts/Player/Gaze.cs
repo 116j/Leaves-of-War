@@ -41,12 +41,12 @@ public static class Gaze
 
         Vector3 c = bounds.center;
         Vector3 e = bounds.extents;
-        Vector3[] samples =
-        {
-            c, c + new Vector3(e.x, 0f, e.z) * 0.8f, c + new Vector3(-e.x, 0f, e.z) * 0.8f,
-            c + new Vector3(e.x, 0f, -e.z) * 0.8f, c + new Vector3(-e.x, 0f, -e.z) * 0.8f
-        };
-        foreach (Vector3 point in samples)
+        Samples[0] = c;
+        Samples[1] = c + new Vector3(e.x, 0f, e.z) * 0.8f;
+        Samples[2] = c + new Vector3(-e.x, 0f, e.z) * 0.8f;
+        Samples[3] = c + new Vector3(e.x, 0f, -e.z) * 0.8f;
+        Samples[4] = c + new Vector3(-e.x, 0f, -e.z) * 0.8f;
+        foreach (Vector3 point in Samples)
         {
             Vector3 viewport = cam.WorldToViewportPoint(point);
             if (viewport.z <= 0f || viewport.x < edge || viewport.x > 1f - edge || viewport.y < edge || viewport.y > 1f - edge)
@@ -70,10 +70,15 @@ public static class Gaze
         return IsSeen(b, maxDistance, 0.06f, target.transform);
     }
 
+    private static readonly Vector3[] Samples = new Vector3[5];
+    private static readonly RaycastHit[] Hits = new RaycastHit[16];
+
     private static bool Blocked(Vector3 from, Vector3 to, Transform ignore)
     {
-        foreach (RaycastHit hit in Physics.RaycastAll(from, to - from, Vector3.Distance(from, to) - 0.05f, ~0, QueryTriggerInteraction.Ignore))
+        int count = Physics.RaycastNonAlloc(from, to - from, Hits, Vector3.Distance(from, to) - 0.05f, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
         {
+            RaycastHit hit = Hits[i];
             if (hit.collider.GetComponentInParent<CharacterController>() != null)
                 continue;
             if (hit.collider.GetComponentInParent<PickupItem>() != null)

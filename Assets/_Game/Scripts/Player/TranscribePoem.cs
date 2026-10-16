@@ -90,6 +90,8 @@ public class TranscribePoem : RevealableObject
 
     private static readonly Dictionary<int, PoemInfoContainer> Written = new();
 
+    public static void NewSession() => ResetSession();
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
@@ -362,7 +364,7 @@ public class TranscribePoem : RevealableObject
         }
 
         bool showPrompt = (joining && IsTranscribing || open && activePoem != null && activePoem.IsRevealed) && playing && !DiaryInteraction.IsReading && !(holding && DiaryInteraction.IsWriting);
-        ScreenPrompt.Show(prompt, showPrompt, string.Format(_promptFormat, ScreenPrompt.KeyName(player != null ? player.WriteAction : null, "T")));
+        ScreenPrompt.Show(prompt, showPrompt, showPrompt ? string.Format(_promptFormat, ScreenPrompt.KeyName(player != null ? player.WriteAction : null, "T")) : null);
     }
 
     private void Gust()
@@ -509,7 +511,7 @@ public class TranscribePoem : RevealableObject
         ShowPoemSpread(poemId);
         SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
         string wholeBody = !string.IsNullOrWhiteSpace(poem.poemText) ? poem.poemText : JoinedFragments(poemId, int.MaxValue);
-        SplitBody(piece != null ? Titled(poem, JoinedFragments(poemId, piece.Fragment)) : joining ? Titled(poem, wholeBody) : BodyFor(poem), _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+        SplitBody(piece != null ? Titled(poem, (piece.FragmentText ?? string.Empty).Trim(), piece.Fragment, piece.FragmentCount) : joining ? Titled(poem, wholeBody) : BodyFor(poem), _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
         TextMeshProUGUI headerLine = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
         if (piece != null && piece.Fragment > 1 && headerLine != null)
             sections.Remove(headerLine);
@@ -523,20 +525,6 @@ public class TranscribePoem : RevealableObject
         if (piece != null && piece.Fragment > 1 && headerLine != null)
             SetReveal(headerLine, 1f);
         float[] from = new float[sections.Count];
-        if (piece != null)
-        {
-            string before = JoinedFragments(poemId, piece.Fragment - 1);
-            int previous = before.Length > 0 ? 2 + before.Split('\n').Length + 1 : 0;
-            for (int i = 0; i < sections.Count; i++)
-            {
-                if (sections[i] == headerLine)
-                    continue;
-                int lines = Mathf.Max(1, sections[i].text.Split('\n').Length);
-                from[i] = Mathf.Clamp01(previous / (float)lines);
-                previous = Mathf.Max(0, previous - lines);
-                SetReveal(sections[i], from[i]);
-            }
-        }
 
         voiceStarted = false;
         started = false;
@@ -887,6 +875,22 @@ public class TranscribePoem : RevealableObject
                 ? HeaderText(poem)
                 : string.Empty;
         }
+        FitHeader(line);
+    }
+
+    private void FitHeader(TextMeshProUGUI header)
+    {
+        if (header == null || string.IsNullOrEmpty(header.text))
+            return;
+        if (!baseSizes.TryGetValue(header, out float size))
+            baseSizes[header] = size = header.fontSize;
+        header.fontSize = size;
+        float width = header.rectTransform.rect.width - header.margin.x - header.margin.z;
+        if (width <= 1f)
+            return;
+        float preferred = header.GetPreferredValues(header.text).x;
+        if (preferred > width)
+            header.fontSize = Mathf.Max(size * 0.5f, size * width / preferred * 0.98f);
     }
 
     private string HeaderText(PoemInfoContainer poem)
@@ -897,6 +901,14 @@ public class TranscribePoem : RevealableObject
         if (date.Length == 0 || place.Length == 0)
             return date + place;
         return string.Format(format, date, place);
+    }
+
+    private string Titled(PoemInfoContainer poem, string body, int fragment, int count)
+    {
+        string title = (poem?.poemName ?? "").Trim();
+        if (title.Length == 0 || count <= 1)
+            return Titled(poem, body);
+        return "<size=" + _titleSize.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "%>" + title + "</size>  <size=80%>" + fragment + "/" + count + "</size>\n\n" + (body ?? string.Empty).TrimStart('\n', '\r');
     }
 
     private string Titled(PoemInfoContainer poem, string body)

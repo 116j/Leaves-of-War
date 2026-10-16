@@ -1220,6 +1220,7 @@ namespace Hortensia.Runtime
             }
 
             starting = true;
+            TranscribePoem.NewSession();
             StartCoroutine(Gust(() =>
             {
                 StartCoroutine(FadeScreen.Instance.DarkenScreen(1f, () => SceneManager.LoadScene(newGameScene)));
