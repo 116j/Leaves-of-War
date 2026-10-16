@@ -263,7 +263,7 @@ public class LevelFlow : MonoBehaviour
     private bool Done(Step step)
     {
         bool done = true;
-        foreach(Condition cond in Enum.GetValues(typeof(Condition)))
+        foreach (Condition cond in Enum.GetValues(typeof(Condition)))
         {
             if (cond == Condition.None) continue;
             if (!step.waitFor.HasFlag(cond)) continue;
@@ -309,27 +309,27 @@ public class LevelFlow : MonoBehaviour
                     done = done && IsBehaviourChanged(step.observableIndex);
                     break;
                 case Condition.FragmentFound:
-                {
-                    AssignPoem piece = Fragment(step.fragment);
-                    if (piece != null && transcribe != null && piece.IsRevealed && transcribe.ActivePoem != piece && !transcribe.IsTranscribing)
-                        transcribe.OnPoemRevealed(piece);
-                    done = done && (piece == null || transcribe == null || piece.IsRevealed && transcribe.ActivePoem == piece);
-                    break;
-                }
+                    {
+                        AssignPoem piece = Fragment(step.fragment);
+                        if (piece != null && transcribe != null && piece.IsRevealed && transcribe.ActivePoem != piece && !transcribe.IsTranscribing)
+                            transcribe.OnPoemRevealed(piece);
+                        done = done && (piece == null || transcribe == null || piece.IsRevealed && transcribe.ActivePoem == piece);
+                        break;
+                    }
                 case Condition.FragmentTranscribed:
-                {
-                    AssignPoem piece = Fragment(step.fragment);
-                    done = done && (piece == null || transcribe == null || transcribe.FragmentsDone(piece.PoemId) >= step.fragment);
-                    break;
-                }
+                    {
+                        AssignPoem piece = Fragment(step.fragment);
+                        done = done && (piece == null || transcribe == null || transcribe.FragmentsDone(piece.PoemId) >= step.fragment);
+                        break;
+                    }
                 case Condition.LookAtObservable:
-                {
-                    bool seen = observables != null && step.observableIndex >= 0 && step.observableIndex < observables.Length &&
-                        observables[step.observableIndex] != null && observables[step.observableIndex].IsSeen;
-                    lookTime = seen && !DialogueRunner.IsPlaying ? lookTime + Time.deltaTime : 0f;
-                    done = done && lookTime >= 0.4f;
-                    break;
-                }
+                    {
+                        bool seen = observables != null && step.observableIndex >= 0 && step.observableIndex < observables.Length &&
+                            observables[step.observableIndex] != null && observables[step.observableIndex].IsSeen;
+                        lookTime = seen && !DialogueRunner.IsPlaying ? lookTime + Time.deltaTime : 0f;
+                        done = done && lookTime >= 0.4f;
+                        break;
+                    }
             }
         }
 
@@ -397,9 +397,12 @@ public class LevelFlow : MonoBehaviour
         switch (step.action)
         {
             case StepAction.MoveObjectWhenUnseen:
-                changeBehaviourSet = true;
-                changeBehaviour = observables[step.observableIndex].GetComponent<ChangeBehaviour>();
-                observables[step.observableIndex].OnChangeAllowed.AddListener(changeBehaviour.OnChange);
+                if (observables != null && observables.Length > step.observableIndex)
+                {
+                    changeBehaviourSet = true;
+                    changeBehaviour = observables[step.observableIndex].GetComponent<ChangeBehaviour>();
+                    observables[step.observableIndex].OnChangeAllowed.AddListener(changeBehaviour.OnChange);
+                }
                 break;
             case StepAction.ShowFollowerLeaf:
                 FollowerLeaf.Spawn();
