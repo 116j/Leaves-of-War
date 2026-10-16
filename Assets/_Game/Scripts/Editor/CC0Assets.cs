@@ -20,6 +20,7 @@ public sealed class CC0Assets : EditorWindow
     private const string ModelChild = "CC0 Model";
     private const string Quaternius = "q:trees";
     private const string LocalRoot = "Assets/_Game/Art/3D";
+    private const string ImportRoot = "Assets/_Game/Art/3D/Import";
     private const string RealBroom = "ld:Broom";
     private const string RealBroomPage = "https://sketchfab.com/3d-models/broom-3c16a94db7bd4ea8946896824a46b193";
     private const string PsxKey = "LeavesOfWar.CC0.Psx";
@@ -82,18 +83,21 @@ public sealed class CC0Assets : EditorWindow
 
     private static readonly ModelEntry[] Models =
     {
-        new ModelEntry(L1, "Broom_Stick", Fit.Aligned, RealBroom, "pt:GardenTools/Models/Broom.fbx"),
-        new ModelEntry(L1, "Broom (pickup)/Model", Fit.Aligned, RealBroom, "pt:GardenTools/Models/Broom.fbx"),
-        new ModelEntry(L1, "Iron Bed", S, GF + "Bed.prefab"),
-        new ModelEntry(L1, "Walnut Table", S, "ph:WoodenTable_01", GF + "DinnerTable.prefab"),
-        new ModelEntry(L1, "Walnut Table/French Grammar Books", S, "ph:book_encyclopedia_set_01"),
-        new ModelEntry(L1, "Glass Ink Pot", U, "pt:ink/stoneware_ink_bottle.glb"),
-        new ModelEntry(L1, "Brass Oil Lamp", U, "ph:vintage_oil_lamp"),
-        new ModelEntry(L1, "Bentwood Chair (moves)", U, GF + "Chair.prefab", "ph:WoodenChair_01"),
-        new ModelEntry(L1, "Wardrobe (carved cornice)", S, "pt:wardrobe/source/Wardrobe Filled.fbx", "ph:GothicCabinet_01"),
-        new ModelEntry(L1, "Marble Washstand/Cabinet", S, GF + "Dresser.prefab", "ph:vintage_cabinet_01"),
-        new ModelEntry(L1, "Marble Washstand/Jug", U, "ph:jug_01"),
-        new ModelEntry(L1, "Coat Hooks", Fit.Standing, "pt:coat-rack/source/Hanger.fbx"),
+        new ModelEntry(L1, "Broom_Stick", Fit.Aligned, "im:broom|scopa", RealBroom, "pt:GardenTools/Models/Broom.fbx"),
+        new ModelEntry(L1, "Broom (pickup)/Model", Fit.Aligned, "im:broom|scopa", RealBroom, "pt:GardenTools/Models/Broom.fbx"),
+        new ModelEntry(L1, "Iron Bed", S, "im:bed|letto", GF + "Bed.prefab"),
+        new ModelEntry(L1, "Walnut Table", S, "im:table|tavol|desk|scrivania", "ph:WoodenTable_01", GF + "DinnerTable.prefab"),
+        new ModelEntry(L1, "Walnut Table/French Grammar Books", S, "im:book|libr|grammar|grammatic", "ph:book_encyclopedia_set_01"),
+        new ModelEntry(L1, "Glass Ink Pot", U, "im:ink|inchiostro|calamaio", "pt:ink/stoneware_ink_bottle.glb"),
+        new ModelEntry(L1, "Dip Pen", U, "im:dippen|dip_pen|dip pen|quill|penna|pennino"),
+        new ModelEntry(L1, "Folded Newspaper 1914", U, "im:newspaper|giornale"),
+        new ModelEntry(L1, "Brass Oil Lamp", U, "im:lamp|lume|lanterna", "ph:vintage_oil_lamp"),
+        new ModelEntry(L1, "Bentwood Chair (moves)", U, "im:chair|sedia", GF + "Chair.prefab", "ph:WoodenChair_01"),
+        new ModelEntry(L1, "Wardrobe (carved cornice)", S, "im:wardrobe|armadio", "pt:wardrobe/source/Wardrobe Filled.fbx", "ph:GothicCabinet_01"),
+        new ModelEntry(L1, "Marble Washstand/Cabinet", S, "im:washstand|lavabo|lavamano|toeletta|cabinet|comodino|mobiletto|cassettiera|dresser", GF + "Dresser.prefab", "ph:vintage_cabinet_01"),
+        new ModelEntry(L1, "Marble Washstand/Jug", U, "im:jug|brocca|caraffa", "ph:jug_01"),
+        new ModelEntry(L1, "Coat Hooks", Fit.Standing, "im:coat|hanger|attaccapanni|appendiabiti", "pt:coat-rack/source/Hanger.fbx"),
+        new ModelEntry(L1, "Door Panelled", S, "im:door|porta"),
 
         new ModelEntry(L2, "Bed *", S, GF + "Bed.prefab"),
         new ModelEntry(L2, "Washstand/Stand", S, GF + "SideTable.prefab", "ph:GothicCommode_01"),
@@ -306,7 +310,7 @@ public sealed class CC0Assets : EditorWindow
             EditorGUILayout.LabelField("Level " + level, EditorStyles.boldLabel);
             foreach (ModelEntry m in Models.Where(m => m.level == level))
                 foreach (string source in m.sources)
-                    if (listed.Add(SourceFolder(source)))
+                    if (listed.Add(source.StartsWith("im:", StringComparison.Ordinal) ? source : SourceFolder(source)))
                         Row(source);
             foreach (TextureEntry t in Textures.Where(t => t.level == level))
                 if (listed.Add(TextureFolder(t.id)))
@@ -322,6 +326,11 @@ public sealed class CC0Assets : EditorWindow
     {
         bool portrait = source.StartsWith("pt:", StringComparison.Ordinal);
         bool local = source.StartsWith("ld:", StringComparison.Ordinal);
+        if (source.StartsWith("im:", StringComparison.Ordinal))
+        {
+            RowGui(SourceFiles(source).Count > 0, "Final model  (Import: " + source.Substring(3).Replace("|", ", ") + ")", string.Join("\n", SourceFiles(source)), null, ImportRoot, null);
+            return;
+        }
         string label = portrait ? "Portrait  " + PortraitTop(source)
             : local ? "Your download  " + source.Substring(3) + "  (Sketchfab, JmPrsh153 - put the FBX/GLB in the Folder)"
             : source.StartsWith("q:", StringComparison.Ordinal) ? "Quaternius  Textured LowPoly Trees" : "Poly Haven  " + source.Substring(3);
@@ -589,16 +598,21 @@ public sealed class CC0Assets : EditorWindow
             return PortraitRoot + "/" + PortraitTop(source);
         if (source.StartsWith("ld:", StringComparison.Ordinal))
             return LocalRoot + "/" + source.Substring(3);
+        if (source.StartsWith("im:", StringComparison.Ordinal))
+            return ImportRoot;
         return ModelRoot + "/" + source.Substring(3);
     }
 
     private static string SourceName(string source) =>
         source.StartsWith("pt:", StringComparison.Ordinal) ? "Portrait: " + PortraitTop(source) + (PortraitOrigin.TryGetValue(PortraitTop(source), out string o) ? "  (copy " + o + ")" : "")
         : source.StartsWith("ld:", StringComparison.Ordinal) ? "Your download in " + SourceFolder(source)
+        : source.StartsWith("im:", StringComparison.Ordinal) ? "Your final model in " + ImportRoot + " (name with: " + source.Substring(3).Replace("|", ", ") + ")"
         : source == Quaternius ? "Quaternius Textured LowPoly Trees" : "Poly Haven: " + source.Substring(3);
 
     private static List<string> SourceFiles(string source)
     {
+        if (source.StartsWith("im:", StringComparison.Ordinal))
+            return ImportFiles(source);
         if (!source.StartsWith("pt:", StringComparison.Ordinal))
             return ModelFiles(SourceFolder(source));
         var files = new List<string>();
@@ -611,6 +625,20 @@ public sealed class CC0Assets : EditorWindow
                 files.Add(path);
         }
         return files;
+    }
+
+    private static List<string> ImportFiles(string source)
+    {
+        string[] keys = source.Substring(3).Split('|');
+        return ModelFiles(ImportRoot)
+            .Where(p => !p.ToLowerInvariant().Contains("portrait"))
+            .Where(p =>
+            {
+                string name = Path.GetFileNameWithoutExtension(p).ToLowerInvariant();
+                string folder = Path.GetFileName(Path.GetDirectoryName(p) ?? "").ToLowerInvariant();
+                return keys.Any(k => name.Contains(k) || folder.Contains(k));
+            })
+            .ToList();
     }
 
     private static string TextureFolder(string id) => TextureRoot + "/" + id;
@@ -690,9 +718,10 @@ public sealed class CC0Assets : EditorWindow
         }
 
         int racks = CoatRackClothes.Apply(scene);
+        int coats = CoatRackClothes.ApplyChairCoat(scene);
         EditorSceneManager.MarkSceneDirty(scene);
         log.Add(placed + " models placed, " + textured + " greybox materials textured, " + papers + " papers, letters and drawings" +
-            (racks > 0 ? ", clothes on " + racks + " coat rack(s)." : "."));
+            (racks > 0 ? ", clothes on " + racks + " coat rack(s)" : "") + (coats > 0 ? ", Moammed's coat on the chair." : "."));
         if (missingSources.Count > 0)
             log.Add(missing + " placeholders still greybox, missing:\n  " + string.Join("\n  ", missingSources));
         log.Add("\nIf a model faces the wrong way, rotate its \"" + ModelChild + "\" child by 180 (Apply keeps it).");
@@ -746,6 +775,8 @@ public sealed class CC0Assets : EditorWindow
 
     private static bool Place(Transform target, GameObject asset, ModelEntry entry, string source)
     {
+        if (entry.fit == Fit.Aligned)
+            Unskew(target);
         var parts = new List<Renderer>();
         CollectParts(target, true, parts);
         if (entry.fit == Fit.Aligned)
@@ -761,6 +792,9 @@ public sealed class CC0Assets : EditorWindow
         {
             goal = new Bounds(target.position + Vector3.up * 0.5f, Vector3.one);
         }
+
+        if (source.StartsWith("im:", StringComparison.Ordinal) && (entry.fit == Fit.Uniform || entry.fit == Fit.Stretch))
+            return PlaceImport(target, asset, parts, goal, source);
 
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(asset, target);
         instance.name = ModelChild;
@@ -839,6 +873,57 @@ public sealed class CC0Assets : EditorWindow
             result.Encapsulate(m.MultiplyPoint3x4(corner));
         }
         return result;
+    }
+
+    private static bool PlaceImport(Transform target, GameObject asset, List<Renderer> parts, Bounds goal, string source)
+    {
+        var instance = (GameObject)PrefabUtility.InstantiatePrefab(asset, target);
+        instance.name = ModelChild;
+        Transform t = instance.transform;
+        Vector3 facing = Facing(target, goal);
+        float yaw = Quaternion.LookRotation(facing, Vector3.up).eulerAngles.y - target.eulerAngles.y;
+        Orient(t, target, yaw, asset.transform.localRotation, asset.transform.localScale);
+        if (!Measure(instance, out Bounds natural))
+        {
+            Object.DestroyImmediate(instance);
+            return false;
+        }
+        t.localScale *= Mathf.Min(Ratio(goal.size.x, natural.size.x), Ratio(goal.size.y, natural.size.y), Ratio(goal.size.z, natural.size.z));
+        Measure(instance, out Bounds placed);
+        t.position += new Vector3(goal.center.x - placed.center.x, goal.min.y - placed.min.y, goal.center.z - placed.center.z);
+        ApplyModelMaterials(instance, source);
+        foreach (Transform child in instance.GetComponentsInChildren<Transform>(true))
+            child.gameObject.layer = target.gameObject.layer;
+        foreach (Renderer r in parts)
+            r.enabled = false;
+        return true;
+    }
+
+    private static Vector3 Facing(Transform target, Bounds goal)
+    {
+        Physics.SyncTransforms();
+        Vector3 from = goal.center;
+        from.y = goal.min.y + Mathf.Min(goal.size.y * 0.5f, 0.6f);
+        float best = float.MaxValue;
+        Vector3 normal = Vector3.zero;
+        foreach (Vector3 direction in new[] { Vector3.right, Vector3.left, Vector3.forward, Vector3.back })
+        {
+            float reach = (direction.x != 0f ? goal.extents.x : goal.extents.z) + 0.5f;
+            foreach (RaycastHit hit in Physics.RaycastAll(from, direction, reach, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(target) || Mathf.Abs(hit.normal.y) > 0.5f || hit.collider.bounds.size.y < 1.8f)
+                    continue;
+                if (hit.distance < best)
+                {
+                    best = hit.distance;
+                    normal = new Vector3(hit.normal.x, 0f, hit.normal.z);
+                }
+            }
+        }
+        if (normal.sqrMagnitude > 0.01f)
+            return normal.normalized;
+        Vector3 forward = new Vector3(target.forward.x, 0f, target.forward.z);
+        return forward.sqrMagnitude > 0.01f ? forward.normalized : Vector3.forward;
     }
 
     private static void Orient(Transform t, Transform target, float yaw, Quaternion imported, Vector3 importedScale)
@@ -981,6 +1066,57 @@ public sealed class CC0Assets : EditorWindow
         return steady;
     }
 
+    private static void Unskew(Transform target)
+    {
+        Vector3 s = target.localScale;
+        if (Mathf.Abs(s.x - s.y) < 1e-4f && Mathf.Abs(s.y - s.z) < 1e-4f)
+            return;
+        List<Transform> children = target.Cast<Transform>().ToList();
+        MeshFilter filter = target.GetComponent<MeshFilter>();
+        MeshRenderer renderer = target.GetComponent<MeshRenderer>();
+        if (filter != null && renderer != null)
+        {
+            var shape = new GameObject("Greybox Shape");
+            shape.layer = target.gameObject.layer;
+            shape.transform.SetParent(target, false);
+            shape.transform.localScale = s;
+            shape.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+            MeshRenderer copy = shape.AddComponent<MeshRenderer>();
+            copy.sharedMaterials = renderer.sharedMaterials;
+            copy.enabled = renderer.enabled;
+            Object.DestroyImmediate(renderer);
+            Object.DestroyImmediate(filter);
+        }
+        foreach (Collider c in target.GetComponents<Collider>())
+        {
+            if (c is BoxCollider box)
+            {
+                box.center = Vector3.Scale(box.center, s);
+                box.size = Vector3.Scale(box.size, s);
+            }
+            else if (c is CapsuleCollider capsule)
+            {
+                capsule.center = Vector3.Scale(capsule.center, s);
+                float along = capsule.direction == 0 ? s.x : capsule.direction == 1 ? s.y : s.z;
+                float across = capsule.direction == 0 ? Mathf.Max(s.y, s.z) : capsule.direction == 1 ? Mathf.Max(s.x, s.z) : Mathf.Max(s.x, s.y);
+                capsule.height *= along;
+                capsule.radius *= across;
+            }
+            else if (c is SphereCollider sphere)
+            {
+                sphere.center = Vector3.Scale(sphere.center, s);
+                sphere.radius *= Mathf.Max(s.x, Mathf.Max(s.y, s.z));
+            }
+        }
+        target.localScale = Vector3.one;
+        foreach (Transform child in children)
+        {
+            child.localPosition = Vector3.Scale(child.localPosition, s);
+            Vector3 local = Quaternion.Inverse(child.localRotation) * s;
+            child.localScale = Vector3.Scale(child.localScale, new Vector3(Mathf.Abs(local.x), Mathf.Abs(local.y), Mathf.Abs(local.z)));
+        }
+    }
+
     private static bool PlaceAligned(Transform target, GameObject asset, List<Renderer> parts, string source)
     {
         if (parts.Count == 0)
@@ -1119,7 +1255,7 @@ public sealed class CC0Assets : EditorWindow
 
     private static void ApplyModelMaterials(GameObject instance, string source)
     {
-        bool portrait = source.StartsWith("pt:", StringComparison.Ordinal) || source.StartsWith("ld:", StringComparison.Ordinal);
+        bool portrait = source.StartsWith("pt:", StringComparison.Ordinal) || source.StartsWith("ld:", StringComparison.Ordinal) || source.StartsWith("im:", StringComparison.Ordinal);
         string folder = SourceFolder(source);
         string materialFolder = folder + "/Materials";
         foreach (Renderer r in instance.GetComponentsInChildren<Renderer>(true))

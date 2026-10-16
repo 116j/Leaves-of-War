@@ -3,6 +3,7 @@ using Hortensia.Runtime;
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class DiaryInteraction : KeyboardControl
@@ -46,6 +47,7 @@ public class DiaryInteraction : KeyboardControl
     [Header("Close Hint")]
     [SerializeField] private string closeHint = "PRESS {0} TO CLOSE THE NOTEBOOK";
     [SerializeField, Min(8f)] private float closeHintSize = 28f;
+    [SerializeField] private string turnHint = "A / D TO TURN THE PAGES";
 
     public static bool IsReading { get; private set; }
     public static bool IsWriting { get; private set; }
@@ -321,7 +323,30 @@ public class DiaryInteraction : KeyboardControl
     {
         bool hint = HasDiary && IsReading && !busy && !DialogueRunner.IsPlaying &&
             !(PauseController.Instance != null && PauseController.Instance.IsPaused);
-        ScreenPrompt.Show(closePrompt, hint, string.Format(closeHint, ScreenPrompt.KeyName(player != null ? player.DiaryAction : null, "I")));
+        string hintText = string.Format(closeHint, ScreenPrompt.KeyName(player != null ? player.DiaryAction : null, "I"));
+        if (hint && transcribe != null && transcribe.PageCount > 1)
+            hintText += "   ·   " + turnHint;
+        ScreenPrompt.Show(closePrompt, hint, hintText);
+        if (hint && transcribe != null)
+        {
+            int direction = 0;
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null && (keyboard.rightArrowKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame))
+                direction = 1;
+            else if (keyboard != null && (keyboard.leftArrowKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame))
+                direction = -1;
+            Mouse mouse = Mouse.current;
+            if (direction == 0 && mouse != null)
+            {
+                float wheel = mouse.scroll.ReadValue().y;
+                if (wheel < -0.1f)
+                    direction = 1;
+                else if (wheel > 0.1f)
+                    direction = -1;
+            }
+            if (direction != 0)
+                transcribe.TurnPage(direction);
+        }
         if (!HasDiary)
             return;
         bool pressed = player != null && player.DiaryAction != null

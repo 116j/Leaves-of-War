@@ -61,6 +61,8 @@ public class LevelFlow : MonoBehaviour
     [Tooltip("Title card shown as the level starts (e.g. MILANO — 1914–1915).")]
     [SerializeField] private string titleCard;
     [SerializeField] private string nextScene;
+    [Tooltip("Loaded instead of Next Scene while that level does not exist yet.")]
+    [SerializeField] private string fallbackScene = "MainMenu";
     [Tooltip("The level's character: the camera starts on him and Talk To Character uses his trigger.")]
     [SerializeField] private DialogueTrigger character;
     [SerializeField] private string characterName = "Carlo";
@@ -80,6 +82,8 @@ public class LevelFlow : MonoBehaviour
     [SerializeField] private Transform characterOutside;
     [Tooltip("Character Enters: the door hinge that opens and closes.")]
     [SerializeField] private Transform door;
+    [Tooltip("Used only if the door has no mesh to measure: half the width of the door leaf.")]
+    [SerializeField, Min(0.1f)] private float doorHalfWidth = 0.42f;
     [SerializeField] private float doorOpenAngle = -90f;
     [SerializeField, Min(0.1f)] private float doorSeconds = 0.8f;
     [SerializeField] private AudioClip doorOpenClip;
@@ -124,6 +128,7 @@ public class LevelFlow : MonoBehaviour
     private AsyncOperation nextLoad;
     private bool changeBehaviourSet;
     private bool leaving;
+    private bool loadingFallback;
     private int stepPushed;
     private float stepTime;
     private float turnUnseen;
@@ -343,7 +348,7 @@ public class LevelFlow : MonoBehaviour
         if (nextLoad != null && nextLoad.progress < 0.9f)
             return false;
 
-        Carry.Active = true;
+        Carry.Active = !loadingFallback;
         Carry.Yaw = Mathf.DeltaAngle(exit.eulerAngles.y, player.Yaw);
         Carry.Pitch = player.Pitch;
         Leave();
@@ -428,20 +433,26 @@ public class LevelFlow : MonoBehaviour
                 lookers.Add(behaviour);
             }
 
+        bool hasDoor = Doorway(characterSpot, out Vector3 inner, out Vector3 outer);
         Vector3 outside = characterOutside != null ? characterOutside.position : characterSpot - t.forward * 2f;
+        if (hasDoor && (characterOutside == null || Vector3.Dot(Flat(outside - outer), inner - outer) > 0f))
+            outside = outer + Flat(outer - inner).normalized * 0.8f;
         outside.y = characterSpot.y;
-        Vector3 threshold = door != null ? new Vector3(door.position.x, characterSpot.y, door.position.z) : outside;
-        if (door != null)
-            threshold += (characterSpot - threshold).normalized * 0.6f + door.right * 0.42f;
-        threshold.y = characterSpot.y;
+        Vector3 first = hasDoor ? outer : characterSpot;
 
         t.position = outside;
-        t.rotation = Quaternion.LookRotation(Flat(threshold - outside), Vector3.up);
+        t.rotation = Quaternion.LookRotation(Flat(first - outside).sqrMagnitude > 1e-4f ? Flat(first - outside) : t.forward, Vector3.up);
         body.SetActive(true);
 
         yield return SwingDoor(0f, 1f, doorOpenClip);
-        yield return Walk(t, threshold);
+        Walking(body, true);
+        if (hasDoor)
+        {
+            yield return Walk(t, outer);
+            yield return Walk(t, inner);
+        }
         yield return Walk(t, characterSpot);
+        Walking(body, false);
         StartCoroutine(SwingDoor(1f, 0f, doorCloseClip));
 
         Quaternion start = t.rotation;
@@ -455,6 +466,61 @@ public class LevelFlow : MonoBehaviour
             behaviour.enabled = true;
     }
 
+    private static void Walking(GameObject body, bool on)
+    {
+        DialogueSpeaker speaker = body.GetComponentInChildren<DialogueSpeaker>(true);
+        if (speaker != null)
+            speaker.SetWalking(on);
+    }
+
+    private bool Doorway(Vector3 room, out Vector3 inner, out Vector3 outer)
+    {
+        inner = outer = room;
+        if (door == null)
+            return false;
+        float leaf = LeafWidth(out float side);
+        Quaternion closed = (door.parent != null ? door.parent.rotation : Quaternion.identity) * (doorClosed ?? door.localRotation);
+        Vector3 right = Flat(closed * Vector3.right).normalized * side;
+        Vector3 center = door.position + right * leaf * 0.5f;
+        Vector3 normal = Flat(closed * Vector3.forward).normalized;
+        if (Vector3.Dot(Flat(room - center), normal) < 0f)
+            normal = -normal;
+        center.y = room.y;
+        inner = center + normal * (leaf + 0.45f);
+        outer = center - normal * 1.3f;
+        return true;
+    }
+
+    private float LeafWidth(out float side)
+    {
+        side = 1f;
+        float far = 0f;
+        foreach (MeshFilter filter in door.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (filter.sharedMesh == null)
+                continue;
+            Bounds b = filter.sharedMesh.bounds;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 corner = b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                float x = door.InverseTransformPoint(filter.transform.TransformPoint(corner)).x * door.lossyScale.x;
+                if (Mathf.Abs(x) > Mathf.Abs(far))
+                    far = x;
+            }
+        }
+        if (Mathf.Abs(far) < 0.3f)
+            return doorHalfWidth * 2f;
+        side = Mathf.Sign(far);
+        return Mathf.Abs(far);
+    }
+
+    private static bool Turn(Transform t, Vector3 direction)
+    {
+        Quaternion look = Quaternion.LookRotation(Flat(direction).normalized, Vector3.up);
+        t.rotation = Quaternion.RotateTowards(t.rotation, look, 200f * Time.deltaTime);
+        return Quaternion.Angle(t.rotation, look) < 1f;
+    }
+
     private IEnumerator Walk(Transform t, Vector3 target)
     {
         while (true)
@@ -462,8 +528,8 @@ public class LevelFlow : MonoBehaviour
             Vector3 to = Flat(target - t.position);
             if (to.sqrMagnitude < 0.0025f)
                 yield break;
-            t.rotation = Quaternion.Slerp(t.rotation, Quaternion.LookRotation(to.normalized, Vector3.up), Time.deltaTime * 6f);
-            t.position += to.normalized * Mathf.Min(to.magnitude, walkSpeed * Time.deltaTime);
+            if (Turn(t, to))
+                t.position += to.normalized * Mathf.Min(to.magnitude, walkSpeed * Time.deltaTime);
             yield return null;
         }
     }
@@ -495,7 +561,16 @@ public class LevelFlow : MonoBehaviour
     {
         if (nextLoad != null || string.IsNullOrEmpty(nextScene))
             return;
-        nextLoad = SceneManager.LoadSceneAsync(nextScene, LoadSceneMode.Single);
+        string target = nextScene;
+        if (!Application.CanStreamedLevelBeLoaded(target))
+        {
+            Debug.LogWarning("LevelFlow: \"" + target + "\" is not in the Build Settings yet, going back to " + fallbackScene + ".", this);
+            target = fallbackScene;
+            if (string.IsNullOrEmpty(target) || !Application.CanStreamedLevelBeLoaded(target))
+                return;
+        }
+        loadingFallback = target != nextScene;
+        nextLoad = SceneManager.LoadSceneAsync(target, LoadSceneMode.Single);
         if (nextLoad != null)
             nextLoad.allowSceneActivation = false;
     }
@@ -528,20 +603,54 @@ public class LevelFlow : MonoBehaviour
                 behaviour.enabled = false;
 
         Transform t = body.transform;
-        Vector3 target = characterExitPoint != null ? characterExitPoint.position : t.position - t.forward * 2f;
-        target.y = t.position.y;
+        var path = new System.Collections.Generic.List<Vector3>();
+        bool hasDoor = Doorway(t.position, out Vector3 inner, out Vector3 outer);
+        if (hasDoor)
+        {
+            path.Add(inner);
+            path.Add(outer);
+        }
+        Vector3 end = characterExitPoint != null ? characterExitPoint.position : t.position - t.forward * 2f;
+        if (hasDoor && (characterExitPoint == null || Vector3.Dot(Flat(end - outer), inner - outer) > 0f))
+            end = outer + Flat(outer - inner).normalized * 1.5f;
+        path.Add(end);
+        for (int i = 0; i < path.Count; i++)
+            path[i] = new Vector3(path[i].x, t.position.y, path[i].z);
+        int next = 0;
+        bool walking = false;
+        bool opened = false;
         while (true)
         {
+            Vector3 target = path[next];
             Vector3 to = target - t.position;
             to.y = 0f;
+            if (to.sqrMagnitude <= 0.01f && next < path.Count - 1)
+            {
+                if (hasDoor && next == 0 && !opened)
+                {
+                    opened = true;
+                    Walking(body, false);
+                    walking = false;
+                    yield return SwingDoor(0f, 1f, doorOpenClip);
+                }
+                next++;
+                continue;
+            }
+            if (to.sqrMagnitude > 0.01f != walking)
+            {
+                walking = !walking;
+                Walking(body, walking);
+            }
             if (to.sqrMagnitude > 0.01f)
             {
-                t.rotation = Quaternion.Slerp(t.rotation, Quaternion.LookRotation(to.normalized), Time.deltaTime * 5f);
-                t.position += to.normalized * Mathf.Min(to.magnitude, 0.9f * Time.deltaTime);
+                if (Turn(t, to))
+                    t.position += to.normalized * Mathf.Min(to.magnitude, 0.9f * Time.deltaTime);
             }
             if (Time.timeScale > 0f && !Gaze.IsSeen(body))
             {
                 body.SetActive(false);
+                if (opened)
+                    StartCoroutine(SwingDoor(1f, 0f, doorCloseClip));
                 yield break;
             }
             yield return null;

@@ -20,6 +20,8 @@ namespace Hortensia.Runtime
         [SerializeField] private string talkingState = "talking";
         [Tooltip("Played while waiting for the player to move on to the next piece. If the state does not exist, Idle is used.")]
         [SerializeField] private string waitingState = "waiting";
+        [Tooltip("Played while the character walks (enters or leaves). If the state does not exist, nothing changes.")]
+        [SerializeField] private string walkingState = "Walking";
         [SerializeField, Min(0f)] private float crossFadeSeconds = 0.2f;
 
         [Header("Voice")]
@@ -79,6 +81,17 @@ namespace Hortensia.Runtime
                 if (!animator.HasState(0, hash))
                     return;
             }
+            animator.CrossFadeInFixedTime(hash, crossFadeSeconds, 0);
+        }
+
+        public void SetWalking(bool walking)
+        {
+            if (animator == null || !animator.isActiveAndEnabled)
+                return;
+            int hash = Animator.StringToHash((walking ? walkingState : idleState) ?? string.Empty);
+            if (!animator.HasState(0, hash))
+                return;
+            current = State.Idle;
             animator.CrossFadeInFixedTime(hash, crossFadeSeconds, 0);
         }
 

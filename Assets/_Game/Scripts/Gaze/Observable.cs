@@ -21,13 +21,19 @@ public class Observable : MonoBehaviour
     private void Start()
     {
         _renderer = GetComponent<Renderer>();
-        if (_renderer == null)
+        if (_renderer == null || !_renderer.enabled)
         {
-            for (int i = 0; i < transform.childCount; i++)
+            float best = -1f;
+            foreach (Renderer r in GetComponentsInChildren<Renderer>())
             {
-                _renderer = transform.GetChild(i).GetComponent<Renderer>();
-                if (_renderer != null && _renderer.enabled)
-                    break;
+                if (!r.enabled || r is ParticleSystemRenderer)
+                    continue;
+                float size = r.bounds.size.sqrMagnitude;
+                if (size > best)
+                {
+                    best = size;
+                    _renderer = r;
+                }
             }
         }
         OnSeen.AddListener(() =>

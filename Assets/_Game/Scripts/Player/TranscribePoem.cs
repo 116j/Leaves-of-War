@@ -39,7 +39,13 @@ public class TranscribePoem : RevealableObject
     [Tooltip("The leaves still on the floor vanish when a poem is found.")]
     [SerializeField] private bool _clearLeavesWhenFound = true;
     [Tooltip("Single header line: {0} date, {1} place, {2} title.")]
-    [SerializeField] private string _headerFormat = "{0}, {1}, {2}";
+    [SerializeField] private string _headerFormat = "{0}, {1}";
+    [Tooltip("Extra space between the lines of the poem (TextMeshPro units, 0 = the font's own).")]
+    [SerializeField] private float _lineSpacing = 0f;
+    [Tooltip("Extra space after each verse (each line break of the poem).")]
+    [SerializeField] private float _paragraphSpacing = 0f;
+    [Tooltip("Size of the poem title (first line of the page) compared to the poem text, in %.")]
+    [SerializeField, Range(80f, 200f)] private float _titleSize = 125f;
     [Tooltip("Header font size compared to the poem text.")]
     [SerializeField, Range(0.3f, 1.5f)] private float _headerScale = 0.7f;
     [Header("Audio")]
@@ -103,6 +109,7 @@ public class TranscribePoem : RevealableObject
     private readonly Dictionary<int, int> fragmentsDone = new();
     private readonly Dictionary<int, SortedDictionary<int, string>> fragmentTexts = new();
     private bool joining;
+    private bool finishingVoice;
     private FirstPersonController player;
     private TextMeshProUGUI prompt;
     private AudioSource writingSource;
@@ -143,6 +150,8 @@ public class TranscribePoem : RevealableObject
 
     private void Start()
     {
+        if (_assignedPoemTextCurrent == null || _assignedNameCurrent == null)
+            Debug.LogError("TranscribePoem: the notebook texts are not assigned on " + name + " (Assigned Poem Text Current, Name, Date...). Nothing can be written in the notebook.", this);
         currentp = _firstPoemId;
         book = _assignedPoemTextCurrent != null ? _assignedPoemTextCurrent.GetComponentInParent<Book>(true) : null;
         if (book == null)
@@ -259,17 +268,32 @@ public class TranscribePoem : RevealableObject
             return string.Empty;
         bool split = fragmentTexts.ContainsKey(poem.poemId);
         if (split && !transcribed.Contains(poem.poemId))
-            return JoinedFragments(poem.poemId, FragmentsDone(poem.poemId));
+            return Titled(poem, JoinedFragments(poem.poemId, FragmentsDone(poem.poemId)));
         if (split && string.IsNullOrWhiteSpace(poem.poemText))
-            return JoinedFragments(poem.poemId, int.MaxValue);
-        return poem.poemText;
+            return Titled(poem, JoinedFragments(poem.poemId, int.MaxValue));
+        return Titled(poem, poem.poemText);
     }
 
-    private void ShowPoemSpread(int poemId)
+    private void ShowPoemSpread(int poemId) => currentp = poemId;
+
+    public int PageCount => WrittenPages().Count;
+
+    private List<int> WrittenPages() => transcribed.Concat(poemsSectionProgress.Keys).Distinct().Where(id => Find(id) != null).OrderBy(id => id).ToList();
+
+    public void TurnPage(int direction)
     {
-        currentp = poemId;
-        if (book != null && book.Spread != poemId)
-            book.ShowSpread(poemId);
+        if (IsTranscribing || joining)
+            return;
+        List<int> pages = WrittenPages();
+        if (pages.Count == 0)
+            return;
+        int index = pages.IndexOf(currentp);
+        int next = index < 0 ? (direction > 0 ? 0 : pages.Count - 1) : index + direction;
+        if (next < 0 || next >= pages.Count || pages[next] == currentp)
+            return;
+        currentp = pages[next];
+        OnFlipPage();
+        PlayPageTurn();
     }
 
     private void PlayPageTurn()
@@ -320,7 +344,7 @@ public class TranscribePoem : RevealableObject
             }
         }
 
-        if (voiceStarted)
+        if (voiceStarted && !finishingVoice)
         {
             notWritingTime = CanWrite() ? 0f : notWritingTime + dt;
             if (!voicePaused && notWritingTime > 0.3f && voiceSource.isPlaying)
@@ -335,7 +359,7 @@ public class TranscribePoem : RevealableObject
             }
         }
 
-        bool showPrompt = open && activePoem.IsRevealed && playing && !DiaryInteraction.IsReading && !(holding && DiaryInteraction.IsWriting);
+        bool showPrompt = (joining && IsTranscribing || open && activePoem != null && activePoem.IsRevealed) && playing && !DiaryInteraction.IsReading && !(holding && DiaryInteraction.IsWriting);
         ScreenPrompt.Show(prompt, showPrompt, string.Format(_promptFormat, ScreenPrompt.KeyName(player != null ? player.WriteAction : null, "T")));
     }
 
@@ -427,12 +451,6 @@ public class TranscribePoem : RevealableObject
         if (poem == null)
             yield break;
         joining = true;
-        var pieces = FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-            .Where(p => p.PoemId == poemId && p.IsFragment).OrderBy(p => p.Fragment).ToList();
-        string body = !string.IsNullOrWhiteSpace(poem.poemText)
-            ? poem.poemText
-            : string.Join("\n\n", pieces.Select(p => (p.FragmentText ?? string.Empty).Trim()).Where(t => t.Length > 0));
-
         if (diary != null && diary.HasDiary)
         {
             yield return new WaitUntil(() => DiaryInteraction.IsWriting || diary.CanOpen && !BroomSweeper.Active);
@@ -440,71 +458,11 @@ public class TranscribePoem : RevealableObject
                 diary.BeginWriting();
             yield return new WaitUntil(() => DiaryInteraction.IsWriting && !diary.Busy);
         }
-
-        ShowPoemSpread(poemId);
         poemsSectionProgress.Remove(poemId);
-        IsTranscribing = true;
-        AnyTranscribing = true;
-        if (book != null)
-            book.interactable = false;
-        var sections = new[] { HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent) }
-            .Where(t => t != null)
-            .Concat(new[] { _assignedPoemTextCurrent, _assignedPoemTextCurrentNext }.Where(t => t != null))
-            .ToList();
-        SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
-        SplitBody(body, _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
-        sections = sections.Where(t => !string.IsNullOrWhiteSpace(t.text)).ToList();
-        float[] durations = new float[sections.Count];
-        for (int i = 0; i < sections.Count; i++)
-        {
-            sections[i].alpha = 1f;
-            SetReveal(sections[i], 0f);
-            sections[i].ForceMeshUpdate(true);
-            durations[i] = Mathf.Max(_minSectionSeconds, sections[i].textInfo.lineCount * _secondsPerLine);
-        }
-        float voiceLength = VoiceTrim.Length(poem.poemVoice);
-        if (voiceLength > 0f && sections.Count > 0)
-        {
-            float scale = Mathf.Max(0.1f * sections.Count, voiceLength - _sectionPause * (sections.Count - 1)) / durations.Sum();
-            for (int i = 0; i < durations.Length; i++)
-                durations[i] *= scale;
-        }
-
-        PlayVoice(poem.poemVoice, 0f);
-        TranscriptionStarted?.Invoke(poemId);
-        writing = true;
-        for (int i = 0; i < sections.Count; i++)
-        {
-            for (float t = 0f; t < 1f;)
-            {
-                if (Time.timeScale > 0f)
-                    t += Time.unscaledDeltaTime / durations[i];
-                SetReveal(sections[i], Mathf.Clamp01(t));
-                yield return null;
-            }
-            if (i < sections.Count - 1)
-                for (float t = 0f; t < _sectionPause;)
-                {
-                    if (Time.timeScale > 0f)
-                        t += Time.unscaledDeltaTime;
-                    yield return null;
-                }
-        }
-        writing = false;
-        while (voiceSource != null && voiceSource.clip == poem.poemVoice && !VoiceTrim.Finished(voiceSource, poem.poemVoice))
-            yield return null;
-        poemsSectionProgress[poemId] = 3;
-        IsTranscribing = false;
-        AnyTranscribing = false;
-        if (book != null)
-            book.interactable = true;
-        transcribed.Add(poemId);
-        Remember(poemId);
-        Transcribed?.Invoke(poemId);
-        yield return new WaitForSecondsRealtime(1.5f);
+        currentp = poemId;
+        transcriptionCoroutine = StartCoroutine(Transcribe(poemId));
+        yield return new WaitUntil(() => transcribed.Contains(poemId) && transcriptionCoroutine == null);
         joining = false;
-        if (diary != null)
-            diary.EndWriting();
     }
 
     public void StartTranscription()
@@ -517,9 +475,24 @@ public class TranscribePoem : RevealableObject
     private IEnumerator Transcribe(int poemId)
     {
         PoemInfoContainer poem = Find(poemId);
+        if (poem == null && activePoem != null && activePoem.PoemId == poemId)
+        {
+            poem = activePoem.Container();
+            if (poemInfo != null)
+            {
+                if (poemInfo._poemsList == null)
+                    poemInfo._poemsList = new List<PoemInfoContainer>();
+                poemInfo._poemsList.Add(poem);
+            }
+        }
         if (poem == null)
+        {
+            Debug.LogWarning("TranscribePoem: poem " + poemId + " is not registered (check Poem Info on its Assign Poem).", this);
+            pending.Add(poemId);
+            transcriptionCoroutine = null;
             yield break;
-        AssignPoem piece = activePoem != null && activePoem.IsFragment && activePoem.PoemId == poemId ? activePoem : null;
+        }
+        AssignPoem piece = !joining && activePoem != null && activePoem.IsFragment && activePoem.PoemId == poemId ? activePoem : null;
 
         IsTranscribing = true;
         AnyTranscribing = true;
@@ -532,7 +505,8 @@ public class TranscribePoem : RevealableObject
 
         ShowPoemSpread(poemId);
         SetHeader(poem, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
-        SplitBody(piece != null ? JoinedFragments(poemId, piece.Fragment) : BodyFor(poem), _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
+        string wholeBody = !string.IsNullOrWhiteSpace(poem.poemText) ? poem.poemText : JoinedFragments(poemId, int.MaxValue);
+        SplitBody(piece != null ? Titled(poem, JoinedFragments(poemId, piece.Fragment)) : joining ? Titled(poem, wholeBody) : BodyFor(poem), _assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
         TextMeshProUGUI headerLine = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
         if (piece != null && piece.Fragment > 1 && headerLine != null)
             sections.Remove(headerLine);
@@ -549,7 +523,7 @@ public class TranscribePoem : RevealableObject
         if (piece != null)
         {
             string before = JoinedFragments(poemId, piece.Fragment - 1);
-            int previous = before.Length > 0 ? before.Split('\n').Length + 1 : 0;
+            int previous = before.Length > 0 ? 2 + before.Split('\n').Length + 1 : 0;
             for (int i = 0; i < sections.Count; i++)
             {
                 if (sections[i] == headerLine)
@@ -630,6 +604,20 @@ public class TranscribePoem : RevealableObject
                 yield return Wait(_sectionPause);
         }
         writing = false;
+        if (piece == null && voiceStarted && voiceSource != null && voiceSource.clip == poem.poemVoice && poem.poemVoice != null)
+        {
+            finishingVoice = true;
+            if (voicePaused)
+            {
+                voiceSource.UnPause();
+                voicePaused = false;
+            }
+            float end = VoiceTrim.Range(poem.poemVoice).y - 0.05f;
+            while ((voiceSource.isPlaying || Time.timeScale <= 0f) && voiceSource.time < end)
+                yield return null;
+            voiceSource.Stop();
+            finishingVoice = false;
+        }
 
         IsTranscribing = false;
         AnyTranscribing = false;
@@ -735,7 +723,7 @@ public class TranscribePoem : RevealableObject
     }
 
     private bool CanWrite() => Time.timeScale > 0f && DiaryInteraction.IsWriting && diary != null && !diary.Busy &&
-        Holding() && poemSeen && activePoem != null && activePoem.IsRevealed;
+        Holding() && (joining || poemSeen && activePoem != null && activePoem.IsRevealed);
 
     private IEnumerator Wait(float seconds)
     {
@@ -765,12 +753,14 @@ public class TranscribePoem : RevealableObject
         _assignedDateOld, _assignedNameOld, _assignedPlaceOld, _assignedPoemTextOld, _assignedPoemTextOldNext
     }.Where(t => t != null);
 
-    private static void PrepareBody(TextMeshProUGUI first, TextMeshProUGUI second)
+    private void PrepareBody(TextMeshProUGUI first, TextMeshProUGUI second)
     {
         foreach (TextMeshProUGUI text in new[] { first, second })
         {
             if (text == null)
                 continue;
+            text.lineSpacing = _lineSpacing;
+            text.paragraphSpacing = _paragraphSpacing;
             text.linkedTextComponent = null;
             text.enableAutoSizing = false;
             text.overflowMode = TextOverflowModes.Overflow;
@@ -785,23 +775,34 @@ public class TranscribePoem : RevealableObject
         if (!baseSizes.TryGetValue(first, out float size))
             baseSizes[first] = size = first.fontSize;
 
-        for (float f = 1f; f >= 0.55f; f -= 0.05f)
+        for (float f = 1f; f >= 0.4f; f -= 0.05f)
         {
             first.fontSize = size * f;
             if (second != null)
                 second.fontSize = size * f;
             Split(body, first, second);
-            if (Fits(first) && (second == null || Fits(second)))
+            if (Fits(first, Bottom(first, null)) && (second == null || Fits(second, Bottom(second, first))))
                 return;
         }
     }
 
-    private static bool Fits(TextMeshProUGUI text)
+    private static bool Fits(TextMeshProUGUI text, float bottom)
     {
         TMP_TextInfo info = text.textInfo;
         if (info.lineCount == 0)
             return true;
-        return info.lineInfo[info.lineCount - 1].descender >= text.rectTransform.rect.yMin + text.margin.w - 0.0001f;
+        return info.lineInfo[info.lineCount - 1].descender >= bottom - 0.0001f;
+    }
+
+    private static float Bottom(TextMeshProUGUI text, TextMeshProUGUI reference)
+    {
+        float bottom = text.rectTransform.rect.yMin + text.margin.w;
+        if (reference == null)
+            return bottom;
+        Rect r = reference.rectTransform.rect;
+        Vector3 world = reference.rectTransform.TransformPoint(new Vector3(r.xMin, r.yMin + reference.margin.w, 0f));
+        float shared = text.rectTransform.InverseTransformPoint(world).y;
+        return Mathf.Max(bottom, shared);
     }
 
     private static void Split(string body, TextMeshProUGUI first, TextMeshProUGUI second)
@@ -817,16 +818,35 @@ public class TranscribePoem : RevealableObject
         {
             float bottom = first.rectTransform.rect.yMin + first.margin.w;
             TMP_TextInfo info = first.textInfo;
+            int overflow = -1;
             for (int i = 0; i < info.lineCount; i++)
+                if (info.lineInfo[i].descender < bottom - 0.0001f)
+                {
+                    overflow = i;
+                    break;
+                }
+            if (overflow > 0)
             {
-                if (info.lineInfo[i].descender >= bottom - 0.0001f)
-                    continue;
-                while (i > 1 && !IsBlank(info, i - 1) && !EndsLine(info, i - 1))
-                    i--;
-                int character = info.lineInfo[i].firstCharacterIndex;
+                int target = Mathf.Min(overflow, Mathf.CeilToInt(info.lineCount * 0.5f));
+                int best = target;
+                for (int d = 0; d <= 4; d++)
+                {
+                    if (target - d > 1 && IsBlank(info, target - d - 1))
+                    {
+                        best = target - d;
+                        break;
+                    }
+                    if (target + d < overflow && IsBlank(info, target + d - 1))
+                    {
+                        best = target + d;
+                        break;
+                    }
+                }
+                while (best > 1 && !IsBlank(info, best - 1) && !EndsLine(info, best - 1))
+                    best--;
+                int character = info.lineInfo[best].firstCharacterIndex;
                 if (character >= 0 && character < info.characterCount)
                     cut = Mathf.Clamp(info.characterInfo[character].index, 0, body.Length);
-                break;
             }
         }
 
@@ -861,9 +881,27 @@ public class TranscribePoem : RevealableObject
                 continue;
             header.maxVisibleWords = 99999;
             header.text = header == line
-                ? string.Format(_headerFormat, (poem.poemDate ?? "").Trim(), (poem.poemPlace ?? "").Trim(), (poem.poemName ?? "").Trim())
+                ? HeaderText(poem)
                 : string.Empty;
         }
+    }
+
+    private string HeaderText(PoemInfoContainer poem)
+    {
+        string date = (poem.poemDate ?? "").Trim();
+        string place = (poem.poemPlace ?? "").Trim();
+        string format = _headerFormat.Contains("{2}") ? "{0}, {1}" : _headerFormat;
+        if (date.Length == 0 || place.Length == 0)
+            return date + place;
+        return string.Format(format, date, place);
+    }
+
+    private string Titled(PoemInfoContainer poem, string body)
+    {
+        string title = (poem?.poemName ?? "").Trim();
+        if (title.Length == 0)
+            return body;
+        return "<size=" + _titleSize.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "%>" + title + "</size>\n\n" + (body ?? string.Empty).TrimStart('\n', '\r');
     }
 
     private PoemInfoContainer Find(int poemId)

@@ -64,6 +64,7 @@ public static class ParisScriptSetup
         Transform guillaume = Figure(room, "Apollinaire", new Vector3(-0.45f, 0f, -2.1f), 30f, Mat("Grey Blanket"), Mat("Linen"));
         PickupItem broom = SetupBroom(room, log);
         RelinkHeldItems(log);
+        RelinkNotebookTexts(log);
         PlaceEntry(room, log);
         if (coat == null || books == null)
         {
@@ -127,7 +128,7 @@ public static class ParisScriptSetup
             ("Fragment 1", LevelFlow.Condition.FragmentFound, 0f, 0, 1, "SWEEP BETWEEN THE TWO BEDS", new[] { "U04" }, LevelFlow.StepAction.None),
             ("Transcribe 1", LevelFlow.Condition.FragmentTranscribed, 0f, Coat, 1, "KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE", new string[0], LevelFlow.StepAction.MoveObjectWhenUnseen),
             ("The coat is gone", LevelFlow.Condition.ObservableBehaviourChanged, 0f, Coat, 0, "LOOK AT THE COAT ON THE CHAIR, THEN LOOK AWAY", new[] { "U05", "A05" }, LevelFlow.StepAction.None),
-            ("Fragment 2", LevelFlow.Condition.FragmentFound, 0f, 0, 2, "SWEEP UNDER THE DESK", new[] { "A06" }, LevelFlow.StepAction.None),
+            ("Fragment 2", LevelFlow.Condition.FragmentFound, 0f, 0, 2, "SWEEP IN FRONT OF THE DESK", new[] { "A06" }, LevelFlow.StepAction.None),
             ("Transcribe 2", LevelFlow.Condition.FragmentTranscribed, 0f, Books, 2, "KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE", new string[0], LevelFlow.StepAction.MoveObjectWhenUnseen),
             ("The shelf is empty", LevelFlow.Condition.ObservableBehaviourChanged, 0f, Books, 0, "LOOK AT THE BOOKS ON THE SHELF, THEN LOOK AWAY", new[] { "U06" }, LevelFlow.StepAction.None),
             ("Fragment 3", LevelFlow.Condition.FragmentFound, 0f, 0, 3, "SWEEP UNDER THE WINDOW", new[] { "A07", "U07", "A08", "U08" }, LevelFlow.StepAction.None),
@@ -184,6 +185,8 @@ public static class ParisScriptSetup
             Transform area = room.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name.StartsWith("Fragment " + i + " "));
             if (area == null)
                 continue;
+            if (i == 2)
+                area.localPosition = new Vector3(0.45f, area.localPosition.y, -0.25f);
             area.localRotation = Quaternion.Euler(90f, 0f, 0f);
             area.localScale = new Vector3(0.8f, 0.8f, 1f);
             area.localPosition = new Vector3(area.localPosition.x, 0.01f, area.localPosition.z);
@@ -372,6 +375,47 @@ public static class ParisScriptSetup
             }
         }
         log.Add(book != null ? "Notebook relinked to the player (" + book.name + "), closed in hand." : "WARNING: no Diary_Demo under the Player.");
+    }
+
+    private static readonly (string field, string name)[] NotebookTexts =
+    {
+        ("_assignedDateCurrent", "[Current]Poem_Date_Text (TMP)"),
+        ("_assignedNameCurrent", "[Current]Poem_Name_Text (TMP)"),
+        ("_assignedPlaceCurrent", "[Current]Poem_Place_Text (TMP)"),
+        ("_assignedPoemTextCurrent", "[Current]Poem_Page_0_Text (TMP)"),
+        ("_assignedPoemTextCurrentNext", "[Current]Poem_Name_Page_1_Text (TMP)"),
+        ("_assignedDateOld", "[Old]Poem_Date_Text (TMP)"),
+        ("_assignedNameOld", "[Old]Poem_Name_Text (TMP)"),
+        ("_assignedPlaceOld", "[Old]Poem_Place_Text (TMP)"),
+        ("_assignedPoemTextOld", "[Old]Poem_Page_1_Text (TMP)"),
+        ("_assignedPoemTextOldNext", "[Old]Poem_Name_Page_0_Text (TMP)"),
+    };
+
+    internal static void RelinkNotebookTexts(List<string> log)
+    {
+        TranscribePoem transcribe = Object.FindAnyObjectByType<TranscribePoem>(FindObjectsInactive.Include);
+        if (transcribe == null)
+            return;
+        var texts = Object.FindObjectsByType<TMPro.TextMeshProUGUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var so = new SerializedObject(transcribe);
+        int fixedCount = 0, missing = 0;
+        foreach (var (field, name) in NotebookTexts)
+        {
+            SerializedProperty property = so.FindProperty(field);
+            if (property == null || property.objectReferenceValue != null)
+                continue;
+            TMPro.TextMeshProUGUI text = texts.FirstOrDefault(t => t.name.Trim() == name);
+            if (text != null)
+            {
+                property.objectReferenceValue = text;
+                fixedCount++;
+            }
+            else
+                missing++;
+        }
+        so.ApplyModifiedPropertiesWithoutUndo();
+        if (fixedCount > 0 || missing > 0)
+            log.Add("Notebook texts relinked: " + fixedCount + (missing > 0 ? ", " + missing + " not found (check the Book under the notebook)." : "."));
     }
 
     private static void PlaceEntry(Transform room, List<string> log)

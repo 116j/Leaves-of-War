@@ -44,6 +44,16 @@ public class AssignPoem : RevealableObject
     public int FragmentCount => _fragmentCount;
     public bool IsFragment => _fragment > 0;
     public string FragmentText => _fragmentText;
+
+    public PoemInfoContainer Container() => new PoemInfoContainer
+    {
+        poemId = _poemId,
+        poemName = _assignedPoemName,
+        poemText = _assignedPoemText,
+        poemDate = _assignedDate,
+        poemPlace = _assignedPlace,
+        poemVoice = _poemVoice
+    };
     public override bool HasFootprint => true;
     public override Bounds Footprint => footprint;
 

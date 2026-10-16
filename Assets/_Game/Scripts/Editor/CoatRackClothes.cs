@@ -44,6 +44,126 @@ internal static class CoatRackClothes
         return count;
     }
 
+    private const string ChairCoatName = "Moammed's Coat (vanishes)";
+    private const string ChairCoatModel = "Coat Model";
+
+    [MenuItem("Tools/Leaves of War/Build Moammed's Coat")]
+    private static void ChairCoatMenu()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        int count = ApplyChairCoat(scene);
+        if (count > 0)
+            EditorSceneManager.MarkSceneDirty(scene);
+        EditorUtility.DisplayDialog("Moammed's Coat", count > 0
+            ? "Coat hung on the chair.\n\nSave the scene (Ctrl+S)."
+            : "No \"" + ChairCoatName + "\" in the open scene: open Level 2 - Parigi.", "OK");
+    }
+
+    internal static int ApplyChairCoat(Scene scene)
+    {
+        int count = 0;
+        foreach (GameObject root in scene.GetRootGameObjects())
+            foreach (Transform coat in root.GetComponentsInChildren<Transform>(true).Where(t => t.name == ChairCoatName).ToList())
+            {
+                Transform old = coat.Find(ChairCoatModel);
+                if (old != null)
+                    Object.DestroyImmediate(old.gameObject);
+                BuildChairCoat(coat);
+                count++;
+            }
+        return count;
+    }
+
+    private static void BuildChairCoat(Transform coat)
+    {
+        MeshRenderer box = coat.GetComponent<MeshRenderer>();
+        Material cloth = box != null && box.sharedMaterial != null ? box.sharedMaterial : MaterialFor("Coat Wool", new Color(0.24f, 0.21f, 0.2f));
+        Material button = MaterialFor("Coat Button", new Color(0.06f, 0.05f, 0.05f));
+
+        var model = new GameObject(ChairCoatModel).transform;
+        model.SetParent(coat, false);
+        model.localPosition = new Vector3(0f, 0.5f, 0f);
+        Vector3 s = coat.lossyScale;
+        model.localScale = new Vector3(1f / Mathf.Max(s.x, 1e-4f), 1f / Mathf.Max(s.y, 1e-4f), 1f / Mathf.Max(s.z, 1e-4f));
+
+        float drop = Mathf.Clamp(model.position.y - 0.08f, 0.4f, 0.95f);
+        const float back = -0.05f;
+
+        Transform body = Part("Body", model, MeshAsset("Chair Coat Body", () => ChairCoatBody(drop)), cloth);
+        body.localPosition = new Vector3(0f, 0f, back - 0.06f);
+
+        Transform roll = Part("Shoulders", model, MeshAsset("Chair Coat Shoulders", ChairCoatRoll), cloth);
+        roll.localPosition = new Vector3(0f, 0.012f, back);
+        roll.localRotation = Quaternion.Euler(0f, 0f, 90f);
+
+        Transform fold = Part("Collar Fold", model, MeshAsset("Chair Coat Fold", ChairCoatFold), cloth);
+        fold.localPosition = new Vector3(0f, 0f, back + 0.04f);
+
+        foreach (float side in new[] { -1f, 1f })
+        {
+            Transform lapel = Part(side < 0f ? "Left Lapel" : "Right Lapel", model, MeshAsset("Chair Coat Lapel", () => Box(new Vector3(0.075f, 0.2f, 0.012f), new Vector3(0f, -0.1f, 0f))), cloth);
+            lapel.localPosition = new Vector3(0.07f * side, -0.01f, back + 0.065f);
+            lapel.localRotation = Quaternion.Euler(0f, 0f, 14f * side);
+
+            Transform sleeve = Part(side < 0f ? "Left Sleeve" : "Right Sleeve", model, MeshAsset("Chair Coat Sleeve", ChairCoatSleeve), cloth);
+            sleeve.localPosition = new Vector3(0.235f * side, -0.02f, back - 0.05f);
+            sleeve.localRotation = Quaternion.Euler(4f, 0f, 7f * side);
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            Transform b = Part("Button " + (i + 1), model, MeshAsset("Chair Coat Button", () => Box(new Vector3(0.022f, 0.022f, 0.008f), Vector3.zero)), button);
+            b.localPosition = new Vector3(0.075f, -0.16f - i * 0.15f, back - 0.06f - ChairCoatDepth(0.16f + i * 0.15f, drop) - 0.003f);
+        }
+
+        foreach (Transform t in model.GetComponentsInChildren<Transform>(true))
+        {
+            t.gameObject.layer = coat.gameObject.layer;
+            if (t.TryGetComponent(out MeshRenderer r))
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        }
+        if (box != null)
+            box.enabled = false;
+    }
+
+    private static float ChairCoatDepth(float down, float drop) => Mathf.Lerp(0.03f, 0.055f, Mathf.Clamp01(down / drop));
+
+    private static Mesh ChairCoatBody(float drop)
+    {
+        var rings = new List<Vector3>();
+        float[] steps = { 0f, 0.03f, 0.12f, 0.3f, 0.5f, 0.75f, 1f };
+        foreach (float k in steps)
+        {
+            float down = k * drop;
+            float half = Mathf.Lerp(0.19f, 0.25f, k) + (k > 0.05f && k < 0.35f ? 0.01f : 0f);
+            rings.Add(new Vector3(-down, k == 0f ? half * 0.85f : half, k == 0f ? 0.02f : ChairCoatDepth(down, drop)));
+        }
+        return Lathe(rings.ToArray(), 12, true, true, 0f);
+    }
+
+    private static Mesh ChairCoatRoll() => Lathe(new[]
+    {
+        new Vector3(0.21f, 0.03f, 0.03f),
+        new Vector3(0.19f, 0.045f, 0.04f),
+        new Vector3(-0.19f, 0.045f, 0.04f),
+        new Vector3(-0.21f, 0.03f, 0.03f),
+    }, 8, true, true, 0f);
+
+    private static Mesh ChairCoatFold() => Lathe(new[]
+    {
+        new Vector3(0f, 0.17f, 0.018f),
+        new Vector3(-0.12f, 0.18f, 0.022f),
+        new Vector3(-0.26f, 0.19f, 0.02f),
+    }, 10, true, true, 0f);
+
+    private static Mesh ChairCoatSleeve() => Lathe(new[]
+    {
+        new Vector3(0f, 0.055f, 0.045f),
+        new Vector3(-0.22f, 0.05f, 0.042f),
+        new Vector3(-0.46f, 0.047f, 0.04f),
+        new Vector3(-0.5f, 0.052f, 0.044f),
+    }, 8, true, true, 0f);
+
     private static bool TryBounds(Transform model, out Bounds bounds)
     {
         bounds = default;

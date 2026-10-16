@@ -201,7 +201,7 @@ public static class ParisRoomBuilder
         MilanoRoomBuilder.Box("Books (vanish as a group)", shelf, new Vector3(0f, 0.12f, 0f), new Vector3(0.18f, 0.22f, 0.8f), books, false);
 
         Transform fragments = MilanoRoomBuilder.Group("Fragment Areas 0.8 x 0.8", root);
-        foreach (var (name, pos) in new[] { ("Fragment 1 - between the beds", new Vector3(0f, 0f, 1.0f)), ("Fragment 2 - under the desk", new Vector3(1.1f, 0f, -0.9f)), ("Fragment 3 - under the window", new Vector3(0f, 0f, 2.0f)) })
+        foreach (var (name, pos) in new[] { ("Fragment 1 - between the beds", new Vector3(0f, 0f, 1.0f)), ("Fragment 2 - under the desk", new Vector3(0.45f, 0f, -0.25f)), ("Fragment 3 - under the window", new Vector3(0f, 0f, 2.0f)) })
         {
             Transform f = MilanoRoomBuilder.Group(name, fragments);
             f.localPosition = pos;
