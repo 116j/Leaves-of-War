@@ -242,6 +242,10 @@ public sealed class CC0Assets : EditorWindow
             "https://images.pexels.com/photos/35973349/pexels-photo-35973349.jpeg?auto=compress&cs=tinysrgb&w=1920",
             "https://www.pexels.com/photo/historic-courtyard-in-san-fernando-spain-35973349/",
             new Color(0.92f, 0.9f, 0.86f)),
+        new ViewEntry(L2, "Paris Roofs", "parigi_view.jpg",
+            "https://images.pexels.com/photos/16923121/pexels-photo-16923121.jpeg?auto=compress&cs=tinysrgb&w=1920",
+            "https://www.pexels.com/photo/roofs-of-buildings-in-paris-16923121/",
+            new Color(0.95f, 0.9f, 0.82f)),
     };
 
     private static readonly HashSet<string> KeepNames = new HashSet<string>

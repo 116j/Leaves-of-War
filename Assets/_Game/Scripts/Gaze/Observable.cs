@@ -47,6 +47,10 @@ public class Observable : MonoBehaviour
         {
             IsSeen = false;
         });
+
+        if (OnChangeAllowed.GetPersistentEventCount() == 0 && !LevelFlow.Drives(this))
+            foreach (ChangeBehaviour change in GetComponents<ChangeBehaviour>())
+                OnChangeAllowed.AddListener(change.OnChange);
     }
 
     private void Update()

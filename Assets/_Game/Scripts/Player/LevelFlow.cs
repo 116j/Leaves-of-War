@@ -105,6 +105,22 @@ public class LevelFlow : MonoBehaviour
     [SerializeField, Min(8f)] private float objectiveSize = 34f;
 
     public static bool PoemAllowed { get; private set; } = true;
+
+    public static bool Drives(Observable observable)
+    {
+        foreach (LevelFlow flow in FindObjectsByType<LevelFlow>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (flow.observables == null || flow.steps == null)
+                continue;
+            int index = Array.IndexOf(flow.observables, observable);
+            if (index < 0)
+                continue;
+            foreach (Step step in flow.steps)
+                if (step != null && step.action == StepAction.MoveObjectWhenUnseen && step.observableIndex == index)
+                    return true;
+        }
+        return false;
+    }
     public static bool SweepBlocked { get; private set; }
 
     public static class Carry

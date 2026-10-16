@@ -44,6 +44,8 @@ public class TranscribePoem : RevealableObject
     [SerializeField] private float _lineSpacing = 0f;
     [Tooltip("Extra space after each verse (each line break of the poem).")]
     [SerializeField] private float _paragraphSpacing = 0f;
+    [Tooltip("Pulls the lines of the poem closer together, in % of the font size (0 = the font's own spacing).")]
+    [SerializeField, Range(0f, 60f)] private float _tighterLines = 25f;
     [Tooltip("Size of the poem title (first line of the page) compared to the poem text, in %.")]
     [SerializeField, Range(80f, 200f)] private float _titleSize = 125f;
     [Tooltip("Header font size compared to the poem text.")]
@@ -167,6 +169,8 @@ public class TranscribePoem : RevealableObject
 
         PrepareBody(_assignedPoemTextCurrent, _assignedPoemTextCurrentNext);
         PrepareBody(_assignedPoemTextOld, _assignedPoemTextOldNext);
+        RaiseBody(_assignedPoemTextCurrent, _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+        RaiseBody(_assignedPoemTextOld, _assignedDateOld, _assignedNameOld, _assignedPlaceOld);
         foreach (TextMeshProUGUI header in new[] { _assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent, _assignedDateOld, _assignedNameOld, _assignedPlaceOld })
         {
             if (header == null)
@@ -750,7 +754,8 @@ public class TranscribePoem : RevealableObject
         {
             if (text == null)
                 continue;
-            text.lineSpacing = _lineSpacing;
+            text.lineSpacing = _lineSpacing - _tighterLines;
+            text.horizontalAlignment = HorizontalAlignmentOptions.Left;
             text.paragraphSpacing = _paragraphSpacing;
             text.linkedTextComponent = null;
             text.enableAutoSizing = false;
@@ -759,30 +764,263 @@ public class TranscribePoem : RevealableObject
         }
     }
 
+    private void RaiseBody(TextMeshProUGUI body, params TextMeshProUGUI[] headers)
+    {
+        if (body == null)
+            return;
+        RectTransform rect = body.rectTransform;
+        RectTransform parent = rect.parent as RectTransform;
+        TextMeshProUGUI line = HeaderLine(headers.Where(h => h != null && h.rectTransform.parent == rect.parent).ToArray());
+        if (line == null || parent == null)
+            return;
+        Rect box = line.rectTransform.rect;
+        float headerBottom = parent.InverseTransformPoint(line.rectTransform.TransformPoint(new Vector3(0f, box.yMin, 0f))).y;
+        Rect r = rect.rect;
+        float bodyTop = parent.InverseTransformPoint(rect.TransformPoint(new Vector3(0f, r.yMax, 0f))).y;
+        float wanted = headerBottom - line.fontSize * 0.3f;
+        if (wanted > bodyTop + 0.0001f)
+            rect.offsetMax += new Vector2(0f, wanted - bodyTop);
+    }
+
     private void SplitBody(string body, TextMeshProUGUI first, TextMeshProUGUI second)
     {
         if (first == null)
             return;
         if (!baseSizes.TryGetValue(first, out float size))
             baseSizes[first] = size = first.fontSize;
+        body = (body ?? string.Empty).Replace("\r", string.Empty);
+        string[] lines = body.Split('\n');
+        int header = lines.Length > 1 && lines[0].StartsWith("<size=") ? 2 : 0;
 
-        for (float f = 1f; f >= 0.4f; f -= 0.05f)
-        {
-            first.fontSize = size * f;
-            if (second != null)
-                second.fontSize = size * f;
-            Split(body, first, second);
-            if (Fits(first, Bottom(first, null)) && (second == null || Fits(second, Bottom(second, first))))
-                return;
-        }
+        for (float f = 1f; f >= MinPoemScale - 0.001f; f -= 0.05f)
+            foreach (int[] layout in Layouts)
+            {
+                if (second == null && layout[1] != layout[0])
+                    continue;
+                if (Show(lines, header, first, second, size * f, layout[0], layout[1]))
+                    return;
+            }
+        Show(lines, header, first, second, size * MinPoemScale, 3, 3);
     }
 
-    private static bool Fits(TextMeshProUGUI text, float bottom)
+    private static readonly int[][] Layouts = { new[] { 1, 1 }, new[] { 1, 2 }, new[] { 2, 2 }, new[] { 2, 3 }, new[] { 3, 3 } };
+    private const float ColumnGap = 6f;
+
+    private bool Show(string[] lines, int header, TextMeshProUGUI first, TextMeshProUGUI second, float fontSize, int leftColumns, int rightColumns)
+    {
+        first.fontSize = fontSize;
+        if (second != null)
+            second.fontSize = fontSize;
+        WrapCache.Clear();
+        bool fits = Pack(lines, header, first, second, leftColumns, rightColumns, out string left, out string right);
+        Apply(first, left);
+        if (second != null)
+            Apply(second, right);
+        return fits && Laid(first, null) && (second == null || Laid(second, first));
+    }
+
+    private static bool Pack(string[] lines, int header, TextMeshProUGUI first, TextMeshProUGUI second, int c1, int c2, out string left, out string right)
+    {
+        right = string.Empty;
+        if (second == null)
+        {
+            left = Columns(first, lines, 0, lines.Length, header, c1, out int wraps);
+            return Content(first, left) <= Room(first, null) && Tidy(lines.Length, c1, wraps);
+        }
+
+        float room1 = Room(first, null);
+        int lo = Mathf.Min(lines.Length, header + 1), hi = lines.Length;
+        if (Content(first, Columns(first, lines, 0, lo, header, c1)) > room1)
+            lo = Mathf.Min(lines.Length, 1);
+        while (lo < hi)
+        {
+            int mid = (lo + hi + 1) / 2;
+            if (Content(first, Columns(first, lines, 0, mid, header, c1)) <= room1)
+                lo = mid;
+            else
+                hi = mid - 1;
+        }
+        int fill = Mathf.Max(1, lo);
+        float room2 = Room(second, first);
+        for (int k = fill; k >= Mathf.Max(header + 1, fill - 6); k--)
+        {
+            bool stanza = k >= lines.Length || lines[k - 1].Trim().Length == 0 || lines[k].Trim().Length == 0;
+            if (!stanza)
+                continue;
+            string rest = Columns(second, lines, k, lines.Length, 0, c2, out int wrapsRight);
+            if (Content(second, rest) <= room2)
+            {
+                left = Columns(first, lines, 0, k, header, c1, out int wrapsLeft);
+                right = rest;
+                return Tidy(k, c1, wrapsLeft) && Tidy(lines.Length - k, c2, wrapsRight);
+            }
+        }
+        left = Columns(first, lines, 0, fill, header, c1, out int leftWraps);
+        right = Columns(second, lines, fill, lines.Length, 0, c2, out int rightWraps);
+        return Content(second, right) <= room2 && Tidy(fill, c1, leftWraps) && Tidy(lines.Length - fill, c2, rightWraps);
+    }
+
+    private static bool Tidy(int rows, int columns, int wraps) => columns <= 1 || wraps <= Mathf.Max(1, Mathf.FloorToInt(rows * 0.12f));
+
+    private static string Columns(TextMeshProUGUI text, string[] lines, int from, int to, int header, int columns) =>
+        Columns(text, lines, from, to, header, columns, out _);
+
+    private static string Columns(TextMeshProUGUI text, string[] lines, int from, int to, int header, int columns, out int extra)
+    {
+        extra = 0;
+        var head = new List<string>();
+        var rows = new List<string>();
+        for (int i = from; i < to; i++)
+        {
+            if (from == 0 && i < header)
+                head.Add(lines[i]);
+            else
+                rows.Add(lines[i]);
+        }
+        Trim(rows);
+        if (columns <= 1 || rows.Count == 0)
+            return string.Join("\n", head.Concat(rows)).TrimEnd();
+
+        float inner = Mathf.Max(0.0001f, text.rectTransform.rect.width - text.margin.x - text.margin.z);
+        float share = (100f - ColumnGap * (columns - 1)) / columns;
+        float limit = inner * share / 100f * 0.95f;
+        float offset = WidthOffset(text);
+        var wrapped = new List<string>();
+        foreach (string row in rows)
+        {
+            string key = row + "\u0001" + limit.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            if (!WrapCache.TryGetValue(key, out string[] pieces))
+                WrapCache[key] = pieces = Wrap(text, row, limit, offset).ToArray();
+            wrapped.AddRange(pieces);
+            extra += pieces.Length - 1;
+        }
+
+        var cols = new List<List<string>>();
+        int start = 0;
+        for (int c = 0; c < columns; c++)
+        {
+            int remaining = columns - c;
+            int target = start + Mathf.CeilToInt((wrapped.Count - start) / (float)remaining);
+            int end = c == columns - 1 ? wrapped.Count : target;
+            if (c < columns - 1)
+                for (int d = 0; d <= 3; d++)
+                {
+                    if (target - d > start && wrapped[target - d - 1].Trim().Length == 0)
+                    {
+                        end = target - d;
+                        break;
+                    }
+                    if (target + d < wrapped.Count && target + d > start && wrapped[target + d - 1].Trim().Length == 0)
+                    {
+                        end = target + d;
+                        break;
+                    }
+                }
+            var col = wrapped.GetRange(start, Mathf.Clamp(end - start, 0, wrapped.Count - start));
+            Trim(col);
+            cols.Add(col);
+            start = Mathf.Min(end, wrapped.Count);
+        }
+
+        int height = cols.Max(c => c.Count);
+        var output = new List<string>(head);
+        for (int r = 0; r < height; r++)
+        {
+            var row = new System.Text.StringBuilder();
+            for (int c = 0; c < cols.Count; c++)
+            {
+                if (c > 0)
+                    row.Append("<pos=").Append((c * (share + ColumnGap)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)).Append("%>");
+                if (r < cols[c].Count)
+                    row.Append(cols[c][r]);
+            }
+            output.Add(row.ToString());
+        }
+        return string.Join("\n", output).TrimEnd();
+    }
+
+    private static readonly Dictionary<string, string[]> WrapCache = new Dictionary<string, string[]>();
+
+    private static void Trim(List<string> rows)
+    {
+        while (rows.Count > 0 && rows[0].Trim().Length == 0)
+            rows.RemoveAt(0);
+        while (rows.Count > 0 && rows[rows.Count - 1].Trim().Length == 0)
+            rows.RemoveAt(rows.Count - 1);
+    }
+
+    private static float WidthOffset(TextMeshProUGUI text)
+    {
+        float one = text.GetPreferredValues("MMMM", 10000f, 0f).x;
+        float two = text.GetPreferredValues("MMMMMMMM", 10000f, 0f).x;
+        return Mathf.Max(0f, 2f * one - two);
+    }
+
+    private static float Width(TextMeshProUGUI text, string value, float offset) =>
+        text.GetPreferredValues(value, 10000f, 0f).x - offset;
+
+    private static IEnumerable<string> Wrap(TextMeshProUGUI text, string line, float limit, float offset)
+    {
+        if (line.Trim().Length == 0 || Width(text, line, offset) <= limit)
+        {
+            yield return line;
+            yield break;
+        }
+        string[] words = line.Split(' ');
+        string current = string.Empty;
+        foreach (string word in words)
+        {
+            string attempt = current.Length == 0 ? word : current + " " + word;
+            if (current.Trim().Length > 0 && Width(text, attempt, offset) > limit)
+            {
+                yield return current;
+                current = "   " + word;
+            }
+            else
+            {
+                current = attempt;
+            }
+        }
+        if (current.Length > 0)
+            yield return current;
+    }
+
+    private const float MinPoemScale = 0.3f;
+
+    private static bool Laid(TextMeshProUGUI text, TextMeshProUGUI reference)
     {
         TMP_TextInfo info = text.textInfo;
-        if (info.lineCount == 0)
+        if (info == null || info.lineCount == 0 || string.IsNullOrEmpty(text.text))
             return true;
-        return info.lineInfo[info.lineCount - 1].descender >= bottom - 0.0001f;
+        return info.lineInfo[info.lineCount - 1].descender >= Bottom(text, reference) - 0.0001f;
+    }
+
+    private static void Apply(TextMeshProUGUI text, string value)
+    {
+        text.maxVisibleWords = 99999;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.text = value;
+        text.ForceMeshUpdate(true, true);
+    }
+
+    private static string Join(string[] lines, int from, int to) =>
+        from >= to ? string.Empty : string.Join("\n", lines, from, to - from);
+
+    private static float Content(TextMeshProUGUI text, string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return 0f;
+        Rect r = text.rectTransform.rect;
+        float width = Mathf.Max(0.0001f, r.width);
+        float height = text.GetPreferredValues(value, width, 0f).y;
+        return height - text.margin.y - text.margin.w;
+    }
+
+    private static float Room(TextMeshProUGUI text, TextMeshProUGUI reference)
+    {
+        Rect r = text.rectTransform.rect;
+        float top = r.yMax - text.margin.y;
+        return (top - Bottom(text, reference)) * 0.98f;
     }
 
     private static float Bottom(TextMeshProUGUI text, TextMeshProUGUI reference)
@@ -794,62 +1032,6 @@ public class TranscribePoem : RevealableObject
         Vector3 world = reference.rectTransform.TransformPoint(new Vector3(r.xMin, r.yMin + reference.margin.w, 0f));
         float shared = text.rectTransform.InverseTransformPoint(world).y;
         return Mathf.Max(bottom, shared);
-    }
-
-    private static void Split(string body, TextMeshProUGUI first, TextMeshProUGUI second)
-    {
-        body ??= string.Empty;
-        first.maxVisibleWords = 99999;
-        first.overflowMode = TextOverflowModes.Overflow;
-        first.text = body;
-        first.ForceMeshUpdate(true, true);
-
-        int cut = body.Length;
-        if (second != null)
-        {
-            float bottom = first.rectTransform.rect.yMin + first.margin.w;
-            TMP_TextInfo info = first.textInfo;
-            int overflow = -1;
-            for (int i = 0; i < info.lineCount; i++)
-                if (info.lineInfo[i].descender < bottom - 0.0001f)
-                {
-                    overflow = i;
-                    break;
-                }
-            if (overflow > 0)
-            {
-                int target = Mathf.Min(overflow, Mathf.CeilToInt(info.lineCount * 0.5f));
-                int best = target;
-                for (int d = 0; d <= 4; d++)
-                {
-                    if (target - d > 1 && IsBlank(info, target - d - 1))
-                    {
-                        best = target - d;
-                        break;
-                    }
-                    if (target + d < overflow && IsBlank(info, target + d - 1))
-                    {
-                        best = target + d;
-                        break;
-                    }
-                }
-                while (best > 1 && !IsBlank(info, best - 1) && !EndsLine(info, best - 1))
-                    best--;
-                int character = info.lineInfo[best].firstCharacterIndex;
-                if (character >= 0 && character < info.characterCount)
-                    cut = Mathf.Clamp(info.characterInfo[character].index, 0, body.Length);
-            }
-        }
-
-        first.text = body.Substring(0, cut).TrimEnd();
-        first.ForceMeshUpdate(true, true);
-        if (second == null)
-            return;
-
-        second.maxVisibleWords = 99999;
-        second.overflowMode = TextOverflowModes.Overflow;
-        second.text = body.Substring(cut).TrimStart(' ', '\n', '\r', '\t');
-        second.ForceMeshUpdate(true, true);
     }
 
     private static bool IsBlank(TMP_TextInfo info, int line) => info.lineInfo[line].visibleCharacterCount == 0;

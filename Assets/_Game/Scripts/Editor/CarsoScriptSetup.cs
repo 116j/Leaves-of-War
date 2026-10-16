@@ -115,6 +115,7 @@ public static class CarsoScriptSetup
             new GameObject("GazeManager").AddComponent<GazeManager>();
         log.Add("Pietro carries the lantern along WP 1-5 one look-away at a time, kneels by the companion, hangs the light on the post, comes back for it at dawn and is gone.");
         log.Add("The companion shows only at the edge of sight, and vanishes for good at the end.");
+        log.Add(CompanionBuilder.Build(companion.gameObject.scene).Split('\n')[0]);
 
         SetupPoem(poemArea, log);
         DawnAfterPoem dawn = P.Get<DawnAfterPoem>(root);

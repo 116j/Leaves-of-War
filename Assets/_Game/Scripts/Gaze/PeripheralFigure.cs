@@ -2,8 +2,11 @@ using UnityEngine;
 
 public class PeripheralFigure : MonoBehaviour
 {
-    [Tooltip("How close to the border of the view it must be to show (0.18 = the outer 18% of the screen).")]
-    [SerializeField, Range(0f, 0.45f)] float _edge = 0.18f;
+    [Tooltip("The figure disappears while its centre is within this angle (degrees) from where the player looks, and shows again in the corner of the eye.")]
+    [SerializeField, Range(3f, 60f)] float _focusAngle = 16f;
+    [SerializeField, Min(1f)] float _maxDistance = 30f;
+    [Tooltip("On: the opposite - the figure is there only while looked at, and disappears as soon as the player looks away.")]
+    [SerializeField] bool _onlyWhileLookedAt;
 
     Renderer[] _renderers;
 
@@ -16,12 +19,19 @@ public class PeripheralFigure : MonoBehaviour
     {
         if (_renderers.Length == 0)
             return;
+        Camera cam = Gaze.View;
+        if (cam == null)
+            return;
         Bounds bounds = _renderers[0].bounds;
         foreach (Renderer r in _renderers)
             bounds.Encapsulate(r.bounds);
-        bool seen = Gaze.IsSeen(bounds, 30f, _edge, transform);
+        Vector3 eye = cam.transform.position;
+        Vector3 toCentre = bounds.center - eye;
+        bool looked = !DiaryInteraction.IsReading && toCentre.magnitude <= _maxDistance &&
+                      Vector3.Angle(cam.transform.forward, toCentre) < _focusAngle;
+        bool hidden = _onlyWhileLookedAt ? !looked : looked;
         foreach (Renderer r in _renderers)
-            r.forceRenderingOff = seen;
+            r.forceRenderingOff = hidden;
     }
 
     void OnDisable()
