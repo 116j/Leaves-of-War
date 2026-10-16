@@ -570,6 +570,7 @@ public static class CastModels
         foreach (SkinnedMeshRenderer skin in instance.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             skin.updateWhenOffscreen = true;
         Materials(instance, cast);
+        PeriodClothes.Dress(instance, cast.name);
         foreach (MeshRenderer r in stand)
             r.enabled = false;
 

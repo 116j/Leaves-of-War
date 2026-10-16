@@ -21,7 +21,8 @@ public class BroomSweeper : MonoBehaviour
 
     [Header("Broom Pose")]
     [SerializeField] private Vector3 sweepPositionOffset = new Vector3(0f, -0.12f, 0.15f);
-    [SerializeField] private Vector3 sweepRotationOffset = new Vector3(25f, 0f, 0f);
+    [Tooltip("Extra tilt while sweeping, around the camera's axes. Zero: the broom keeps exactly the rotation you gave it in the editor, held or sweeping.")]
+    [SerializeField] private Vector3 sweepRotationOffset = Vector3.zero;
     [SerializeField, Range(0f, 60f)] private float swingAngle = 25f;
     [SerializeField, Range(0f, 1f)] private float swingShift = 0.25f;
     [SerializeField, Min(0.1f)] private float blendSpeed = 8f;
@@ -175,7 +176,7 @@ public class BroomSweeper : MonoBehaviour
 
         float side = halfWidth > 0f ? offset / halfWidth : 0f;
         Vector3 targetPosition = heldPosition + sweepPositionOffset + Vector3.right * side * swingShift + Vector3.up * (currentReach - reach) * 0.2f;
-        Quaternion targetRotation = Quaternion.AngleAxis(swingAngle * side, Vector3.up) * heldRotation * Quaternion.Euler(sweepRotationOffset);
+        Quaternion targetRotation = Quaternion.AngleAxis(swingAngle * side, Vector3.up) * Quaternion.Euler(sweepRotationOffset) * heldRotation;
         float k = Mathf.SmoothStep(0f, 1f, weight);
         broom.localPosition = Vector3.Lerp(heldPosition, targetPosition, k);
         broom.localRotation = Quaternion.Slerp(heldRotation, targetRotation, k);

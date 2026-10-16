@@ -13,6 +13,10 @@ public class DiaryInteraction : KeyboardControl
     [Tooltip("Optional: the broom, lowered out of view while reading.")]
     [SerializeField] private Transform broom;
     [SerializeField] private Vector3 broomHiddenOffset = new Vector3(0f, -0.25f, 0f);
+    [Tooltip("Size of the broom while the notebook is open (reading or transcribing), as a fraction of its normal size.")]
+    [SerializeField, Range(0.05f, 1f)] private float broomHiddenScale = 0.6f;
+    [Tooltip("Transcribing: where the broom goes, relative to the notebook and seen from the camera (x = right, y = up, z = away). Positive x = right, positive z = behind the notebook.")]
+    [SerializeField] private Vector3 broomWritingOffset = new Vector3(0.3f, 0f, 0.2f);
     [SerializeField, Min(0.05f)] private float transitionSeconds = 0.45f;
     [Tooltip("Duration of the cover opening/closing.")]
     [SerializeField, Min(0.05f)] private float flipSeconds = 0.5f;
@@ -24,12 +28,12 @@ public class DiaryInteraction : KeyboardControl
     [SerializeField, Range(0f, 1f)] private float volume = 0.8f;
     [Tooltip("Seconds into the close clip where the cover lands.")]
     [SerializeField, Min(0f)] private float closeImpact = 0.17f;
-    [Tooltip("How much of the screen the open book fills while reading.")]
-    [SerializeField, Range(0.4f, 1f)] private float screenFill = 0.85f;
+    [Tooltip("How much of the screen the open notebook fills while reading (1 = the whole screen).")]
+    [SerializeField, Range(0.4f, 1f)] private float readingSize = 0.96f;
     [Tooltip("Writing (transcribing from the floor): how much of the screen the open notebook fills.")]
-    [SerializeField, Range(0.2f, 1f)] private float writingFill = 0.5f;
+    [SerializeField, Range(0.2f, 1f)] private float writingSize = 0.66f;
     [Tooltip("Writing: how far down the screen the notebook sits (0 = centre, 0.5 = bottom edge).")]
-    [SerializeField, Range(0f, 0.5f)] private float writingDrop = 0.3f;
+    [SerializeField, Range(0f, 0.5f)] private float writingLower = 0.17f;
     [Tooltip("How much of the diary face the pages cover (the rest is the cover border).")]
     [SerializeField, Range(0.5f, 1f)] private float pageFill = 0.95f;
     [Tooltip("Off: the diary stays on its pickup until the player takes it.")]
@@ -71,6 +75,8 @@ public class DiaryInteraction : KeyboardControl
     private Vector3 heldPosition;
     private Quaternion heldRotation;
     private Vector3 broomPosition;
+    private Vector3 broomScale = Vector3.one;
+    private Vector3 broomAway;
     private bool busy;
     private CursorLockMode previousLock = CursorLockMode.Locked;
 
@@ -108,6 +114,8 @@ public class DiaryInteraction : KeyboardControl
         viewCamera = player != null && player.PlayerCamera != null ? player.PlayerCamera : Camera.main;
         transcribe = FindAnyObjectByType<TranscribePoem>();
         blur = GetComponent<ReadingBlur>();
+        if (blur == null)
+            blur = gameObject.AddComponent<ReadingBlur>();
         closePrompt = ScreenPrompt.Create(transform, "Notebook Close Hint", closeHintSize, 40f);
         if (openClip == null)
             openClip = Resources.Load<AudioClip>("Audio/DiaryOpen");
@@ -132,7 +140,10 @@ public class DiaryInteraction : KeyboardControl
         heldPosition = diary.localPosition;
         heldRotation = diary.localRotation;
         if (broom != null)
+        {
             broomPosition = broom.localPosition;
+            broomScale = broom.localScale;
+        }
 
         pages = diary.GetComponentInChildren<Canvas>(true);
         foreach (Canvas canvas in diary.GetComponentsInChildren<Canvas>(true))
@@ -382,8 +393,15 @@ public class DiaryInteraction : KeyboardControl
 
         if (blur != null)
             blur.SetReading(!writing);
-        GetReadingPose(out Vector3 position, out Quaternion rotation, writing ? writingFill : screenFill, writing ? writingDrop : 0f);
-        yield return Move(heldPosition, heldRotation, position, rotation, Vector3.zero, broomHiddenOffset);
+        GetReadingPose(out Vector3 position, out Quaternion rotation, writing ? writingSize : readingSize, writing ? writingLower : 0f);
+        broomAway = broomHiddenOffset;
+        if (writing && broom != null)
+        {
+            Vector3 notebook = diary.parent != null ? diary.parent.TransformPoint(position) : position;
+            Vector3 target = notebook + viewCamera.transform.rotation * broomWritingOffset;
+            broomAway = (broom.parent != null ? broom.parent.InverseTransformPoint(target) : target) - broomPosition;
+        }
+        yield return Move(heldPosition, heldRotation, position, rotation, Vector3.zero, broomAway, 1f, broomHiddenScale);
 
         Play(openClip, 0f);
         if (rig != null)
@@ -427,7 +445,7 @@ public class DiaryInteraction : KeyboardControl
         IsReading = false;
         IsWriting = false;
 
-        yield return Move(diary.localPosition, diary.localRotation, heldPosition, heldRotation, broomHiddenOffset, Vector3.zero);
+        yield return Move(diary.localPosition, diary.localRotation, heldPosition, heldRotation, broomAway, Vector3.zero, broomHiddenScale, 1f);
 
         busy = false;
     }
@@ -512,7 +530,7 @@ public class DiaryInteraction : KeyboardControl
         }
     }
 
-    private IEnumerator Move(Vector3 fromPosition, Quaternion fromRotation, Vector3 toPosition, Quaternion toRotation, Vector3 broomFrom, Vector3 broomTo)
+    private IEnumerator Move(Vector3 fromPosition, Quaternion fromRotation, Vector3 toPosition, Quaternion toRotation, Vector3 broomFrom, Vector3 broomTo, float broomScaleFrom, float broomScaleTo)
     {
         float t = 0f;
         while (t < 1f)
@@ -524,7 +542,10 @@ public class DiaryInteraction : KeyboardControl
             diary.localRotation = Quaternion.Slerp(fromRotation, toRotation, k);
             FollowDiary();
             if (broom != null)
+            {
                 broom.localPosition = broomPosition + Vector3.Lerp(broomFrom, broomTo, k);
+                broom.localScale = broomScale * Mathf.Lerp(broomScaleFrom, broomScaleTo, k);
+            }
             yield return null;
         }
     }

@@ -454,11 +454,25 @@ MonoBehaviour:
   sweepBareWoodVolume: 0.828
   sweepFullSpeed: 350
   sweepPitch: {x: 0.9, y: 1.12}
-  gustClip: {fileID: 8300000, guid: 301b8dcfe0d163e4fa64c3a24e8ec4e2, type: 3}
+  gustClip: {fileID: 8300000, guid: 5e2a2442df6181e4cb914a2f7f7b23e7, type: 3}
+  gustClips:
+  - {fileID: 8300000, guid: 5e2a2442df6181e4cb914a2f7f7b23e7, type: 3}
+  - {fileID: 8300000, guid: c966a30c4a9cdd34488ed3411d18949c, type: 3}
   gustVolume: 0.74
-  entryEnterSound: {fileID: 0}
+  startGameSound: {fileID: 0}
+  startGameVolume: 0.8
+  entryEnterSound: {fileID: 8300000, guid: 8b47769662fefe34981d7e16cf1d3f25, type: 3}
   entryExitSound: {fileID: 0}
-  entryClickSound: {fileID: 0}
+  entryClickSound: {fileID: 8300000, guid: 72433e019758ef1488cd657ab8b484d1, type: 3}
+  entryPaperSounds:
+  - {fileID: 8300000, guid: 9b8306fab1f52c74c8ac921fb81a67b6, type: 3}
+  - {fileID: 8300000, guid: d7d021f9aa504ea42ab061b109dacb76, type: 3}
+  - {fileID: 8300000, guid: 5e7fd5a13ffb5f344abb54a9e7df555a, type: 3}
+  entryPaperVolume: 0.7
+  entryPaperFoldPitch: 0.88
+  entryBackSounds:
+  - {fileID: 8300000, guid: a8ce58c9693f5924b9ce8b3515f74c56, type: 3}
+  - {fileID: 8300000, guid: 15fedaad06ae50843a434da6c8a02b4c, type: 3}
   entrySoundVolume: 0.8
   entrySoundPitch: {x: 0.94, y: 1.06}
   cursorSize: 256

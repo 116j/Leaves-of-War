@@ -150,12 +150,24 @@ namespace Hortensia.Runtime
         [SerializeField, Min(10f)] private float sweepFullSpeed = 350f;
         [SerializeField] private Vector2 sweepPitch = new Vector2(0.9f, 1.12f);
         [SerializeField] private AudioClip gustClip;
+        [Tooltip("Optional: one is picked at random for each gust. Empty = Gust Clip.")]
+        [SerializeField] private AudioClip[] gustClips = System.Array.Empty<AudioClip>();
         [SerializeField, Range(0f, 1f)] private float gustVolume = 0.8f;
+        [Tooltip("Played when a game starts or a save is loaded.")]
+        [SerializeField] private AudioClip startGameSound;
+        [SerializeField, Range(0f, 1f)] private float startGameVolume = 0.8f;
 
         [Header("Menu Entry Sounds")]
         [SerializeField] private AudioClip entryEnterSound;
         [SerializeField] private AudioClip entryExitSound;
         [SerializeField] private AudioClip entryClickSound;
+        [Tooltip("Paper unfolding when the pointer enters an entry and folding back when it leaves. One at random.")]
+        [SerializeField] private AudioClip[] entryPaperSounds = System.Array.Empty<AudioClip>();
+        [SerializeField, Range(0f, 1f)] private float entryPaperVolume = 0.7f;
+        [Tooltip("Pitch of the paper folding back, relative to the unfolding.")]
+        [SerializeField, Range(0.5f, 1.5f)] private float entryPaperFoldPitch = 0.88f;
+        [Tooltip("Played when a panel (Load, Options, Credits) is closed. One at random.")]
+        [SerializeField] private AudioClip[] entryBackSounds = System.Array.Empty<AudioClip>();
         [SerializeField, Range(0f, 1f)] private float entrySoundVolume = 0.8f;
         [SerializeField] private Vector2 entrySoundPitch = new Vector2(0.94f, 1.06f);
 
@@ -248,6 +260,8 @@ namespace Hortensia.Runtime
         private AudioSource sweepSource;
         private AudioSource sfxSource;
         private AudioSource entrySource;
+        private AudioSource paperSource;
+        private int lastPaper = -1;
 
         private Canvas cursorCanvas;
         private RectTransform cursorRect;
@@ -648,6 +662,8 @@ namespace Hortensia.Runtime
             colors.pressedColor = new Color(0.48f, 0.52f, 0.37f);
             colors.disabledColor = new Color(0.34f, 0.32f, 0.28f, 0.65f);
             button.colors = colors;
+            if (name != "Back")
+                button.onClick.AddListener(() => PlayEntrySound(2));
             button.onClick.AddListener(action);
 
             CreateText(rect, "Label", readableFont, 23f, Vector2.zero, new Vector2(width - 30f, 46f)).color = PanelTextColor;
@@ -1165,8 +1181,9 @@ namespace Hortensia.Runtime
         {
             inputLocked = true;
             gustActive = true;
-            if (gustClip != null)
-                sfxSource.PlayOneShot(gustClip, gustVolume);
+            AudioClip gust = gustClips != null && gustClips.Length > 0 ? gustClips[Random.Range(0, gustClips.Length)] : gustClip;
+            if (gust != null)
+                sfxSource.PlayOneShot(gust, gustVolume);
             FadeOutHint(0.3f);
 
             float w = leavesTexture.width;
@@ -1220,6 +1237,7 @@ namespace Hortensia.Runtime
             }
 
             starting = true;
+            PlayStartSound();
             TranscribePoem.NewSession();
             StartCoroutine(Gust(() =>
             {
@@ -1234,6 +1252,7 @@ namespace Hortensia.Runtime
                 return;
 
             starting = true;
+            PlayStartSound();
             StartCoroutine(Gust(() => SceneManager.LoadScene(level)));
         }
 
@@ -1243,7 +1262,14 @@ namespace Hortensia.Runtime
                 return;
 
             starting = true;
+            PlayStartSound();
             SceneManager.LoadScene(level);
+        }
+
+        private void PlayStartSound()
+        {
+            if (startGameSound != null && sfxSource != null)
+                sfxSource.PlayOneShot(startGameSound, startGameVolume);
         }
 
         private void OpenPanel(System.Action open)
@@ -1281,6 +1307,8 @@ namespace Hortensia.Runtime
                 StopCoroutine(creditsRoutine);
             creditsRoutine = null;
 
+            if (inputLocked && !starting && entryBackSounds != null && entryBackSounds.Length > 0 && entrySource != null)
+                entrySource.PlayOneShot(entryBackSounds[Random.Range(0, entryBackSounds.Length)], entrySoundVolume);
             creditsPanel.SetActive(false);
             loadPanel.SetActive(false);
             optionsPanel.Hide();
@@ -1381,11 +1409,28 @@ namespace Hortensia.Runtime
 
         internal void PlayEntrySound(int kind)
         {
-            AudioClip clip = kind == 0 ? entryEnterSound : kind == 1 ? entryExitSound : entryClickSound;
-            if (clip == null || entrySource == null)
+            if (entrySource == null)
                 return;
-            entrySource.pitch = Random.Range(entrySoundPitch.x, entrySoundPitch.y);
-            entrySource.PlayOneShot(clip, entrySoundVolume);
+            AudioClip clip = kind == 0 ? entryEnterSound : kind == 1 ? entryExitSound : entryClickSound;
+            if (clip != null)
+            {
+                entrySource.pitch = Random.Range(entrySoundPitch.x, entrySoundPitch.y);
+                entrySource.PlayOneShot(clip, entrySoundVolume);
+            }
+            if (kind < 2 && entryPaperSounds != null && entryPaperSounds.Length > 0)
+            {
+                if (paperSource == null)
+                    paperSource = CreateSource("Entry Paper", null, 1f);
+                int pick = Random.Range(0, entryPaperSounds.Length);
+                if (entryPaperSounds.Length > 1 && pick == lastPaper)
+                    pick = (pick + 1) % entryPaperSounds.Length;
+                lastPaper = pick;
+                AudioClip paper = entryPaperSounds[pick];
+                if (paper == null)
+                    return;
+                paperSource.pitch = Random.Range(entrySoundPitch.x, entrySoundPitch.y) * (kind == 1 ? entryPaperFoldPitch : 1f);
+                paperSource.PlayOneShot(paper, entryPaperVolume);
+            }
         }
 
         private void UpdateSweepAudio()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Hortensia.Runtime
@@ -16,6 +17,8 @@ namespace Hortensia.Runtime
         public sealed class Ambience
         {
             public AudioClip clip;
+            [Tooltip("Same clip forced to mono (Tools > Leaves of War > Audio > Mono Ambience Copies). Used to narrow the stereo image while the window is closed.")]
+            public AudioClip monoClip;
             [Tooltip("Always, only with the window closed (inside version) or only with it open (outside version).")]
             public Mix mix = Mix.Always;
             [Range(0f, 1f)] public float volume = 0.6f;
@@ -56,8 +59,33 @@ namespace Hortensia.Runtime
         [Tooltip("How fast the outside takes over: higher = a small gap already lets the street in.")]
         [SerializeField, Range(0.2f, 1f)] private float leakCurve = 0.5f;
         [SerializeField, Min(0f)] private float fadeInSeconds = 2f;
+        [Tooltip("Seconds of overlap between the end of each ambience loop and its next start. 0 = plain loop.")]
+        [SerializeField, Min(0f)] private float loopCrossfade = 3f;
+        [Tooltip("Stereo width of the ambience with the window closed (0 = mono, 1 = full stereo). Opening the window widens it to full stereo. Needs the mono copies.")]
+        [SerializeField, Range(0f, 1f)] private float closedStereoWidth = 0.3f;
 
-        private AudioSource[] sources = Array.Empty<AudioSource>();
+        private const float MonoBoost = 1.3f;
+
+        private sealed class Layer
+        {
+            public Ambience entry;
+            public readonly AudioSource[] stereo = new AudioSource[2];
+            public readonly AudioSource[] mono = new AudioSource[2];
+        }
+
+        private sealed class Track
+        {
+            public readonly List<Layer> layers = new List<Layer>();
+            public int frequency;
+            public double length;
+            public double crossfade;
+            public int current;
+            public bool scheduled;
+            public double ready;
+            public readonly bool[] fadeIn = new bool[2];
+        }
+
+        private readonly List<Track> tracks = new List<Track>();
         private AudioSource musicSource;
         private float musicTarget;
         private float elapsed;
@@ -115,52 +143,162 @@ namespace Hortensia.Runtime
             if (window == null)
                 window = FindAnyObjectByType<OpenableWindow>();
             transcribe = FindAnyObjectByType<TranscribePoem>();
-            sources = new AudioSource[ambience.Length];
             double syncStart = AudioSettings.dspTime + 0.1;
-            for (int i = 0; i < ambience.Length; i++)
+            var synced = new Dictionary<long, Track>();
+            foreach (Ambience entry in ambience)
             {
-                Ambience entry = ambience[i];
                 if (entry == null || entry.clip == null)
                     continue;
+                AudioClip clip = entry.clip;
+                double length = clip.samples / (double)clip.frequency;
+                Track track = null;
+                long key = (long)clip.samples * 1000003L + clip.frequency;
+                if (entry.mix != Mix.Always)
+                    synced.TryGetValue(key, out track);
+                if (track == null)
+                {
+                    track = new Track
+                    {
+                        frequency = clip.frequency,
+                        length = length,
+                        crossfade = Math.Min(loopCrossfade, length * 0.3),
+                        ready = syncStart + 0.25,
+                    };
+                    tracks.Add(track);
+                    if (entry.mix != Mix.Always)
+                        synced[key] = track;
+                }
 
-                Transform parent = entry.source != null ? entry.source : transform;
-                var go = new GameObject("Ambience " + entry.clip.name);
-                go.transform.SetParent(parent, false);
-                AudioSource source = go.AddComponent<AudioSource>();
-                source.clip = entry.clip;
-                source.loop = true;
-                source.playOnAwake = false;
-                source.volume = 0f;
-                source.spatialBlend = entry.source != null ? 1f : 0f;
-                source.rolloffMode = AudioRolloffMode.Linear;
-                source.maxDistance = entry.maxDistance;
-                AudioManager.Route(source, AudioBus.SoundEffects);
-                if (entry.mix == Mix.Always)
+                var layer = new Layer { entry = entry };
+                AudioClip mono = entry.source == null && entry.monoClip != null && entry.monoClip.samples == clip.samples ? entry.monoClip : null;
+                int voices = track.crossfade > 0.05 ? 2 : 1;
+                for (int v = 0; v < voices; v++)
                 {
-                    source.time = UnityEngine.Random.Range(0f, entry.clip.length * 0.9f);
-                    source.Play();
+                    layer.stereo[v] = MakeSource(entry, clip, voices == 1);
+                    if (mono != null)
+                        layer.mono[v] = MakeSource(entry, mono, voices == 1);
                 }
-                else
-                {
-                    source.PlayScheduled(syncStart);
-                }
-                sources[i] = source;
+                track.layers.Add(layer);
             }
+
+            foreach (Track track in tracks)
+            {
+                bool always = track.layers[0].entry.mix == Mix.Always;
+                int offset = always ? (int)(UnityEngine.Random.Range(0f, 0.9f) * track.length * track.frequency) : 0;
+                foreach (Layer layer in track.layers)
+                    foreach (AudioSource source in new[] { layer.stereo[0], layer.mono[0] })
+                    {
+                        if (source == null)
+                            continue;
+                        source.timeSamples = Mathf.Min(offset, source.clip.samples - 1);
+                        source.PlayScheduled(syncStart);
+                    }
+            }
+        }
+
+        private AudioSource MakeSource(Ambience entry, AudioClip clip, bool loop)
+        {
+            Transform parent = entry.source != null ? entry.source : transform;
+            var go = new GameObject("Ambience " + clip.name);
+            go.transform.SetParent(parent, false);
+            AudioSource source = go.AddComponent<AudioSource>();
+            source.clip = clip;
+            source.loop = loop;
+            source.playOnAwake = false;
+            source.volume = 0f;
+            source.spatialBlend = entry.source != null ? 1f : 0f;
+            source.rolloffMode = AudioRolloffMode.Linear;
+            source.maxDistance = entry.maxDistance;
+            AudioManager.Route(source, AudioBus.SoundEffects);
+            return source;
+        }
+
+        private void Advance(Track track)
+        {
+            if (track.layers[0].stereo[1] == null || AudioListener.pause || AudioSettings.dspTime < track.ready)
+                return;
+            int next = 1 - track.current;
+            AudioSource current = track.layers[0].stereo[track.current];
+            double played = current.timeSamples / (double)track.frequency;
+            double remaining = track.length - track.crossfade - played;
+
+            if (track.scheduled)
+            {
+                AudioSource upcoming = track.layers[0].stereo[next];
+                if (upcoming.isPlaying && upcoming.timeSamples > 0 || !current.isPlaying)
+                {
+                    track.current = next;
+                    track.scheduled = false;
+                }
+                return;
+            }
+
+            if (current.isPlaying && remaining > 0.25)
+                return;
+            double at = AudioSettings.dspTime + Math.Max(current.isPlaying ? remaining : 0.0, 0.02);
+            foreach (Layer layer in track.layers)
+                foreach (AudioSource source in new[] { layer.stereo[next], layer.mono[next] })
+                {
+                    if (source == null)
+                        continue;
+                    source.Stop();
+                    source.timeSamples = 0;
+                    source.PlayScheduled(at);
+                }
+            track.fadeIn[next] = true;
+            track.scheduled = true;
+        }
+
+        private static float Gain(Track track, int voice)
+        {
+            AudioSource source = track.layers[0].stereo[voice];
+            if (source == null || !source.isPlaying)
+                return 0f;
+            if (track.layers[0].stereo[1] == null)
+                return 1f;
+            double t = source.timeSamples / (double)track.frequency;
+            double xf = track.crossfade;
+            double gain = 1.0;
+            if (track.fadeIn[voice] && t < xf)
+                gain *= Math.Sin(t / xf * Math.PI * 0.5);
+            if (t > track.length - xf)
+                gain *= Math.Cos(Math.Min(1.0, (t - (track.length - xf)) / xf) * Math.PI * 0.5);
+            return (float)gain;
         }
 
         private void Update()
         {
             elapsed += Time.unscaledDeltaTime;
             float fade = fadeInSeconds > 0f ? Mathf.Clamp01(elapsed / fadeInSeconds) : 1f;
-            float open = window != null ? Mathf.Pow(window.Openness, leakCurve) : 0f;
+            float openness = window != null ? window.Openness : 0f;
+            float open = Mathf.Pow(openness, leakCurve);
             float outside = Mathf.Sin(open * Mathf.PI * 0.5f);
             float inside = Mathf.Cos(open * Mathf.PI * 0.5f);
-            for (int i = 0; i < sources.Length; i++)
+            float width = window != null ? Mathf.Lerp(closedStereoWidth, 1f, open) : 1f;
+            foreach (Track track in tracks)
             {
-                if (sources[i] == null)
-                    continue;
-                float mix = ambience[i].mix == Mix.WindowOpen ? outside : ambience[i].mix == Mix.WindowClosed ? inside : 1f;
-                sources[i].volume = ambience[i].volume * fade * mix;
+                Advance(track);
+                for (int v = 0; v < 2; v++)
+                {
+                    float gain = Gain(track, v);
+                    foreach (Layer layer in track.layers)
+                    {
+                        if (layer.stereo[v] == null)
+                            continue;
+                        Ambience entry = layer.entry;
+                        float mix = entry.mix == Mix.WindowOpen ? outside : entry.mix == Mix.WindowClosed ? inside : 1f;
+                        float level = entry.volume * fade * mix * gain;
+                        if (layer.mono[v] != null)
+                        {
+                            layer.stereo[v].volume = level * width;
+                            layer.mono[v].volume = Mathf.Clamp01(level * (1f - width) * MonoBoost);
+                        }
+                        else
+                        {
+                            layer.stereo[v].volume = level;
+                        }
+                    }
+                }
             }
 
             bool uncovered = transcribe != null && transcribe.IsPoemUncovered;

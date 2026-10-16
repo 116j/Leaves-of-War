@@ -58,7 +58,7 @@ public static class ProjectCleanup
             return "No MakeHuman folder.";
         EnsureFolder(SharedTextures);
         string[] paths = AssetDatabase.FindAssets("t:Texture2D", new[] { MakeHuman }).Select(AssetDatabase.GUIDToAssetPath)
-            .Where(p => !p.StartsWith(SharedTextures + "/")).Distinct().ToArray();
+            .Where(p => !p.StartsWith(SharedTextures + "/") && !p.Contains("/_Outfits/")).Distinct().ToArray();
         var canonical = new Dictionary<string, Texture2D>();
         var duplicates = new Dictionary<Texture2D, Texture2D>();
         foreach (string path in paths.OrderBy(p => p))
@@ -126,7 +126,7 @@ public static class ProjectCleanup
     private static void OptimizeBuildSize()
     {
         if (!EditorUtility.DisplayDialog("Optimize Build Size",
-            "Voices and poems: mono, 22 kHz, Vorbis 50%.\nSound effects: 32 kHz, Vorbis 50%.\nMusic and ambience: Vorbis 45%, streamed.\n" +
+            "Voices and poems: mono, 22 kHz, Vorbis 50%.\nSound effects: 32 kHz, Vorbis 50%.\nMusic: Vorbis 45%, streamed. Ambience: Vorbis 45%, compressed in memory (needed for the loop crossfade).\n" +
             "Game textures: at most 1024 px (PS1 look), crunch compression 50.\n\nIt reimports many files: it can take a few minutes.", "Optimize", "Cancel"))
             return;
         int audio = 0, textures = 0;
@@ -140,13 +140,14 @@ public static class ProjectCleanup
                     continue;
                 string lower = path.ToLowerInvariant();
                 bool voice = lower.Contains("/voices/");
+                bool monoCopy = lower.Contains("/ambience/mono/");
                 bool longClip = lower.Contains("/music/") || lower.Contains("/ambience/");
                 AudioImporterSampleSettings settings = importer.defaultSampleSettings;
                 settings.compressionFormat = AudioCompressionFormat.Vorbis;
                 settings.quality = longClip ? 0.45f : 0.5f;
                 if (longClip)
                 {
-                    settings.loadType = AudioClipLoadType.Streaming;
+                    settings.loadType = lower.Contains("/music/") ? AudioClipLoadType.Streaming : AudioClipLoadType.CompressedInMemory;
                     settings.sampleRateSetting = AudioSampleRateSetting.PreserveSampleRate;
                 }
                 else
@@ -155,7 +156,7 @@ public static class ProjectCleanup
                     settings.sampleRateOverride = voice ? 22050u : 32000u;
                 }
                 importer.defaultSampleSettings = settings;
-                if (voice)
+                if (voice || monoCopy)
                     importer.forceToMono = true;
                 importer.SaveAndReimport();
                 audio++;

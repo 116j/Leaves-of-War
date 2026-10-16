@@ -170,7 +170,11 @@ public sealed class DriveAudioImport : EditorWindow
         yield return "SFX_Notebook_Close_1";
         yield return "SFX_Notebook_Close_2";
         yield return "SFX_Chair_Move";
+        foreach (string ui in MenuSounds)
+            yield return ui;
     }
+
+    private static readonly string[] MenuSounds = { "UI_Menu_Gust1", "UI_Menu_Gust2", "UI_Hover_1", "UI_Select_2", "UI_Back_8", "UI_Back_6", "UI_StartGame" };
 
     private static string Destination(string name)
     {
@@ -183,6 +187,8 @@ public sealed class DriveAudioImport : EditorWindow
             return AmbienceFolder;
         if (upper.StartsWith("MUS_") || upper.StartsWith("00_MUS_") || upper.StartsWith("STG_"))
             return MusicFolder;
+        if (upper.StartsWith("UI_"))
+            return SfxFolder + "/UI";
         if (upper.StartsWith("SFX_FOOTSTEPS"))
             return SfxFolder + "/Footsteps";
         if (upper.StartsWith("SFX_PAGE_TURN"))
@@ -217,7 +223,7 @@ public sealed class DriveAudioImport : EditorWindow
         foreach (string guid in AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets" }))
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (path.StartsWith(Trash))
+            if (path.StartsWith(Trash) || path.StartsWith(AmbienceMono.Folder))
                 continue;
             string name = Path.GetFileName(path);
             string folder = Destination(Path.GetFileNameWithoutExtension(path));
@@ -265,7 +271,7 @@ public sealed class DriveAudioImport : EditorWindow
         bool loop = sfx && Path.GetFileName(path).ToUpperInvariant().Contains("LOOP");
         bool longClip = folder == AmbienceFolder || folder == MusicFolder && !Path.GetFileName(path).StartsWith("STG_");
         AudioImporterSampleSettings settings = importer.defaultSampleSettings;
-        settings.loadType = voice || sfx && !loop ? AudioClipLoadType.DecompressOnLoad : longClip ? AudioClipLoadType.Streaming : AudioClipLoadType.CompressedInMemory;
+        settings.loadType = voice || sfx && !loop ? AudioClipLoadType.DecompressOnLoad : longClip && folder == MusicFolder ? AudioClipLoadType.Streaming : AudioClipLoadType.CompressedInMemory;
         settings.compressionFormat = AudioCompressionFormat.Vorbis;
         settings.quality = voice ? 0.75f : sfx ? 0.7f : 0.6f;
         importer.defaultSampleSettings = settings;
@@ -363,6 +369,7 @@ public sealed class DriveAudioImport : EditorWindow
                 LevelAudio.Mix mix = window == null ? LevelAudio.Mix.Always : clips[i].amb.mix;
                 float volume = window == null && clips[i].amb.mix == LevelAudio.Mix.WindowOpen ? 0.2f : clips[i].amb.volume;
                 entry.FindPropertyRelative("clip").objectReferenceValue = clips[i].clip;
+                entry.FindPropertyRelative("monoClip").objectReferenceValue = AmbienceMono.Copy(clips[i].clip);
                 entry.FindPropertyRelative("mix").enumValueIndex = (int)mix;
                 entry.FindPropertyRelative("volume").floatValue = volume;
                 entry.FindPropertyRelative("source").objectReferenceValue = null;
@@ -605,11 +612,25 @@ public sealed class DriveAudioImport : EditorWindow
             so.FindProperty("windAmbience").objectReferenceValue = wind;
             done.Add("menu ambience " + wind.name);
         }
-        AudioClip menuGust = First("SFX_Wind_Gust_1");
+        AudioClip menuGust = First("UI_Menu_Gust1", "SFX_Wind_Gust_1");
         if (menuGust != null)
         {
             so.FindProperty("gustClip").objectReferenceValue = menuGust;
-            done.Add("menu gust");
+            done.Add("menu gust " + menuGust.name);
+        }
+        SetClips(so.FindProperty("gustClips"), "UI_Menu_Gust1", "UI_Menu_Gust2");
+        SetClips(so.FindProperty("entryBackSounds"), "UI_Back_8", "UI_Back_6");
+        SetClips(so.FindProperty("entryPaperSounds"), "SFX_Paper_Reveal_1", "SFX_Paper_Reveal_2", "SFX_Paper_Reveal_3");
+        var menuSounds = new[] { ("entryEnterSound", "UI_Hover_1"), ("entryClickSound", "UI_Select_2"), ("startGameSound", "UI_StartGame") };
+        foreach ((string property, string file) in menuSounds)
+        {
+            AudioClip clip = First(file.Split('|'));
+            SerializedProperty field = so.FindProperty(property);
+            if (clip != null && field != null)
+            {
+                field.objectReferenceValue = clip;
+                done.Add(clip.name);
+            }
         }
         AudioClip menuSweep = First("SFX_Broom_Wood_Slow");
         if (menuSweep != null)
@@ -619,6 +640,18 @@ public sealed class DriveAudioImport : EditorWindow
         }
         so.ApplyModifiedPropertiesWithoutUndo();
         return string.Join(", ", done);
+    }
+
+    private static void SetClips(SerializedProperty list, params string[] files)
+    {
+        if (list == null)
+            return;
+        var clips = files.Select(f => First(f)).Where(c => c != null).ToList();
+        if (clips.Count == 0)
+            return;
+        list.arraySize = clips.Count;
+        for (int i = 0; i < clips.Count; i++)
+            list.GetArrayElementAtIndex(i).objectReferenceValue = clips[i];
     }
 
     private static int Relink(Scene scene, out int voiced)
