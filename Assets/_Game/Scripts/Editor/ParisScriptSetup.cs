@@ -284,7 +284,7 @@ public static class ParisScriptSetup
             silent++;
     }
 
-    private static Transform Figure(Transform room, string name, Vector3 local, float yaw, Material clothes, Material skin)
+    internal static Transform Figure(Transform room, string name, Vector3 local, float yaw, Material clothes, Material skin)
     {
         Transform figure = room.Find(name);
         if (figure == null)
@@ -344,7 +344,7 @@ public static class ParisScriptSetup
         return broom;
     }
 
-    private static void RelinkHeldItems(List<string> log)
+    internal static void RelinkHeldItems(List<string> log)
     {
         DiaryInteraction diary = Object.FindAnyObjectByType<DiaryInteraction>(FindObjectsInactive.Include);
         BroomSweeper sweeper = Object.FindAnyObjectByType<BroomSweeper>(FindObjectsInactive.Include);
@@ -461,15 +461,15 @@ public static class ParisScriptSetup
         return null;
     }
 
-    private static T Get<T>(Transform t) where T : Component =>
+    internal static T Get<T>(Transform t) where T : Component =>
         t.TryGetComponent(out T found) ? found : t.gameObject.AddComponent<T>();
 
     private static Transform Child(Transform root, string name) =>
         root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == name);
 
-    private static Material Mat(string name) => AssetDatabase.LoadAssetAtPath<Material>(GreyboxFolder + name + ".mat");
+    internal static Material Mat(string name) => AssetDatabase.LoadAssetAtPath<Material>(GreyboxFolder + name + ".mat");
 
-    private static Material InvisibleMaterial()
+    internal static Material InvisibleMaterial()
     {
         foreach (string candidate in new[] { "Transparent", "TransporantMaterial" })
             foreach (string guid in AssetDatabase.FindAssets(candidate + " t:Material"))

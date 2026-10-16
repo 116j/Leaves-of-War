@@ -401,6 +401,8 @@ public class LevelFlow : MonoBehaviour
                 {
                     changeBehaviourSet = true;
                     changeBehaviour = observables[step.observableIndex].GetComponent<ChangeBehaviour>();
+                    observables[step.observableIndex].OnChangeAllowed.RemoveListener(changeBehaviour.OnChange);
+                    changeBehaviour.Arm();
                     observables[step.observableIndex].OnChangeAllowed.AddListener(changeBehaviour.OnChange);
                 }
                 break;

@@ -203,7 +203,13 @@ public sealed class CastVoices : EditorWindow
                 unknown.Add(path);
                 continue;
             }
-            Line direct = All.FirstOrDefault(l => l.character == character && Regex.IsMatch(name, "(^|[^0-9a-z])" + l.id.Replace("_", "[_ ]?") + "($|[^0-9])", RegexOptions.IgnoreCase));
+            string id = LevelId(name);
+            Line direct = All.FirstOrDefault(l => l.character == character && (l.id == id || Regex.IsMatch(name, "(^|[^0-9a-z])" + l.id.Replace("_", "[_ ]?") + "($|[^0-9])", RegexOptions.IgnoreCase)));
+            if (direct == null && id != null)
+            {
+                unknown.Add(path + "  (" + id + " is not one of " + character + "'s lines)");
+                continue;
+            }
             int order = Number(name);
             if (direct == null && order < 0)
             {
@@ -243,6 +249,12 @@ public sealed class CastVoices : EditorWindow
                 if (Regex.IsMatch(lower, "(^|[^a-z])" + token + "([^a-z]|$)") || token.Length > 3 && lower.Contains(token))
                     return character;
         return null;
+    }
+
+    private static string LevelId(string name)
+    {
+        Match m = Regex.Match(name, @"(?:lvl|level|liv|livello)[ _-]?(\d)[ _-]+0*(\d+)", RegexOptions.IgnoreCase);
+        return m.Success ? "L" + m.Groups[1].Value + "_" + int.Parse(m.Groups[2].Value).ToString("00") : null;
     }
 
     private static int Number(string name)

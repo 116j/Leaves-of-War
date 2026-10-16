@@ -20,6 +20,9 @@ public class FollowerLeaf : MonoBehaviour
     private float seed;
     private bool shown = true;
 
+    public static AudioClip[] Sounds;
+    public static float SoundVolume = 0.35f;
+
     public static FollowerLeaf Spawn(Texture2D texture = null)
     {
         FollowerLeaf existing = FindAnyObjectByType<FollowerLeaf>();
@@ -77,6 +80,24 @@ public class FollowerLeaf : MonoBehaviour
             transform.position = Target();
     }
 
+    private void PlaySound()
+    {
+        if (Sounds == null || Sounds.Length == 0)
+            return;
+        AudioClip clip = Sounds[Random.Range(0, Sounds.Length)];
+        if (clip == null)
+            return;
+        var go = new GameObject("Follower Leaf Sound");
+        go.transform.SetParent(transform, false);
+        AudioSource source = go.AddComponent<AudioSource>();
+        source.spatialBlend = 0f;
+        source.volume = SoundVolume;
+        source.clip = clip;
+        Hortensia.Runtime.AudioManager.Route(source, Hortensia.Runtime.AudioBus.SoundEffects);
+        source.Play();
+        Destroy(go, clip.length + 0.2f);
+    }
+
     private Vector2 NewSlot() => new Vector2(Random.Range(viewportX.x, viewportX.y), Random.Range(viewportY.x, viewportY.y));
 
     private Vector3 Target()
@@ -103,6 +124,7 @@ public class FollowerLeaf : MonoBehaviour
                 leaf.gameObject.SetActive(show);
             if (show)
             {
+                PlaySound();
                 slot = NewSlot();
                 transform.position = view.ViewportToWorldPoint(new Vector3(slot.x, -0.15f, distance));
                 velocity = Vector3.zero;

@@ -149,6 +149,27 @@ public sealed class DriveAudioImport : EditorWindow
         yield return "SFX_Lantern_Flicker_Loop";
         yield return "SFX_Lantern_Hang_1";
         yield return "SFX_Lantern_Hang_2";
+        foreach (string surface in new[] { "Wood", "Stone", "Tile" })
+        {
+            yield return "SFX_Broom_" + surface + "_Slow";
+            yield return "SFX_Broom_" + surface + "_Fast";
+        }
+        for (int i = 1; i <= 6; i++)
+            yield return "SFX_Leaf_Rustle_" + i;
+        for (int i = 1; i <= 6; i++)
+            yield return "SFX_Leaf_Wet_" + i;
+        for (int i = 1; i <= 5; i++)
+            yield return "SFX_Wind_Gust_" + i;
+        for (int i = 1; i <= 3; i++)
+            yield return "SFX_Follower_Leaf_" + i;
+        for (int i = 1; i <= 3; i++)
+            yield return "SFX_Paper_Reveal_" + i;
+        yield return "SFX_Pen_Write";
+        yield return "SFX_Notebook_Open_1";
+        yield return "SFX_Notebook_Open_2";
+        yield return "SFX_Notebook_Close_1";
+        yield return "SFX_Notebook_Close_2";
+        yield return "SFX_Chair_Move";
     }
 
     private static string Destination(string name)
@@ -172,6 +193,18 @@ public sealed class DriveAudioImport : EditorWindow
             return SfxFolder + "/Window";
         if (upper.StartsWith("SFX_OLD_DOOR"))
             return SfxFolder + "/Door";
+        if (upper.StartsWith("SFX_BROOM"))
+            return SfxFolder + "/Broom";
+        if (upper.StartsWith("SFX_LEAF"))
+            return SfxFolder + "/Leaves";
+        if (upper.StartsWith("SFX_WIND"))
+            return SfxFolder + "/Wind";
+        if (upper.StartsWith("SFX_FOLLOWER"))
+            return SfxFolder + "/Follower Leaf";
+        if (upper.StartsWith("SFX_PAPER") || upper.StartsWith("SFX_PEN") || upper.StartsWith("SFX_NOTEBOOK"))
+            return SfxFolder + "/Notebook";
+        if (upper.StartsWith("SFX_CHAIR"))
+            return SfxFolder + "/Furniture";
         if (upper.StartsWith("SFX_"))
             return SfxFolder;
         return null;
@@ -236,7 +269,7 @@ public sealed class DriveAudioImport : EditorWindow
         settings.compressionFormat = AudioCompressionFormat.Vorbis;
         settings.quality = voice ? 0.75f : sfx ? 0.7f : 0.6f;
         importer.defaultSampleSettings = settings;
-        importer.forceToMono = voice || folder == SfxFolder + "/Footsteps" || folder == SfxFolder + "/Page Turn";
+        importer.forceToMono = voice || folder == SfxFolder + "/Footsteps" || folder == SfxFolder + "/Page Turn" || folder == SfxFolder + "/Leaves" || folder == SfxFolder + "/Notebook";
         importer.loadInBackground = longClip;
         importer.SaveAndReimport();
     }
@@ -478,6 +511,81 @@ public sealed class DriveAudioImport : EditorWindow
             }
         if (lanterns > 0)
             done.Add(lanterns + " lantern(s)");
+
+        string broomSurface = ground == FootstepSurfaceType.Wood ? "Wood" : ground == FootstepSurfaceType.Tile ? "Tile" : "Stone";
+        bool wet = ground == FootstepSurfaceType.Earth;
+        BroomSweeper sweeper = Object.FindAnyObjectByType<BroomSweeper>(FindObjectsInactive.Include);
+        AudioClip slow = First("SFX_Broom_" + broomSurface + "_Slow");
+        AudioClip fast = First("SFX_Broom_" + broomSurface + "_Fast");
+        AudioClip[] leaves = Clips(wet ? "SFX_Leaf_Wet_" : "SFX_Leaf_Rustle_", 6);
+        if (leaves.Length == 0)
+            leaves = Clips(wet ? "SFX_Leaf_Rustle_" : "SFX_Leaf_Wet_", 6);
+        if (sweeper != null && (slow != null || fast != null || leaves.Length > 0))
+        {
+            var so = new SerializedObject(sweeper);
+            if (slow != null)
+                so.FindProperty("sweepClip").objectReferenceValue = slow;
+            if (fast != null)
+                so.FindProperty("fastClip").objectReferenceValue = fast;
+            SetArray(so.FindProperty("leafClips"), leaves);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            done.Add("broom (" + broomSurface + (leaves.Length > 0 ? ", " + (wet ? "wet" : "dry") + " leaves" : "") + ")");
+        }
+
+        AudioClip pen = First("SFX_Pen_Write");
+        AudioClip[] gusts = Clips("SFX_Wind_Gust_", 5);
+        if (transcribe != null && (pen != null || gusts.Length > 0))
+        {
+            var so = new SerializedObject(transcribe);
+            if (pen != null)
+                so.FindProperty("_writingClip").objectReferenceValue = pen;
+            if (gusts.Length > 0)
+            {
+                SetArray(so.FindProperty("_gustClips"), gusts);
+                so.FindProperty("_gustClip").objectReferenceValue = gusts[0];
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+            done.Add("pen and gusts");
+        }
+
+        DiaryInteraction diary = Object.FindAnyObjectByType<DiaryInteraction>(FindObjectsInactive.Include);
+        AudioClip notebookOpen = First("SFX_Notebook_Open_1", "SFX_Notebook_Open_2");
+        AudioClip notebookClose = First("SFX_Notebook_Close_1", "SFX_Notebook_Close_2");
+        if (diary != null && (notebookOpen != null || notebookClose != null))
+        {
+            var so = new SerializedObject(diary);
+            if (notebookOpen != null)
+                so.FindProperty("openClip").objectReferenceValue = notebookOpen;
+            if (notebookClose != null)
+                so.FindProperty("closeClip").objectReferenceValue = notebookClose;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            done.Add("notebook open/close");
+        }
+
+        AudioClip[] reveal = Clips("SFX_Paper_Reveal_", 3);
+        AudioClip[] follower = Clips("SFX_Follower_Leaf_", 3);
+        LevelAudio levelAudio = Object.FindAnyObjectByType<LevelAudio>(FindObjectsInactive.Include);
+        if (levelAudio != null && (reveal.Length > 0 || follower.Length > 0))
+        {
+            var so = new SerializedObject(levelAudio);
+            SetArray(so.FindProperty("paperRevealClips"), reveal);
+            SetArray(so.FindProperty("followerLeafClips"), follower);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            done.Add("paper reveal and golden leaf");
+        }
+
+        AudioClip chairMove = First("SFX_Chair_Move");
+        if (chairMove != null)
+            foreach (Transform t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => t.name.Contains("(moves)")))
+            {
+                MoveSfx move = t.GetComponent<MoveSfx>();
+                if (move == null)
+                    move = t.gameObject.AddComponent<MoveSfx>();
+                var so = new SerializedObject(move);
+                so.FindProperty("clip").objectReferenceValue = chairMove;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                done.Add(t.name + " sound");
+            }
         return string.Join(", ", done);
     }
 
@@ -496,6 +604,18 @@ public sealed class DriveAudioImport : EditorWindow
         {
             so.FindProperty("windAmbience").objectReferenceValue = wind;
             done.Add("menu ambience " + wind.name);
+        }
+        AudioClip menuGust = First("SFX_Wind_Gust_1");
+        if (menuGust != null)
+        {
+            so.FindProperty("gustClip").objectReferenceValue = menuGust;
+            done.Add("menu gust");
+        }
+        AudioClip menuSweep = First("SFX_Broom_Wood_Slow");
+        if (menuSweep != null)
+        {
+            so.FindProperty("sweepLoop").objectReferenceValue = menuSweep;
+            done.Add("menu sweep");
         }
         so.ApplyModifiedPropertiesWithoutUndo();
         return string.Join(", ", done);

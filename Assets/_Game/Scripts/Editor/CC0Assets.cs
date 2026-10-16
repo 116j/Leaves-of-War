@@ -83,22 +83,18 @@ public sealed class CC0Assets : EditorWindow
 
     private static readonly ModelEntry[] Models =
     {
-        new ModelEntry(L1, "Broom_Stick", Fit.Aligned, "im:broom|scopa", RealBroom, "pt:GardenTools/Models/Broom.fbx"),
-        new ModelEntry(L1, "Broom (pickup)/Model", Fit.Aligned, "im:broom|scopa", RealBroom, "pt:GardenTools/Models/Broom.fbx"),
-        new ModelEntry(L1, "Iron Bed", S, "im:bed|letto", GF + "Bed.prefab"),
-        new ModelEntry(L1, "Walnut Table", S, "im:table|tavol|desk|scrivania", "ph:WoodenTable_01", GF + "DinnerTable.prefab"),
-        new ModelEntry(L1, "Walnut Table/French Grammar Books", S, "im:book|libr|grammar|grammatic", "ph:book_encyclopedia_set_01"),
-        new ModelEntry(L1, "Glass Ink Pot", U, "im:ink|inchiostro|calamaio", "pt:ink/stoneware_ink_bottle.glb"),
-        new ModelEntry(L1, "Dip Pen", U, "im:dippen|dip_pen|dip pen|quill|penna|pennino"),
-        new ModelEntry(L1, "Folded Newspaper 1914", U, "im:newspaper|giornale"),
-        new ModelEntry(L1, "Brass Oil Lamp", U, "im:lamp|lume|lanterna", "ph:vintage_oil_lamp"),
-        new ModelEntry(L1, "Bentwood Chair (moves)", U, "im:chair|sedia", GF + "Chair.prefab", "ph:WoodenChair_01"),
-        new ModelEntry(L1, "Wardrobe (carved cornice)", S, "im:wardrobe|armadio", "pt:wardrobe/source/Wardrobe Filled.fbx", "ph:GothicCabinet_01"),
-        new ModelEntry(L1, "Marble Washstand/Cabinet", S, "im:washstand|lavabo|lavamano|toeletta|cabinet|comodino|mobiletto|cassettiera|dresser", GF + "Dresser.prefab", "ph:vintage_cabinet_01"),
-        new ModelEntry(L1, "Marble Washstand/Jug", U, "im:jug|brocca|caraffa", "ph:jug_01"),
-        new ModelEntry(L1, "Coat Hooks", Fit.Standing, "im:coat|hanger|attaccapanni|appendiabiti", "pt:coat-rack/source/Hanger.fbx"),
-        new ModelEntry(L1, "Door Panelled", S, "im:door|porta"),
-
+        new ModelEntry(L1, "Broom_Stick", Fit.Aligned, RealBroom, "pt:GardenTools/Models/Broom.fbx"),
+        new ModelEntry(L1, "Broom (pickup)/Model", Fit.Aligned, RealBroom, "pt:GardenTools/Models/Broom.fbx"),
+        new ModelEntry(L1, "Iron Bed", S, GF + "Bed.prefab"),
+        new ModelEntry(L1, "Walnut Table", S, "ph:WoodenTable_01", GF + "DinnerTable.prefab"),
+        new ModelEntry(L1, "Walnut Table/French Grammar Books", S, "ph:book_encyclopedia_set_01"),
+        new ModelEntry(L1, "Glass Ink Pot", U, "pt:ink/stoneware_ink_bottle.glb"),
+        new ModelEntry(L1, "Brass Oil Lamp", U, "ph:vintage_oil_lamp"),
+        new ModelEntry(L1, "Bentwood Chair (moves)", U, GF + "Chair.prefab", "ph:WoodenChair_01"),
+        new ModelEntry(L1, "Wardrobe (carved cornice)", S, "pt:wardrobe/source/Wardrobe Filled.fbx", "ph:GothicCabinet_01"),
+        new ModelEntry(L1, "Marble Washstand/Cabinet", S, GF + "Dresser.prefab", "ph:vintage_cabinet_01"),
+        new ModelEntry(L1, "Marble Washstand/Jug", U, "ph:jug_01"),
+        new ModelEntry(L1, "Coat Hooks", Fit.Standing, "pt:coat-rack/source/Hanger.fbx"),
         new ModelEntry(L2, "Bed *", S, GF + "Bed.prefab"),
         new ModelEntry(L2, "Washstand/Stand", S, GF + "SideTable.prefab", "ph:GothicCommode_01"),
         new ModelEntry(L2, "Washstand/Jug", U, "ph:jug_01"),
@@ -188,8 +184,8 @@ public sealed class CC0Assets : EditorWindow
 
     private static readonly TextureEntry[] Textures =
     {
-        new TextureEntry(L1, "Floor Planks", "old_wood_floor", 1.5f, Color.white),
-        new TextureEntry(L1, "Plaster", "painted_plaster_wall", 2.5f, new Color(1f, 0.93f, 0.8f)),
+        new TextureEntry(L1, "Floor Planks", "Assets/_Game/Art/3D/Import/Level 1 Milano Assets/Wall&Floor/Floor", 2.05f, Color.white),
+        new TextureEntry(L1, "Plaster", "Assets/_Game/Art/3D/Import/Level 1 Milano Assets/Wall&Floor/Wall", 2.05f, Color.white),
         new TextureEntry(L1, "Stencil Border", "patterned_plaster_wall", 1f, new Color(0.8f, 0.62f, 0.52f)),
         new TextureEntry(L1, "Walnut", "wood_table_worn", 1f, new Color(0.8f, 0.6f, 0.45f)),
         new TextureEntry(L1, "Dark Wood", "wood_table_worn", 1f, new Color(0.5f, 0.36f, 0.27f)),
@@ -250,7 +246,7 @@ public sealed class CC0Assets : EditorWindow
 
     private static readonly HashSet<string> KeepNames = new HashSet<string>
     {
-        ModelChild, "Exercise Sheets", "Folded Newspaper 1914", "Glass Ink Pot", "Dip Pen", "Marble Top", "Basin", "Bowl",
+        ModelChild, MilanoFinalModels.Child, "Exercise Sheets", "Folded Newspaper 1914", "Glass Ink Pot", "Dip Pen", "Marble Top", "Basin", "Bowl",
         "Letters and Envelopes", "Moammed's Coat (vanishes)", "Branch Anchors", "1 - Drawings", "Lantern Light"
     };
 
@@ -342,8 +338,9 @@ public sealed class CC0Assets : EditorWindow
 
     private static void TextureRow(string id)
     {
-        RowGui(FindTexture(TextureFolder(id), "", Diffuse) != null, "Texture  " + id, null, "https://polyhaven.com/a/" + id, TextureFolder(id),
-            () => Download(new List<string>(), new List<string> { id }));
+        bool local = id.StartsWith("Assets/", StringComparison.Ordinal);
+        RowGui(FindTexture(TextureFolder(id), "", Diffuse) != null, "Texture  " + (local ? Path.GetFileName(id) + " (your textures)" : id), null, local ? null : "https://polyhaven.com/a/" + id, TextureFolder(id),
+            local ? (Action)null : () => Download(new List<string>(), new List<string> { id }));
     }
 
     private static void RowGui(bool ok, string label, string tip, string url, string folder, Action get)
@@ -392,6 +389,7 @@ public sealed class CC0Assets : EditorWindow
             .Where(id => ModelFiles(ModelRoot + "/" + id).Count == 0)
             .ToList();
         List<string> textures = Textures.Select(e => e.id)
+            .Where(id => !id.StartsWith("Assets/", StringComparison.Ordinal))
             .Distinct()
             .Where(id => FindTexture(TextureFolder(id), "", Diffuse) == null)
             .ToList();
@@ -641,7 +639,7 @@ public sealed class CC0Assets : EditorWindow
             .ToList();
     }
 
-    private static string TextureFolder(string id) => TextureRoot + "/" + id;
+    private static string TextureFolder(string id) => id.StartsWith("Assets/", StringComparison.Ordinal) ? id : TextureRoot + "/" + id;
 
     private static void CreateAllFolders()
     {
@@ -668,6 +666,7 @@ public sealed class CC0Assets : EditorWindow
     {
         Scene scene = SceneManager.GetActiveScene();
         var log = new List<string>();
+        int finals = MilanoFinalModels.Apply(scene, log);
         PrepareTextures();
         RepairPortraitMaterials();
         int textured = ApplyTextures(scene) + ApplyViews(scene);
@@ -701,6 +700,8 @@ public sealed class CC0Assets : EditorWindow
 
             foreach (Transform target in targets)
             {
+                if (target.Find(MilanoFinalModels.Child) != null)
+                    continue;
                 Transform existing = target.Find(ModelChild);
                 if (existing != null)
                 {
@@ -720,6 +721,7 @@ public sealed class CC0Assets : EditorWindow
         int racks = CoatRackClothes.Apply(scene);
         int coats = CoatRackClothes.ApplyChairCoat(scene);
         EditorSceneManager.MarkSceneDirty(scene);
+        log.Insert(0, finals > 0 ? finals + " final Milano models from Art/3D/Import." : "");
         log.Add(placed + " models placed, " + textured + " greybox materials textured, " + papers + " papers, letters and drawings" +
             (racks > 0 ? ", clothes on " + racks + " coat rack(s)" : "") + (coats > 0 ? ", Moammed's coat on the chair." : "."));
         if (missingSources.Count > 0)
@@ -1228,8 +1230,22 @@ public sealed class CC0Assets : EditorWindow
             CollectParts(child, false, list);
     }
 
-    private static readonly string[] Diffuse = { "_diff", "diffuse", "basecolor", "base_color", "albedo", "_col" };
-    private static readonly string[] Normal = { "_nor_gl", "normalgl", "_normal", "_nrm" };
+    private static readonly string[] Diffuse = { "_diff", "diffuse", "basecolor", "base_color", "albedo", "_col", "colour" };
+    private static readonly string[] Normal = { "_nor_gl", "normalgl", "_normal", "_nrm", "normal" };
+
+    private static Texture2D NormalMap(Texture2D texture)
+    {
+        if (texture == null)
+            return null;
+        string path = AssetDatabase.GetAssetPath(texture);
+        if (AssetImporter.GetAtPath(path) is TextureImporter importer && importer.textureType != TextureImporterType.NormalMap)
+        {
+            importer.textureType = TextureImporterType.NormalMap;
+            importer.SaveAndReimport();
+            texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+        return texture;
+    }
 
     private static Texture2D FindTexture(string folder, string prefix, string[] keys)
     {
@@ -1554,7 +1570,7 @@ public sealed class CC0Assets : EditorWindow
                 material.SetTextureScale("_BaseMap", Vector2.one * entry.tile);
                 material.SetColor("_BaseColor", entry.tint);
                 material.SetFloat("_Smoothness", 0.25f);
-                Texture2D bump = FindTexture(folder, entry.id, Normal);
+                Texture2D bump = NormalMap(FindTexture(folder, entry.id, Normal));
                 if (bump != null)
                 {
                     material.SetTexture("_BumpMap", bump);
@@ -1569,7 +1585,7 @@ public sealed class CC0Assets : EditorWindow
             material.SetTexture("_BaseMap", diffuse);
             material.SetColor("_BaseColor", entry.tint);
             material.SetFloat("_Smoothness", 0.08f);
-            Texture2D normal = FindTexture(folder, entry.id, Normal);
+            Texture2D normal = NormalMap(FindTexture(folder, entry.id, Normal));
             if (normal != null)
             {
                 material.SetTexture("_BumpMap", normal);

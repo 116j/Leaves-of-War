@@ -27,8 +27,15 @@ public class BroomSweeper : MonoBehaviour
     [SerializeField, Min(0.1f)] private float blendSpeed = 8f;
 
     [Header("Audio")]
+    [Tooltip("Slow sweeping loop on this level's floor.")]
     [SerializeField] private AudioClip sweepClip;
+    [Tooltip("Fast sweeping loop: crossfades in when the broom moves quickly.")]
+    [SerializeField] private AudioClip fastClip;
+    [SerializeField, Min(0.1f)] private float fastSpeed = 1.6f;
     [SerializeField, Range(0f, 1f)] private float volume = 0.6f;
+    [Tooltip("Played now and then while leaves are pushed.")]
+    [SerializeField] private AudioClip[] leafClips = new AudioClip[0];
+    [SerializeField, Range(0f, 1f)] private float leafVolume = 0.4f;
 
     [Header("Prompt")]
     [SerializeField] private string promptFormat = "HOLD {0} AND MOVE THE MOUSE TO SWEEP";
@@ -47,6 +54,10 @@ public class BroomSweeper : MonoBehaviour
 
     private FirstPersonController player;
     private AudioSource source;
+    private AudioSource fastSource;
+    private AudioSource leafSource;
+    private int audioPushed;
+    private float nextLeaf;
     private TextMeshProUGUI prompt;
     private Vector3 heldPosition;
     private Quaternion heldRotation;
@@ -77,13 +88,13 @@ public class BroomSweeper : MonoBehaviour
 
         if (sweepClip == null)
             sweepClip = Resources.Load<AudioClip>("MainMenu/Sweep");
-        source = gameObject.AddComponent<AudioSource>();
-        source.clip = sweepClip;
-        source.loop = true;
-        source.playOnAwake = false;
-        source.spatialBlend = 0f;
-        source.volume = 0f;
-        AudioManager.Route(source, AudioBus.SoundEffects);
+        source = LoopSource(sweepClip);
+        if (fastClip != null)
+            fastSource = LoopSource(fastClip);
+        leafSource = gameObject.AddComponent<AudioSource>();
+        leafSource.playOnAwake = false;
+        leafSource.spatialBlend = 0f;
+        AudioManager.Route(leafSource, AudioBus.SoundEffects);
 
         prompt = ScreenPrompt.Create(transform, "Sweep Prompt", promptSize, 40f);
     }
@@ -189,21 +200,55 @@ public class BroomSweeper : MonoBehaviour
         return ray.GetPoint(10f);
     }
 
+    private AudioSource LoopSource(AudioClip clip)
+    {
+        AudioSource s = gameObject.AddComponent<AudioSource>();
+        s.clip = clip;
+        s.loop = true;
+        s.playOnAwake = false;
+        s.spatialBlend = 0f;
+        s.volume = 0f;
+        AudioManager.Route(s, AudioBus.SoundEffects);
+        return s;
+    }
+
     private void UpdateAudio(bool sweeping, float dt)
     {
-        if (source == null || source.clip == null)
-            return;
-
         float target = sweeping ? volume * Mathf.Clamp01(headSpeed / 1.2f) : 0f;
-        source.volume = Mathf.MoveTowards(source.volume, target, dt * (target > source.volume ? 6f : 3f));
-        if (source.volume > 0.001f && !source.isPlaying)
+        float fast = fastSource != null ? Mathf.Clamp01((headSpeed - fastSpeed * 0.6f) / (fastSpeed * 0.6f)) : 0f;
+        Fade(source, target * (1f - fast), dt);
+        Fade(fastSource, target * fast, dt);
+
+        if (leafClips != null && leafClips.Length > 0 && leafSource != null)
         {
-            source.time = Random.Range(0f, source.clip.length * 0.9f);
-            source.Play();
+            if (pushedTotal > audioPushed + 3 && Time.time >= nextLeaf)
+            {
+                AudioClip clip = leafClips[Random.Range(0, leafClips.Length)];
+                if (clip != null)
+                    leafSource.PlayOneShot(clip, leafVolume * Random.Range(0.75f, 1f));
+                nextLeaf = Time.time + Random.Range(0.25f, 0.5f);
+                audioPushed = pushedTotal;
+            }
+            else if (!sweeping)
+            {
+                audioPushed = pushedTotal;
+            }
         }
-        else if (source.volume <= 0.001f && source.isPlaying)
+    }
+
+    private static void Fade(AudioSource s, float target, float dt)
+    {
+        if (s == null || s.clip == null)
+            return;
+        s.volume = Mathf.MoveTowards(s.volume, target, dt * (target > s.volume ? 6f : 3f));
+        if (s.volume > 0.001f && !s.isPlaying)
         {
-            source.Stop();
+            s.time = Random.Range(0f, s.clip.length * 0.9f);
+            s.Play();
+        }
+        else if (s.volume <= 0.001f && s.isPlaying)
+        {
+            s.Stop();
         }
     }
 

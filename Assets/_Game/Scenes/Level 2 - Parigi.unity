@@ -762,8 +762,18 @@ MonoBehaviour:
   swingAngle: 25
   swingShift: 0.734
   blendSpeed: 8
-  sweepClip: {fileID: 8300000, guid: c341b4565e43af74c9cd2f581c35c67f, type: 3}
+  sweepClip: {fileID: 8300000, guid: 1775d1141ff13344facb3046f6a78f91, type: 3}
+  fastClip: {fileID: 8300000, guid: 398e20dc9af3dfe48a40252924a4dda7, type: 3}
+  fastSpeed: 1.6
   volume: 0.6
+  leafClips:
+  - {fileID: 8300000, guid: db0ce57031c22a146b16d4728e760bf1, type: 3}
+  - {fileID: 8300000, guid: fb5d25ab27bb3da419e1a89a90356f6c, type: 3}
+  - {fileID: 8300000, guid: b3205d21494b1714ea8f31f9ba48a624, type: 3}
+  - {fileID: 8300000, guid: 9c8de666c50d3884099504fded3a80ea, type: 3}
+  - {fileID: 8300000, guid: 5f3fdfbb0db5aa84c8eaaee8c9ca1938, type: 3}
+  - {fileID: 8300000, guid: 53c7f05cdcad9a649b3dcc331f252389, type: 3}
+  leafVolume: 0.4
   promptFormat: HOLD {0} AND MOVE THE MOUSE TO SWEEP
   promptSize: 30
   hintLeaves: 300
@@ -4972,43 +4982,43 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.25932917
+      value: 0.8757174
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.0760339
+      value: -0.45218378
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.035700087
+      value: -0.6842379
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.3794776
+      value: -0.3310463
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.61267084
+      value: -0.6402358
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.4404028
+      value: -0.14207384
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.5354219
+      value: 0.67847
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -249.487
+      value: -218.074
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 66.694
+      value: 100.231
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -22.35498
+      value: 19.848999
       objectReference: {fileID: 0}
     - target: {fileID: 6967078709348319743, guid: 31846c6b696125f48a66b693e2d9ffcf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -5733,8 +5743,8 @@ MonoBehaviour:
   broomHiddenOffset: {x: 0, y: -0.25, z: 0}
   transitionSeconds: 0.45
   flipSeconds: 0.5
-  openClip: {fileID: 8300000, guid: ce54e35ccdf7e374ea52881fdfc37453, type: 3}
-  closeClip: {fileID: 8300000, guid: 7bc5e424f5c4d7d45a26b778b2f6c538, type: 3}
+  openClip: {fileID: 8300000, guid: 380fb1a3846baea42b75bf3461248911, type: 3}
+  closeClip: {fileID: 8300000, guid: 17dd8c7dec7ce0144bfaef12ac00491b, type: 3}
   volume: 0.642
   closeImpact: 0.17
   screenFill: 0.74
@@ -5802,7 +5812,7 @@ MonoBehaviour:
   _paragraphSpacing: 0
   _titleSize: 125
   _headerScale: 0.7
-  _writingClip: {fileID: 8300000, guid: b7db8b72b92e2b340bf07b5a4b449df7, type: 3}
+  _writingClip: {fileID: 8300000, guid: d21d766972855a345a37578adb313e39, type: 3}
   _writingVolume: 0.336
   _voiceVolume: 0.601
   _pageTurnClips:
@@ -5816,7 +5826,13 @@ MonoBehaviour:
   _pageTurnVolume: 0.7
   _lookAwaySeconds: 3
   _recoverCoverage: 0.7
-  _gustClip: {fileID: 0}
+  _gustClip: {fileID: 8300000, guid: 301b8dcfe0d163e4fa64c3a24e8ec4e2, type: 3}
+  _gustClips:
+  - {fileID: 8300000, guid: 301b8dcfe0d163e4fa64c3a24e8ec4e2, type: 3}
+  - {fileID: 8300000, guid: 5710ed42c2b1d274c93ab0178277bcdf, type: 3}
+  - {fileID: 8300000, guid: e81b6cd175194084db90e3642b671e5d, type: 3}
+  - {fileID: 8300000, guid: ddd0cf49f825f5b41a3daec70803ffd1, type: 3}
+  - {fileID: 8300000, guid: b9fe579a39c1c1b4fab87fee88db8522, type: 3}
   _gustVolume: 0.8
   _immuneToLookingAway: 0
   _lowerAfterRelease: 1
@@ -6567,6 +6583,16 @@ MonoBehaviour:
   musicFade: 2
   poemFoundStinger: {fileID: 8300000, guid: f54972751fbb13443b124ad75f71399b, type: 3}
   stingerVolume: 0.8
+  paperRevealClips:
+  - {fileID: 8300000, guid: 9b8306fab1f52c74c8ac921fb81a67b6, type: 3}
+  - {fileID: 8300000, guid: d7d021f9aa504ea42ab061b109dacb76, type: 3}
+  - {fileID: 8300000, guid: 5e7fd5a13ffb5f344abb54a9e7df555a, type: 3}
+  paperRevealVolume: 0.7
+  followerLeafClips:
+  - {fileID: 8300000, guid: 71a259afb740fff44a706756022f2954, type: 3}
+  - {fileID: 8300000, guid: ccd4d37bf5ca8874295dd4372efa1d8c, type: 3}
+  - {fileID: 8300000, guid: 6767f72940936974ba473894f692bb77, type: 3}
+  followerLeafVolume: 0.35
   ambience:
   - clip: {fileID: 8300000, guid: 386eabf14f4802c46bf58042fc8db6fd, type: 3}
     mix: 0

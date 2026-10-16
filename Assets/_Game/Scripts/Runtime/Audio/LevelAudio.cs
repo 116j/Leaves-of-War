@@ -41,6 +41,14 @@ namespace Hortensia.Runtime
         [SerializeField] private AudioClip poemFoundStinger;
         [SerializeField, Range(0f, 1f)] private float stingerVolume = 0.8f;
 
+        [Header("Effects")]
+        [Tooltip("Paper sound when the poem is uncovered (one at random).")]
+        [SerializeField] private AudioClip[] paperRevealClips = Array.Empty<AudioClip>();
+        [SerializeField, Range(0f, 1f)] private float paperRevealVolume = 0.7f;
+        [Tooltip("Played when the golden leaf appears while writing (one at random).")]
+        [SerializeField] private AudioClip[] followerLeafClips = Array.Empty<AudioClip>();
+        [SerializeField, Range(0f, 1f)] private float followerLeafVolume = 0.35f;
+
         [Header("Ambience")]
         [SerializeField] private Ambience[] ambience = Array.Empty<Ambience>();
         [Tooltip("The window that crossfades the inside and outside ambience.")]
@@ -61,6 +69,8 @@ namespace Hortensia.Runtime
         {
             TranscribePoem.TranscriptionStarted += OnTranscriptionStarted;
             TranscribePoem.Transcribed += OnTranscribed;
+            FollowerLeaf.Sounds = followerLeafClips;
+            FollowerLeaf.SoundVolume = followerLeafVolume;
         }
 
         private void OnDisable()
@@ -154,8 +164,13 @@ namespace Hortensia.Runtime
             }
 
             bool uncovered = transcribe != null && transcribe.IsPoemUncovered;
-            if (uncovered && !poemWasUncovered && poemFoundStinger != null)
-                PlayStinger();
+            if (uncovered && !poemWasUncovered)
+            {
+                if (poemFoundStinger != null)
+                    PlayStinger();
+                if (paperRevealClips.Length > 0)
+                    OneShot(paperRevealClips[UnityEngine.Random.Range(0, paperRevealClips.Length)], paperRevealVolume);
+            }
             poemWasUncovered = uncovered;
 
             if (!musicStarted && musicMode == MusicMode.Always && music != null && elapsed >= musicDelay)
@@ -185,6 +200,21 @@ namespace Hortensia.Runtime
             AudioManager.Route(source, AudioBus.Music);
             source.Play();
             Destroy(go, poemFoundStinger.length + 0.2f);
+        }
+
+        private void OneShot(AudioClip clip, float volume)
+        {
+            if (clip == null)
+                return;
+            var go = new GameObject(clip.name);
+            go.transform.SetParent(transform, false);
+            AudioSource source = go.AddComponent<AudioSource>();
+            source.spatialBlend = 0f;
+            source.volume = volume;
+            source.clip = clip;
+            AudioManager.Route(source, AudioBus.SoundEffects);
+            source.Play();
+            Destroy(go, clip.length + 0.2f);
         }
 
         private void OnDestroy()

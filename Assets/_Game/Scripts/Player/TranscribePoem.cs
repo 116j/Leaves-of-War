@@ -64,6 +64,8 @@ public class TranscribePoem : RevealableObject
     [SerializeField, Range(0.6f, 1f)] private float _recoverCoverage = 0.7f;
     [Tooltip("Wind gust. Loaded from Resources/MainMenu/Gust when empty.")]
     [SerializeField] private AudioClip _gustClip;
+    [Tooltip("Several gusts: one is picked at random. Empty = Gust Clip.")]
+    [SerializeField] private AudioClip[] _gustClips = new AudioClip[0];
     [SerializeField, Range(0f, 1f)] private float _gustVolume = 0.8f;
     [Tooltip("Quiet mode: looking away never interrupts the transcription.")]
     [SerializeField] private bool _immuneToLookingAway = false;
@@ -368,8 +370,9 @@ public class TranscribePoem : RevealableObject
         unseenTime = 0f;
         if (LeafField.Instance != null)
             LeafField.Instance.Cover(activePoem, _recoverCoverage);
-        if (_gustClip != null)
-            AudioSource.PlayClipAtPoint(_gustClip, activePoem.Footprint.center, _gustVolume);
+        AudioClip gust = _gustClips != null && _gustClips.Length > 0 ? _gustClips[UnityEngine.Random.Range(0, _gustClips.Length)] : _gustClip;
+        if (gust != null)
+            AudioSource.PlayClipAtPoint(gust, activePoem.Footprint.center, _gustVolume);
         if (diary != null)
             diary.EndWriting();
         Gusted?.Invoke(activePoem.PoemId);

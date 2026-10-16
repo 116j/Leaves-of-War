@@ -449,12 +449,12 @@ MonoBehaviour:
   musicVolume: 0.6
   windAmbience: {fileID: 8300000, guid: 74d06525b7f3835448acf4427766b860, type: 3}
   windVolume: 0.5
-  sweepLoop: {fileID: 8300000, guid: c341b4565e43af74c9cd2f581c35c67f, type: 3}
+  sweepLoop: {fileID: 8300000, guid: 1775d1141ff13344facb3046f6a78f91, type: 3}
   sweepVolume: 0.7
   sweepBareWoodVolume: 0.828
   sweepFullSpeed: 350
   sweepPitch: {x: 0.9, y: 1.12}
-  gustClip: {fileID: 8300000, guid: fc0bebe5e193c6e4b8e3813420c0f28a, type: 3}
+  gustClip: {fileID: 8300000, guid: 301b8dcfe0d163e4fa64c3a24e8ec4e2, type: 3}
   gustVolume: 0.74
   entryEnterSound: {fileID: 0}
   entryExitSound: {fileID: 0}
