@@ -6713,12 +6713,14 @@ MonoBehaviour:
     volume: 0.47
     source: {fileID: 0}
     maxDistance: 12
+    afterWeatherClears: 0
   - clip: {fileID: 8300000, guid: ad1a1803ce51bf14eb5355063e08d309, type: 3}
     monoClip: {fileID: 8300000, guid: aaecc7c2052c948448c5dead5609b4a2, type: 3}
     mix: 0
     volume: 0.2
     source: {fileID: 0}
     maxDistance: 12
+    afterWeatherClears: 0
   window: {fileID: 0}
   leakCurve: 0.5
   fadeInSeconds: 2

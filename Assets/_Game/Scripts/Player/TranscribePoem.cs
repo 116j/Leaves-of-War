@@ -104,6 +104,10 @@ public class TranscribePoem : RevealableObject
     public int FragmentsDone(int poemId) => fragmentsDone.TryGetValue(poemId, out int done) ? done : 0;
     public bool IsTranscribing { get; private set; }
     public static bool AnyTranscribing { get; private set; }
+    public static List<TextMeshProUGUI> WritingSections { get; private set; }
+    public static float[] WritingSeconds { get; private set; }
+    public static int WritingSection { get; private set; }
+    public static float WritingProgress { get; private set; }
     public TMP_FontAsset PoemFont => _assignedPoemTextCurrent != null ? _assignedPoemTextCurrent.font : null;
 
     private int currentp = 1;
@@ -547,6 +551,10 @@ public class TranscribePoem : RevealableObject
             for (int i = 0; i < durations.Length; i++)
                 durations[i] *= scale;
         }
+        WritingSections = sections;
+        WritingSeconds = durations;
+        WritingSection = Mathf.Min(startIndex, sections.Count);
+        WritingProgress = 0f;
         float voiceOffset = 0f;
         for (int i = 0; i < Mathf.Min(startIndex, durations.Length); i++)
             voiceOffset += durations[i] + _sectionPause;
@@ -588,11 +596,15 @@ public class TranscribePoem : RevealableObject
                     }
                 }
                 SetReveal(text, Mathf.Clamp01(t));
+                WritingSection = index;
+                WritingProgress = Mathf.Clamp01(t);
                 if (activePoem != null)
                     activePoem.SetLifted((index + Mathf.Clamp01(t)) / sections.Count);
                 yield return null;
             }
             index++;
+            WritingSection = index;
+            WritingProgress = 0f;
             poemsSectionProgress[poemId] = index;
             writing = false;
             if (text != sections[sections.Count - 1])

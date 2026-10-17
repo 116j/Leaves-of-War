@@ -37,6 +37,8 @@ public sealed class DriveAudioImport : EditorWindow
         public readonly string[] files;
         public readonly LevelAudio.Mix mix;
         public readonly float volume;
+        public bool afterClear;
+        public bool open;
 
         public Amb(LevelAudio.Mix mix, float volume, params string[] files)
         {
@@ -73,8 +75,10 @@ public sealed class DriveAudioImport : EditorWindow
         new LevelSound("Carso", 3, "MUS_P3",
             new Amb(LevelAudio.Mix.Always, 0.6f, "AMB_03_Carso")),
         new LevelSound("San Paolo", 4, "MUS_P4",
-            new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_04_SanPaolo_Inside"),
-            new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_04_SanPaolo_Outside")),
+            new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_04_SanPaolo_Inside") { open = true },
+            new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_04_SanPaolo_Outside") { open = true },
+            new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_04_SanPaolo_Transition_Inside", "AMB_04_SanPaolo_Transition:Inside") { open = true, afterClear = true },
+            new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_04_SanPaolo_Transition_Outside", "AMB_04_SanPaolo_Transition:Outside") { open = true, afterClear = true }),
         new LevelSound("Roma", 5, "MUS_P5"),
         new LevelSound("Courton", 6, "MUS_06_FINALE"),
     };
@@ -170,6 +174,8 @@ public sealed class DriveAudioImport : EditorWindow
         yield return "SFX_Notebook_Close_1";
         yield return "SFX_Notebook_Close_2";
         yield return "SFX_Chair_Move";
+        yield return "SFX_Child_Laugh";
+        yield return "SFX_Umbrella_Open";
         foreach (string ui in MenuSounds)
             yield return ui;
     }
@@ -367,13 +373,14 @@ public sealed class DriveAudioImport : EditorWindow
             {
                 SerializedProperty entry = list.GetArrayElementAtIndex(i);
                 LevelAudio.Mix mix = window == null ? LevelAudio.Mix.Always : clips[i].amb.mix;
-                float volume = window == null && clips[i].amb.mix == LevelAudio.Mix.WindowOpen ? 0.2f : clips[i].amb.volume;
+                float volume = window == null && clips[i].amb.mix == LevelAudio.Mix.WindowOpen && !clips[i].amb.open ? 0.2f : clips[i].amb.volume;
                 entry.FindPropertyRelative("clip").objectReferenceValue = clips[i].clip;
                 entry.FindPropertyRelative("monoClip").objectReferenceValue = AmbienceMono.Copy(clips[i].clip);
                 entry.FindPropertyRelative("mix").enumValueIndex = (int)mix;
                 entry.FindPropertyRelative("volume").floatValue = volume;
                 entry.FindPropertyRelative("source").objectReferenceValue = null;
                 entry.FindPropertyRelative("maxDistance").floatValue = 12f;
+                entry.FindPropertyRelative("afterWeatherClears").boolValue = clips[i].amb.afterClear;
             }
             done.Add(clips.Count == 0 ? "no ambience yet" : "ambience " + string.Join(" + ", clips.Select(c => c.clip.name)));
         }
@@ -540,7 +547,27 @@ public sealed class DriveAudioImport : EditorWindow
         }
 
         AudioClip pen = First("SFX_Pen_Write");
-        AudioClip[] gusts = Clips("SFX_Wind_Gust_", 5);
+        AudioClip[] gusts = sceneName.Contains("San Paolo") ? Clips("SFX_Leaf_Wet_", 6) : Clips("SFX_Wind_Gust_", 5);
+        if (gusts.Length == 0)
+            gusts = Clips("SFX_Wind_Gust_", 5);
+        AudioClip laugh = First("SFX_Child_Laugh", "SFX_Child_Laugh_1");
+        foreach (LookAwayCue cue in Object.FindObjectsByType<LookAwayCue>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (laugh != null)
+            {
+                var cueSo = new SerializedObject(cue);
+                cueSo.FindProperty("clip").objectReferenceValue = laugh;
+                cueSo.ApplyModifiedPropertiesWithoutUndo();
+                done.Add("child's laugh");
+            }
+        AudioClip umbrellaOpen = First("SFX_Umbrella_Open");
+        foreach (Umbrella umbrella in Object.FindObjectsByType<Umbrella>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (umbrellaOpen != null)
+            {
+                var umbrellaSo = new SerializedObject(umbrella);
+                umbrellaSo.FindProperty("openClip").objectReferenceValue = umbrellaOpen;
+                umbrellaSo.ApplyModifiedPropertiesWithoutUndo();
+                done.Add("umbrella");
+            }
         if (transcribe != null && (pen != null || gusts.Length > 0))
         {
             var so = new SerializedObject(transcribe);

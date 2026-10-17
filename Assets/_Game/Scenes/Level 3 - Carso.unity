@@ -5952,7 +5952,7 @@ MonoBehaviour:
   diary: {fileID: 956923918}
   broom: {fileID: 587431198}
   broomHiddenOffset: {x: 0, y: -1.5, z: 0}
-  broomHiddenScale: 0.6
+  broomHiddenScale: 0.333
   broomWritingOffset: {x: 0.3, y: 0, z: 0.2}
   transitionSeconds: 0.45
   flipSeconds: 0.5
@@ -7617,9 +7617,10 @@ MonoBehaviour:
   - clip: {fileID: 8300000, guid: d82cdce4486b35f4b8c76250eccde611, type: 3}
     monoClip: {fileID: 8300000, guid: 8fa689f1b918b9f4990f0eeda7f715cc, type: 3}
     mix: 0
-    volume: 0.205
+    volume: 0.6
     source: {fileID: 0}
     maxDistance: 12
+    afterWeatherClears: 0
   window: {fileID: 0}
   leakCurve: 0.5
   fadeInSeconds: 2

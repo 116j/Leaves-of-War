@@ -17,6 +17,8 @@ public class Examinable : MonoBehaviour, IInteractable
     [SerializeField] private AudioClip voice;
     [SerializeField, Range(0f, 1f)] private float voiceVolume = 0.55f;
 
+    public bool Examined { get; private set; }
+
     public static bool IsOpen => ObjectInspector.Instance != null && ObjectInspector.Instance.IsOpen;
 
     public string Prompt => IsOpen ? string.Empty : (prompt + " " + DisplayName.ToUpperInvariant()).Trim();
@@ -45,7 +47,9 @@ public class Examinable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        if (!IsOpen)
-            ObjectInspector.EnsureInstance().Inspect(this);
+        if (IsOpen)
+            return;
+        Examined = true;
+        ObjectInspector.EnsureInstance().Inspect(this);
     }
 }

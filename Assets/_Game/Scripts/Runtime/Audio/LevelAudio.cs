@@ -25,6 +25,8 @@ namespace Hortensia.Runtime
             [Tooltip("Optional: plays from this point in the room (e.g. the window for the street). Empty: everywhere.")]
             public Transform source;
             [Min(0.5f)] public float maxDistance = 12f;
+            [Tooltip("Silent at first; fades in (while the others fade out) when the weather clears, e.g. after the rain in San Paolo.")]
+            public bool afterWeatherClears;
         }
 
         public enum MusicMode
@@ -86,6 +88,16 @@ namespace Hortensia.Runtime
         }
 
         private readonly List<Track> tracks = new List<Track>();
+        private float clearPhase;
+        private float clearTarget;
+        private float clearSeconds = 6f;
+        private bool hasAfter;
+
+        public void ClearWeather(float seconds)
+        {
+            clearTarget = 1f;
+            clearSeconds = Mathf.Max(0.1f, seconds);
+        }
         private AudioSource musicSource;
         private float musicTarget;
         private float elapsed;
@@ -144,6 +156,9 @@ namespace Hortensia.Runtime
                 window = FindAnyObjectByType<OpenableWindow>();
             transcribe = FindAnyObjectByType<TranscribePoem>();
             double syncStart = AudioSettings.dspTime + 0.1;
+            foreach (Ambience entry in ambience)
+                if (entry != null && entry.clip != null && entry.afterWeatherClears)
+                    hasAfter = true;
             var synced = new Dictionary<long, Track>();
             foreach (Ambience entry in ambience)
             {
@@ -275,6 +290,7 @@ namespace Hortensia.Runtime
             float outside = Mathf.Sin(open * Mathf.PI * 0.5f);
             float inside = Mathf.Cos(open * Mathf.PI * 0.5f);
             float width = window != null ? Mathf.Lerp(closedStereoWidth, 1f, open) : 1f;
+            clearPhase = Mathf.MoveTowards(clearPhase, clearTarget, Time.unscaledDeltaTime / clearSeconds);
             foreach (Track track in tracks)
             {
                 Advance(track);
@@ -287,7 +303,8 @@ namespace Hortensia.Runtime
                             continue;
                         Ambience entry = layer.entry;
                         float mix = entry.mix == Mix.WindowOpen ? outside : entry.mix == Mix.WindowClosed ? inside : 1f;
-                        float level = entry.volume * fade * mix * gain;
+                        float phase = entry.afterWeatherClears ? clearPhase : hasAfter ? 1f - clearPhase : 1f;
+                        float level = entry.volume * fade * mix * gain * phase;
                         if (layer.mono[v] != null)
                         {
                             layer.stereo[v].volume = level * width;

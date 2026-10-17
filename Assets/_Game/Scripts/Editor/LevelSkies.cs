@@ -27,7 +27,7 @@ public static class LevelSkies
         new Sky { scene = "Milano", material = "SkyBrightMorning", tint = new Color(0.47f, 0.48f, 0.5f, 0.5f), exposure = 0.85f },
         new Sky { scene = "Parigi", material = "SkyAfterNoon", exposure = 0.79f },
         new Sky { scene = "Carso", material = "SkyNight", exposure = 0.55f, later = "SkyBrightMorning", laterTint = new Color(0.42f, 0.42f, 0.47f, 0.5f), laterExposure = 0.6f, poem = 3 },
-        new Sky { scene = "San Paolo", material = "SkyNoon", tint = new Color(0.36f, 0.38f, 0.4f, 0.5f), exposure = 0.55f },
+        new Sky { scene = "San Paolo", material = "SkyNoon", tint = new Color(0.36f, 0.38f, 0.4f, 0.5f), exposure = 0.55f, later = "SkyNoon", laterTint = new Color(0.48f, 0.49f, 0.5f, 0.5f), laterExposure = 0.85f, poem = -1 },
         new Sky { scene = "Roma", material = "SkySunset", exposure = 0.8f },
         new Sky { scene = "Courton", material = "SkyNight", exposure = 0.7f },
     };
@@ -91,7 +91,7 @@ public static class LevelSkies
                 if (camera.CompareTag("MainCamera"))
                     camera.clearFlags = CameraClearFlags.Skybox;
         EditorSceneManager.MarkSceneDirty(scene);
-        return sky.material + (later != null ? ", turning to " + sky.later + " after the poem" : "");
+        return sky.material + (later == null ? "" : sky.poem < 0 ? ", brightening when the rain stops" : ", turning to " + sky.later + " after the poem");
     }
 
     private static Material Load(string name) => AssetDatabase.LoadAssetAtPath<Material>(Folder + "/" + name + ".mat");

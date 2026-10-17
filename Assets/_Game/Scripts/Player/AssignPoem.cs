@@ -38,6 +38,15 @@ public class AssignPoem : RevealableObject
     [SerializeField, Range(0f, 0.4f)] private float _floorPadding = 0.12f;
     [SerializeField, Range(0f, 1f)] private float _shimmer = 0.35f;
     [SerializeField, Min(0.1f)] private float _fadeSeconds = 2.5f;
+    [Header("Flying Letters")]
+    [Tooltip("While transcribing, the letters leave the floor one by one and fly into the notebook, in the floor font.")]
+    [SerializeField] private bool _lettersFly = true;
+    [SerializeField, Min(0.3f)] private float _flightSeconds = 2.4f;
+    [Tooltip("How big the letters grow in flight, compared with the floor writing.")]
+    [SerializeField, Range(1f, 6f)] private float _flightSize = 2.6f;
+    [Tooltip("Radius of the spiral the letters draw around the notebook before landing in place.")]
+    [SerializeField, Range(0f, 1f)] private float _spiralRadius = 0.24f;
+    [SerializeField, Range(0f, 4f)] private float _spiralTurns = 1.5f;
 
     public int PoemId => _poemId;
     public int Fragment => _fragment;
@@ -59,6 +68,7 @@ public class AssignPoem : RevealableObject
 
     private Bounds footprint;
     private TextMeshPro floorText;
+    private FlyingLetters flying;
     private float lifted;
     private bool fading;
     private float fade = 1f;
@@ -107,7 +117,11 @@ public class AssignPoem : RevealableObject
     private void OnFragmentTranscribed(int poemId, int fragment)
     {
         if (poemId == _poemId && fragment == _fragment)
+        {
             fading = true;
+            if (flying != null)
+                flying.Finish();
+        }
     }
 
     private void Start() => BuildFloorText();
@@ -142,9 +156,20 @@ public class AssignPoem : RevealableObject
         floorText.textWrappingMode = TextWrappingModes.Normal;
         floorText.color = new Color(_floorColor.r, _floorColor.g, _floorColor.b, 1f);
         floorText.ForceMeshUpdate();
+        if (_lettersFly)
+        {
+            floorText.color = new Color(_floorColor.r, _floorColor.g, _floorColor.b, _floorColor.a);
+            flying = FlyingLetters.Create(floorText, _flightSeconds, _flightSize, _spiralRadius, _spiralTurns);
+            floorText.color = new Color(_floorColor.r, _floorColor.g, _floorColor.b, 1f);
+        }
     }
 
-    public void SetLifted(float fraction) => lifted = Mathf.Clamp01(fraction);
+    public void SetLifted(float fraction)
+    {
+        lifted = Mathf.Clamp01(fraction);
+        if (flying != null)
+            flying.SetActive(TranscribePoem.AnyTranscribing);
+    }
 
     private void LateUpdate()
     {
@@ -175,6 +200,14 @@ public class AssignPoem : RevealableObject
             if (!character.isVisible)
                 continue;
             float line = 1f - Mathf.Clamp01(liftedLines - character.lineNumber);
+            if (flying != null)
+            {
+                TMP_LineInfo row = info.lineInfo[character.lineNumber];
+                float along = row.characterCount > 0 ? (i - row.firstCharacterIndex + 0.5f) / row.characterCount : 0f;
+                if (liftedLines - character.lineNumber > along)
+                    flying.LaunchIfFree(i);
+                line = flying.IsLaunched(i) ? 0f : 1f;
+            }
             byte a = (byte)Mathf.RoundToInt(255f * alpha * line);
             Color32[] colors = info.meshInfo[character.materialReferenceIndex].colors32;
             for (int v = 0; v < 4; v++)
@@ -195,6 +228,10 @@ public class AssignPoem : RevealableObject
     private void OnTranscribed(int poemId)
     {
         if (poemId == _poemId)
+        {
             fading = true;
+            if (flying != null)
+                flying.Finish();
+        }
     }
 }

@@ -13,6 +13,9 @@ namespace Hortensia.Runtime
         [SerializeField] private string openPrompt = "OPEN WINDOW";
         [SerializeField] private string closePrompt = "CLOSE WINDOW";
 
+        [Tooltip("Optional: the window opens by itself when this character starts walking (he goes out through it).")]
+        [SerializeField] private DialogueSpeaker openWhenWalking;
+
         [Header("Audio")]
         [SerializeField] private AudioClip openClip;
         [SerializeField] private AudioClip closeClip;
@@ -52,8 +55,16 @@ namespace Hortensia.Runtime
                 source.PlayOneShot(clip, volume);
         }
 
+        public void Open()
+        {
+            if (!IsOpen)
+                Interact();
+        }
+
         private void Update()
         {
+            if (openWhenWalking != null && openWhenWalking.IsWalking)
+                Open();
             if (Mathf.Approximately(progress, target))
                 return;
             progress = Mathf.MoveTowards(progress, target, Time.deltaTime / duration);

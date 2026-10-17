@@ -15,7 +15,7 @@ namespace Hortensia.Runtime
         [SerializeField] private Material laterSky;
         [SerializeField] private Color laterTint = new Color(0.5f, 0.5f, 0.5f, 0.5f);
         [SerializeField, Min(0f)] private float laterExposure = 1f;
-        [Tooltip("0 = any poem.")]
+        [Tooltip("0 = any poem. -1 = only when the weather clears (Level Flow step Weather Clears).")]
         [SerializeField] private int poemId;
         [SerializeField, Min(0f)] private float delay = 3f;
         [SerializeField, Min(0.5f)] private float seconds = 25f;
@@ -39,15 +39,37 @@ namespace Hortensia.Runtime
 
         private void OnTranscribed(int id)
         {
-            if (changed || laterSky == null || poemId != 0 && id != poemId)
+            if (changed || laterSky == null || poemId < 0 || poemId != 0 && id != poemId)
                 return;
             changed = true;
-            StartCoroutine(Change());
+            StartCoroutine(Change(delay, seconds));
         }
 
-        private IEnumerator Change()
+        public void ChangeNow(float duration)
         {
-            yield return new WaitForSeconds(delay);
+            if (changed || laterSky == null)
+                return;
+            changed = true;
+            StartCoroutine(Change(0f, duration));
+        }
+
+        private IEnumerator Change(float wait, float seconds)
+        {
+            yield return new WaitForSeconds(wait);
+            if (laterSky == sky && current != null)
+            {
+                Color tint0 = current.HasProperty("_Tint") ? current.GetColor("_Tint") : tint;
+                float exposure0 = current.HasProperty("_Exposure") ? current.GetFloat("_Exposure") : exposure;
+                for (float t = 0f; t < 1f; t += Time.deltaTime / seconds)
+                {
+                    float k = Mathf.SmoothStep(0f, 1f, t);
+                    if (current.HasProperty("_Tint"))
+                        current.SetColor("_Tint", Color.Lerp(tint0, laterTint, k));
+                    SetExposure(Mathf.Lerp(exposure0, laterExposure, k));
+                    yield return null;
+                }
+                yield break;
+            }
             float half = seconds * 0.5f;
             float from = current != null && current.HasProperty("_Exposure") ? current.GetFloat("_Exposure") : exposure;
             for (float t = 0f; t < 1f; t += Time.deltaTime / half)

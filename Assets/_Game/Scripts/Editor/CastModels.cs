@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-public static class CastModels
+public static partial class CastModels
 {
     private const string Folder = "Assets/_Game/Art/Characters/MakeHuman";
     private const string MaterialFolder = Folder + "/_Materials";
@@ -21,6 +21,9 @@ public static class CastModels
     private const string Raybrook = "raybrook";
     private const string Walk = "walk";
     private const string AnimationFolder = "Assets/_Game/Art/Characters/Animations";
+    private const string FinalFolder = "Assets/_Game/Art/Characters/Final";
+    private const string BackupPref = "LeavesOfWar.UseBackupCharacters";
+    private const string FinalMenu = "Tools/Leaves of War/Characters/Use final models (MakeHuman as backup)";
 
     private sealed class Role
     {
@@ -58,9 +61,29 @@ public static class CastModels
     private static void Folders()
     {
         foreach (Role role in Casting)
+        {
             EnsureFolder(Folder + "/" + role.name);
+            EnsureFolder(FinalFolder + "/" + role.name);
+        }
         AssetDatabase.Refresh();
         EditorUtility.RevealInFinder(Folder + "/" + Casting[0].name);
+    }
+
+    [MenuItem(FinalMenu)]
+    private static void ToggleFinal()
+    {
+        bool backup = !EditorPrefs.GetBool(BackupPref, false);
+        EditorPrefs.SetBool(BackupPref, backup);
+        EditorUtility.DisplayDialog("Characters", backup
+            ? "Final models OFF: the MakeHuman models (backup) are used.\n\nRun Characters → Apply characters to open scene in each level."
+            : "Final models ON: a character with an FBX in " + FinalFolder + "/<Name> uses it; the others keep MakeHuman.\n\nRun Characters → Apply characters to open scene in each level.", "OK");
+    }
+
+    [MenuItem(FinalMenu, true)]
+    private static bool ToggleFinalCheck()
+    {
+        Menu.SetChecked(FinalMenu, !EditorPrefs.GetBool(BackupPref, false));
+        return true;
     }
 
     [MenuItem("Tools/Leaves of War/Characters/Apply characters to open scene")]
@@ -75,10 +98,37 @@ public static class CastModels
 
     private static string ModelPath(Role role)
     {
-        if (!AssetDatabase.IsValidFolder(Folder))
+        if (!EditorPrefs.GetBool(BackupPref, false))
+        {
+            string final = ModelIn(FinalFolder, role);
+            if (final != null)
+                return final;
+        }
+        return ModelIn(Folder, role);
+    }
+
+    private static bool IsFinal(string path) => path != null && path.StartsWith(FinalFolder + "/", StringComparison.Ordinal);
+
+    private static string ModelIn(string folder, Role role)
+    {
+        if (!AssetDatabase.IsValidFolder(folder))
             return null;
         var keys = new[] { role.name }.Concat(role.aliases).Select(k => k.ToLowerInvariant()).ToArray();
-        return AssetDatabase.FindAssets("t:Model", new[] { Folder })
+        if (folder == FinalFolder)
+        {
+            string rig = AssetDatabase.FindAssets("t:Prefab", new[] { folder })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => p.EndsWith(RigSuffix + ".prefab", StringComparison.Ordinal))
+                .FirstOrDefault(p => keys.Any(p.ToLowerInvariant().Contains));
+            if (rig != null)
+                return rig;
+        }
+        return FbxIn(folder, keys);
+    }
+
+    private static string FbxIn(string folder, string[] keys)
+    {
+        return AssetDatabase.FindAssets("t:Model", new[] { folder })
             .Select(AssetDatabase.GUIDToAssetPath)
             .Where(p => p.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase))
             .Where(p => keys.Any(p.ToLowerInvariant().Contains))
@@ -129,10 +179,19 @@ public static class CastModels
                 log.Add(role.name + ": no FBX in " + Folder + "/" + role.name);
                 continue;
             }
-            Avatar avatar = Humanoid(path);
+            if (IsFinal(path))
+            {
+                string fbx = FbxIn(FinalFolder, new[] { role.name }.Concat(role.aliases).Select(k => k.ToLowerInvariant()).ToArray());
+                string rebuilt = fbx != null ? RebuildRig(fbx, role.name, log) : null;
+                if (rebuilt != null)
+                    path = rebuilt;
+                else if (fbx != null)
+                    path = fbx;
+            }
+            Avatar avatar = path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase) ? PrefabAvatar(path) : Humanoid(path);
             Avatars[role.name] = avatar;
             Controllers[role.name] = avatar != null && clips.idle != null ? Controller(controllerName, clips.idle, clips.talk ?? clips.idle, walk) : null;
-            log.Add(role.name + ": " + System.IO.Path.GetFileName(path) + (avatar != null ? ", Humanoid, " + controllerName + (walk != null ? " + walk" : "") : ", NOT Humanoid (no animation): check the Game engine skeleton in MakeHuman"));
+            log.Add(role.name + ": " + (IsFinal(path) ? "FINAL " : "") + System.IO.Path.GetFileName(path) + (avatar != null ? ", Humanoid, " + controllerName + (walk != null ? " + walk" : "") : ", NOT Humanoid (no animation): check the Game engine skeleton in MakeHuman"));
         }
         AssetDatabase.SaveAssets();
         return log;
@@ -483,7 +542,7 @@ public static class CastModels
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             foreach (Transform target in targets)
             {
-                Place(target, asset, cast);
+                Place(target, asset, cast, path);
                 placed++;
             }
         }
@@ -518,7 +577,7 @@ public static class CastModels
         return false;
     }
 
-    private static void Place(Transform target, GameObject asset, Role cast)
+    private static void Place(Transform target, GameObject asset, Role cast, string path)
     {
         Transform old = target.Find(ModelChild);
         if (old != null)
@@ -569,8 +628,13 @@ public static class CastModels
             child.gameObject.layer = target.gameObject.layer;
         foreach (SkinnedMeshRenderer skin in instance.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             skin.updateWhenOffscreen = true;
-        Materials(instance, cast);
-        PeriodClothes.Dress(instance, cast.name);
+        if (IsFinal(path))
+            FinalMaterials(instance, path);
+        else
+        {
+            Materials(instance, cast);
+            PeriodClothes.Dress(instance, cast.name);
+        }
         foreach (MeshRenderer r in stand)
             r.enabled = false;
 
@@ -593,6 +657,94 @@ public static class CastModels
             so.ApplyModifiedPropertiesWithoutUndo();
         }
     }
+
+    private static readonly string[] BaseKeys = { "basecolor", "base_color", "albedo", "diffuse", "color", "col", "_d", "tex" };
+    private static readonly string[] OtherKeys = { "normal", "nrm", "_n", "rough", "metal", "spec", "ao", "occlusion", "height", "disp", "emiss", "opacity", "mask", "gloss" };
+
+    private static void FinalMaterials(GameObject instance, string modelPath)
+    {
+        Shader lit = Shader.Find("Universal Render Pipeline/Lit");
+        if (lit == null)
+            return;
+        string folder = Path.GetDirectoryName(modelPath).Replace('\\', '/');
+        string materials = folder + "/_Materials";
+        EnsureFolder(materials);
+        var textures = AssetDatabase.FindAssets("t:Texture2D", new[] { folder })
+            .Select(AssetDatabase.GUIDToAssetPath).ToList();
+        int slots = instance.GetComponentsInChildren<Renderer>(true).Sum(r => r.sharedMaterials.Length);
+        foreach (Renderer r in instance.GetComponentsInChildren<Renderer>(true))
+        {
+            Material[] mats = r.sharedMaterials;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                Material original = mats[i];
+                if (original == null)
+                    continue;
+                string name = Clean(original.name.Replace(" (Instance)", ""));
+                string path = materials + "/" + name + ".mat";
+                Material made = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (made == null)
+                {
+                    made = new Material(lit) { name = name };
+                    AssetDatabase.CreateAsset(made, path);
+                }
+                Texture albedo = original.HasProperty("_BaseMap") ? original.GetTexture("_BaseMap") : null;
+                if (albedo == null && original.HasProperty("_MainTex"))
+                    albedo = original.GetTexture("_MainTex");
+                if (albedo == null)
+                    albedo = FindTexture(textures, name, slots == 1, false);
+                Texture normal = original.HasProperty("_BumpMap") ? original.GetTexture("_BumpMap") : null;
+                if (normal == null)
+                    normal = FindTexture(textures, name, slots == 1, true);
+                made.SetTexture("_BaseMap", albedo);
+                made.SetColor("_BaseColor", Color.white);
+                made.SetFloat("_Smoothness", 0.15f);
+                made.SetFloat("_Metallic", 0f);
+                if (normal != null)
+                {
+                    string normalPath = AssetDatabase.GetAssetPath(normal);
+                    if (AssetImporter.GetAtPath(normalPath) is TextureImporter importer && importer.textureType != TextureImporterType.NormalMap)
+                    {
+                        importer.textureType = TextureImporterType.NormalMap;
+                        importer.SaveAndReimport();
+                    }
+                    made.SetTexture("_BumpMap", AssetDatabase.LoadAssetAtPath<Texture>(normalPath));
+                    made.EnableKeyword("_NORMALMAP");
+                }
+                string lower = (name + " " + r.name).ToLowerInvariant();
+                bool cut = Cutout.Any(lower.Contains);
+                made.SetFloat("_AlphaClip", cut ? 1f : 0f);
+                made.SetFloat("_Cutoff", 0.45f);
+                made.SetFloat("_Cull", cut ? 0f : 2f);
+                if (cut)
+                    made.EnableKeyword("_ALPHATEST_ON");
+                else
+                    made.DisableKeyword("_ALPHATEST_ON");
+                EditorUtility.SetDirty(made);
+                mats[i] = made;
+            }
+            r.sharedMaterials = mats;
+        }
+        AssetDatabase.SaveAssets();
+    }
+
+    private static Texture FindTexture(List<string> textures, string material, bool only, bool normal)
+    {
+        string key = Alnum(material);
+        IEnumerable<string> kind = textures.Where(p =>
+        {
+            string file = Path.GetFileNameWithoutExtension(p).ToLowerInvariant();
+            return normal ? file.Contains("normal") || file.Contains("nrm") || file.EndsWith("_n")
+                          : !OtherKeys.Any(file.Contains) || BaseKeys.Any(file.Contains) && !file.Contains("normal");
+        }).ToList();
+        string named = kind.Where(p => Alnum(Path.GetFileNameWithoutExtension(p)).Contains(key))
+            .OrderBy(p => Alnum(Path.GetFileNameWithoutExtension(p)).Length).FirstOrDefault();
+        if (named == null && only)
+            named = kind.FirstOrDefault();
+        return named != null ? AssetDatabase.LoadAssetAtPath<Texture>(named) : null;
+    }
+
+    private static string Alnum(string s) => new string((s ?? "").ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
 
     private static void Materials(GameObject instance, Role role)
     {

@@ -34,7 +34,8 @@ public class LevelFlow : MonoBehaviour
         CharacterLeaves,
         LoadNextLevel,
         CharacterEnters,
-        JoinFragments
+        JoinFragments,
+        WeatherClears
     }
 
     [Serializable]
@@ -206,7 +207,7 @@ public class LevelFlow : MonoBehaviour
             broom.Available = false;
         if (character != null && Array.Exists(steps, s => s != null && s.action == StepAction.CharacterEnters))
         {
-            Transform body = character.transform.root;
+            Transform body = CharacterBody();
             characterSpot = body.position;
             characterSpotRotation = body.rotation;
             body.gameObject.SetActive(false);
@@ -422,6 +423,10 @@ public class LevelFlow : MonoBehaviour
                     observables[step.observableIndex].OnChangeAllowed.AddListener(changeBehaviour.OnChange);
                 }
                 break;
+            case StepAction.WeatherClears:
+                foreach (Weather weather in FindObjectsByType<Weather>(FindObjectsSortMode.None))
+                    weather.Clear();
+                break;
             case StepAction.ShowFollowerLeaf:
                 FollowerLeaf.Spawn();
                 break;
@@ -444,7 +449,7 @@ public class LevelFlow : MonoBehaviour
     {
         if (character == null)
             yield break;
-        GameObject body = character.transform.root.gameObject;
+        GameObject body = CharacterBody().gameObject;
         Transform t = body.transform;
         var lookers = new System.Collections.Generic.List<MonoBehaviour>();
         foreach (MonoBehaviour behaviour in body.GetComponentsInChildren<MonoBehaviour>(true))
@@ -616,9 +621,34 @@ public class LevelFlow : MonoBehaviour
             nextLoad.allowSceneActivation = true;
     }
 
+    private Transform CharacterBody()
+    {
+        Transform body = character.transform;
+        while (body.parent != null && Size(body.parent) <= 2.5f)
+            body = body.parent;
+        return body;
+    }
+
+    private static float Size(Transform group)
+    {
+        bool any = false;
+        Bounds bounds = default;
+        foreach (Renderer r in group.GetComponentsInChildren<Renderer>(true))
+        {
+            if (r is ParticleSystemRenderer || !r.enabled || !r.gameObject.activeInHierarchy)
+                continue;
+            if (!any)
+                bounds = r.bounds;
+            else
+                bounds.Encapsulate(r.bounds);
+            any = true;
+        }
+        return any ? Mathf.Max(bounds.size.x, bounds.size.z) : 0f;
+    }
+
     private IEnumerator CharacterLeaves()
     {
-        GameObject body = character.transform.root.gameObject;
+        GameObject body = CharacterBody().gameObject;
         foreach (MonoBehaviour behaviour in body.GetComponentsInChildren<MonoBehaviour>())
             if (behaviour.GetType().Name == "LookAtPlayer")
                 behaviour.enabled = false;

@@ -84,8 +84,11 @@ namespace Hortensia.Runtime
             animator.CrossFadeInFixedTime(hash, crossFadeSeconds, 0);
         }
 
+        public bool IsWalking { get; private set; }
+
         public void SetWalking(bool walking)
         {
+            IsWalking = walking;
             if (animator == null || !animator.isActiveAndEnabled)
                 return;
             int hash = Animator.StringToHash((walking ? walkingState : idleState) ?? string.Empty);

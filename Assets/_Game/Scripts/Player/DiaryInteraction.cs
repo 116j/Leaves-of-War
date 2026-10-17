@@ -53,6 +53,7 @@ public class DiaryInteraction : KeyboardControl
     [SerializeField, Min(8f)] private float closeHintSize = 28f;
     [SerializeField] private string turnHint = "A / D TO TURN THE PAGES";
 
+    public Transform Notebook => diary;
     public static bool IsReading { get; private set; }
     public static bool IsWriting { get; private set; }
     public static bool IsRaised => IsReading || IsWriting;
