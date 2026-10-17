@@ -49,6 +49,12 @@ namespace Hortensia.Runtime
         [SerializeField] private Color borderColor = new Color(0.96f, 0.93f, 0.88f, 0.85f);
 
         [Header("Continue Indicator")]
+        [Header("Portraits")]
+        [Tooltip("Small ink portraits above the subtitle box: Ungaretti on the left, whoever he talks to on the right.")]
+        [SerializeField] private bool showPortraits = true;
+        [SerializeField, Min(40f)] private float portraitSize = 140f;
+        [SerializeField, Range(0f, 1f)] private float silentPortraitAlpha = 0.35f;
+
         [SerializeField] private string continueSymbol = "▼";
         [SerializeField] private Color continueColor = new Color(0.96f, 0.93f, 0.88f, 0.9f);
         [SerializeField, Min(0f)] private float continueBlinkSpeed = 3f;
@@ -70,6 +76,10 @@ namespace Hortensia.Runtime
         private TMP_Text bodyText;
         private TMP_Text continueText;
         private RectTransform boxRect;
+        private RectTransform leftPortrait, rightPortrait;
+        private InkPortrait rightInk;
+        private CanvasGroup leftGroup, rightGroup;
+        private bool rightUsed;
         private Image backgroundImage;
         private readonly List<Image> borderLines = new List<Image>();
         private AudioSource voice2D;
@@ -141,6 +151,7 @@ namespace Hortensia.Runtime
             involved.ForEach(s => s.SetInDialogue(true));
 
             root.SetActive(true);
+            PreparePortraits(lines);
             ApplySubtitleSettings();
             speakerText.text = string.Empty;
             bodyText.text = string.Empty;
@@ -153,6 +164,7 @@ namespace Hortensia.Runtime
 
                 TryGetSpeaker(speakers, line.speakerId, out DialogueSpeaker speaker);
                 speakerText.text = speaker != null ? speaker.DisplayName : line.speakerId ?? string.Empty;
+                HighlightPortrait(line.speakerId);
 
                 foreach (DialoguePiece piece in line.pieces)
                 {
@@ -337,8 +349,75 @@ namespace Hortensia.Runtime
             continueRect.anchoredPosition = new Vector2(-padding.x * 0.5f, padding.y * 0.5f);
             continueText.gameObject.SetActive(false);
 
+            leftPortrait = Portrait(box, "Ungaretti Portrait", 0f, out InkPortrait leftInk, out leftGroup);
+            leftInk.Person = InkPortrait.Sitter.Ungaretti;
+            rightPortrait = Portrait(box, "Speaker Portrait", 1f, out rightInk, out rightGroup);
+
             ApplySubtitleSettings();
             root.SetActive(false);
+        }
+
+        private RectTransform Portrait(RectTransform box, string name, float side, out InkPortrait ink, out CanvasGroup group)
+        {
+            RectTransform tile = NewRect(name, box);
+            tile.anchorMin = tile.anchorMax = new Vector2(side, 1f);
+            tile.pivot = new Vector2(side, 0f);
+            tile.sizeDelta = new Vector2(portraitSize, portraitSize);
+            tile.anchoredPosition = new Vector2(side < 0.5f ? 24f : -24f, -18f);
+            tile.localRotation = Quaternion.Euler(0f, 0f, side < 0.5f ? 2f : -2f);
+            group = tile.gameObject.AddComponent<CanvasGroup>();
+            Image paper = tile.gameObject.AddComponent<Image>();
+            paper.color = new Color(0.937f, 0.902f, 0.824f, 1f);
+            paper.raycastTarget = false;
+            tile.gameObject.AddComponent<RectMask2D>();
+            Color inkColor = new Color(0.118f, 0.165f, 0.227f, 1f);
+            foreach (var (min, max, size) in new[] { (new Vector2(0f, 1f), Vector2.one, new Vector2(-12f, 2f)), (Vector2.zero, new Vector2(1f, 0f), new Vector2(-12f, 2f)), (Vector2.zero, new Vector2(0f, 1f), new Vector2(2f, -12f)), (new Vector2(1f, 0f), Vector2.one, new Vector2(2f, -12f)) })
+            {
+                RectTransform line = NewRect("Frame", tile);
+                line.anchorMin = min;
+                line.anchorMax = max;
+                line.sizeDelta = size;
+                line.anchoredPosition = new Vector2(min.x == max.x ? (min.x < 0.5f ? 6f : -6f) : 0f, min.y == max.y ? (min.y < 0.5f ? 6f : -6f) : 0f);
+                Image image = line.gameObject.AddComponent<Image>();
+                image.color = inkColor;
+                image.raycastTarget = false;
+            }
+            RectTransform drawing = NewRect("Ink", tile);
+            drawing.anchorMin = drawing.anchorMax = new Vector2(0.5f, 0.5f);
+            drawing.sizeDelta = new Vector2(portraitSize * 1.3f, portraitSize * 1.3f);
+            drawing.anchoredPosition = new Vector2(0f, -portraitSize * 0.12f);
+            ink = drawing.gameObject.AddComponent<InkPortrait>();
+            ink.color = new Color(0.118f, 0.165f, 0.227f, 1f);
+            ink.raycastTarget = false;
+            ink.Seed = side < 0.5f ? 3 : 5;
+            return tile;
+        }
+
+        private void PreparePortraits(IEnumerable<DialogueLine> lines)
+        {
+            rightUsed = false;
+            foreach (DialogueLine line in lines)
+                if (line != null && InkPortrait.TryFind(line.speakerId, out InkPortrait.Sitter sitter) && sitter != InkPortrait.Sitter.Ungaretti)
+                {
+                    rightInk.Person = sitter;
+                    rightUsed = true;
+                    break;
+                }
+            leftGroup.alpha = silentPortraitAlpha;
+            rightGroup.alpha = silentPortraitAlpha;
+        }
+
+        private void HighlightPortrait(string speakerId)
+        {
+            bool known = InkPortrait.TryFind(speakerId, out InkPortrait.Sitter sitter);
+            bool left = known && sitter == InkPortrait.Sitter.Ungaretti;
+            bool right = known && !left && rightUsed;
+            if (right && sitter != rightInk.Person)
+                rightInk.Person = sitter;
+            leftGroup.alpha = left ? 1f : silentPortraitAlpha;
+            rightGroup.alpha = right ? 1f : silentPortraitAlpha;
+            leftPortrait.localScale = Vector3.one * (left ? 1.06f : 1f);
+            rightPortrait.localScale = Vector3.one * (right ? 1.06f : 1f);
         }
 
         private void ApplySubtitleSettings()
@@ -370,6 +449,13 @@ namespace Hortensia.Runtime
             bodyText.overflowMode = TextOverflowModes.Overflow;
             speakerText.gameObject.SetActive(show);
             bodyText.gameObject.SetActive(show);
+            if (leftPortrait != null)
+            {
+                float scale = Mathf.Clamp(style.scale, 0.7f, 1.4f);
+                leftPortrait.sizeDelta = rightPortrait.sizeDelta = new Vector2(portraitSize, portraitSize) * scale;
+                leftPortrait.gameObject.SetActive(show && showPortraits);
+                rightPortrait.gameObject.SetActive(show && showPortraits && rightUsed);
+            }
             borderLines.ForEach(line => line.enabled = show);
             if (backgroundImage != null)
             {

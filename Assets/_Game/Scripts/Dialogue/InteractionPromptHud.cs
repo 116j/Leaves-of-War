@@ -94,7 +94,8 @@ namespace Hortensia.Runtime
             TextStyle style = GameSettings.Current.screenStyle;
             label.fontSize = size * style.scale;
             plateImage.color = style.backgroundColor;
-            TextStyling.Apply(label, style, style.textColor, bold);
+            label.font = MenuLook.Current.HintFont;
+            TextStyling.Apply(label, style, style.textColor, bold || MenuLook.Current.hintBold);
             if (!string.IsNullOrEmpty(label.text))
                 plate.sizeDelta = label.GetPreferredValues(label.text) + padding * 2f;
         }
@@ -135,9 +136,7 @@ namespace Hortensia.Runtime
             rect.offsetMin = rect.offsetMax = Vector2.zero;
 
             label = textObject.GetComponent<TextMeshProUGUI>();
-            label.font = MainMenuController.ResolveFont(fontFile, font, "Interaction Prompt Font")
-                ?? Resources.Load<TMP_FontAsset>("Fonts/OSerif-Regular")
-                ?? TMP_Settings.defaultFontAsset;
+            label.font = MenuLook.Current.HintFont;
             label.fontSize = size;
             label.alignment = TextAlignmentOptions.Center;
             label.textWrappingMode = TextWrappingModes.NoWrap;

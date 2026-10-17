@@ -46,6 +46,21 @@ Textured LowPoly Trees - Quaternius, quaternius.com (CC0)
 "Realistic HD Red Oak Leaf Litter 2036" - PlantCatalog (CC BY 4.0)
 "Tree & Bush Asset Package" - [Autore] ([Licenza])
 
+CHARACTERS AND ANIMATION
+
+Base bodies made with MakeHuman, makehumancommunity.org (CC0)
+Animations - Mixamo, mixamo.com (Adobe)
+
+FONTS
+
+Erratic Cursive, OSerif - GGBotNet, ggbot.net (CC0)
+Bodoni Moda - The Bodoni Moda Project Authors (SIL Open Font License 1.1)
+Playfair Display - The Playfair Display Project Authors (SIL Open Font License 1.1)
+Stardos Stencil - Vernon Adams (SIL Open Font License 1.1)
+Limelight - Sorkin Type Co (SIL Open Font License 1.1)
+Special Elite - Astigmatic (Apache License 2.0)
+Old Standard TT - The Old Standard Project Authors (SIL Open Font License 1.1)
+
 Poems
 Giuseppe Ungaretti
 from "Vita d'un uomo. Tutte le poesie"

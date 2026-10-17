@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bcf67c4452597b94a854bd30056b50df, type: 3}
+  m_Name: MenuLook
+  m_EditorClassIdentifier: Assembly-CSharp::Hortensia.Runtime.MenuLook
+  entryFont: {fileID: 11400000, guid: 11a2e1bb9652b9244aeb48a39f49f6d4, type: 2}
+  entryFontFile: {fileID: 12800000, guid: 1591b6741c4c24147b5a632368ca4749, type: 3}
+  entryBold: 1
+  menuWordSize: 72
+  inkColor: {r: 0.15873086, g: 0.20795403, b: 0.2735849, a: 0.9137255}
+  entryHighlightColor: {r: 0.4339623, g: 0.014328952, b: 0.07243195, a: 0.92156863}
+  entryHighlightScale: 1.08
+  entryTextOutlineWidth: 0.073
+  entryTextOutlineColor: {r: 0.9433962, g: 0.9433962, b: 0.9433962, a: 0.6392157}
+  entrySize: {x: 520, y: 80}
+  entrySpacing: 88
+  useEntryBackground: 1
+  entryBackgroundOnHover: 1
+  entryBackgroundUnfoldTime: 0.3
+  entryBackgroundCrumpleTime: 0.22
+  entryBackground: {fileID: 21300000, guid: 04620d2ee9ec3df408cf76cf6c479475, type: 3}
+  entryBackgroundColor: {r: 0.9, g: 0.85, b: 0.72, a: 1}
+  entryBackgroundHighlightColor: {r: 1, g: 0.95, b: 0.82, a: 1}
+  entryBorderWidth: 0
+  entryBorderColor: {r: 0.118, g: 0.165, b: 0.227, a: 1}
+  panelFont: {fileID: 11400000, guid: 11a2e1bb9652b9244aeb48a39f49f6d4, type: 2}
+  panelFontFile: {fileID: 12800000, guid: 1591b6741c4c24147b5a632368ca4749, type: 3}
+  panelBold: 1
+  panelColor: {r: 0.035, g: 0.03, b: 0.024, a: 0.98}
+  panelHeaderColor: {r: 0.88, g: 0.84, b: 0.72, a: 1}
+  panelTextColor: {r: 0.9, g: 0.86, b: 0.74, a: 1}
+  panelStatusColor: {r: 0.73, g: 0.69, b: 0.57, a: 1}
+  panelButtonColor: {r: 0.115, g: 0.1, b: 0.075, a: 0.96}
+  panelButtonHighlight: {r: 0.72, g: 0.77, b: 0.58, a: 1}
+  panelButtonPressed: {r: 0.48, g: 0.52, b: 0.37, a: 1}
+  panelButtonDisabled: {r: 0.34, g: 0.32, b: 0.28, a: 0.65}
+  hintFont: {fileID: 11400000, guid: 11a2e1bb9652b9244aeb48a39f49f6d4, type: 2}
+  hintFontFile: {fileID: 12800000, guid: 1591b6741c4c24147b5a632368ca4749, type: 3}
+  hintBold: 1
+  hintColor: {r: 0.90196085, g: 0.85098046, b: 0.72156864, a: 1}
+  hintTextOutlineWidth: 0.432
+  hintTextOutlineColor: {r: 0, g: 0.019607844, b: 0.12941177, a: 1}
+  useHintBackground: 1
+  hintBackground: {fileID: 21300000, guid: 04620d2ee9ec3df408cf76cf6c479475, type: 3}
+  hintBackgroundColor: {r: 0.90196085, g: 0.85098046, b: 0.72156864, a: 1}
+  fallbackFloorColor: {r: 0.36, g: 0.25, b: 0.16, a: 1}
+  floorTiling: 2
+  entryEnterSound: {fileID: 8300000, guid: 8b47769662fefe34981d7e16cf1d3f25, type: 3}
+  entryExitSound: {fileID: 0}
+  entryClickSound: {fileID: 8300000, guid: 72433e019758ef1488cd657ab8b484d1, type: 3}
+  entryPaperSounds:
+  - {fileID: 8300000, guid: 9b8306fab1f52c74c8ac921fb81a67b6, type: 3}
+  - {fileID: 8300000, guid: d7d021f9aa504ea42ab061b109dacb76, type: 3}
+  - {fileID: 8300000, guid: 5e7fd5a13ffb5f344abb54a9e7df555a, type: 3}
+  entryPaperVolume: 0.7
+  entryPaperFoldPitch: 0.88
+  entryBackSounds:
+  - {fileID: 8300000, guid: a8ce58c9693f5924b9ce8b3515f74c56, type: 3}
+  - {fileID: 8300000, guid: 15fedaad06ae50843a434da6c8a02b4c, type: 3}
+  entrySoundVolume: 0.8
+  entrySoundPitch: {x: 0.94, y: 1.06}

@@ -174,7 +174,7 @@ public static class ParisScriptSetup
     private static int SetupFragments(Transform room, List<string> log)
     {
         PoemInfo info = AssetDatabase.FindAssets("t:PoemInfo").Select(g => AssetDatabase.LoadAssetAtPath<PoemInfo>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault();
-        AssignPoem existing = Object.FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(p => p.poemInfo != null);
+        AssignPoem existing = Object.FindObjectsByType<AssignPoem>(FindObjectsInactive.Include).FirstOrDefault(p => p.poemInfo != null);
         if (existing != null)
             info = existing.poemInfo;
         Material invisible = InvisibleMaterial();
@@ -319,7 +319,7 @@ public static class ParisScriptSetup
         DiaryInteraction diary = Object.FindAnyObjectByType<DiaryInteraction>(FindObjectsInactive.Include);
         Vector3 position = room.TransformPoint(new Vector3(-1.35f, 0f, -1.0f));
         Quaternion rotation = room.rotation * Quaternion.Euler(0f, 90f, 0f);
-        PickupItem broom = Object.FindObjectsByType<PickupItem>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(p => p.Kind == PickupItem.Item.Broom);
+        PickupItem broom = Object.FindObjectsByType<PickupItem>(FindObjectsInactive.Include).FirstOrDefault(p => p.Kind == PickupItem.Item.Broom);
         if (broom == null)
         {
             Transform held = null;
@@ -352,7 +352,7 @@ public static class ParisScriptSetup
         if (diary == null || player == null)
             return;
         Transform[] held = player.GetComponentsInChildren<Transform>(true)
-            .Concat(Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)).ToArray();
+            .Concat(Object.FindObjectsByType<Transform>(FindObjectsInactive.Include)).ToArray();
         Transform book = held.FirstOrDefault(t => t.name == "Diary_Demo") ?? held.FirstOrDefault(t => t.name.StartsWith("Diary"));
         Transform stick = held.FirstOrDefault(t => t.name == "Broom_Stick");
         if (stick == null && sweeper != null)
@@ -396,7 +396,7 @@ public static class ParisScriptSetup
         TranscribePoem transcribe = Object.FindAnyObjectByType<TranscribePoem>(FindObjectsInactive.Include);
         if (transcribe == null)
             return;
-        var texts = Object.FindObjectsByType<TMPro.TextMeshProUGUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var texts = Object.FindObjectsByType<TMPro.TextMeshProUGUI>(FindObjectsInactive.Include);
         var so = new SerializedObject(transcribe);
         int fixedCount = 0, missing = 0;
         foreach (var (field, name) in NotebookTexts)
@@ -478,7 +478,7 @@ public static class ParisScriptSetup
                 if (Path.GetFileNameWithoutExtension(path) == candidate && !path.StartsWith("Assets/_Trash"))
                     return AssetDatabase.LoadAssetAtPath<Material>(path);
             }
-        AssignPoem milano = Object.FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(p => p.GetComponent<Renderer>() != null);
+        AssignPoem milano = Object.FindObjectsByType<AssignPoem>(FindObjectsInactive.Include).FirstOrDefault(p => p.GetComponent<Renderer>() != null);
         return milano != null ? milano.GetComponent<Renderer>().sharedMaterial : null;
     }
 }

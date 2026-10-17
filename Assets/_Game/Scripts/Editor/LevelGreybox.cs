@@ -174,7 +174,7 @@ internal static class LevelGreybox
 
     internal static void Sky(Color sun, float intensity, Vector3 euler, Color ambient, bool fog, Color fogColor, float fogDensity)
     {
-        foreach (Light light in Object.FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (Light light in Object.FindObjectsByType<Light>(FindObjectsInactive.Include))
         {
             if (light.type != LightType.Directional)
                 continue;

@@ -92,7 +92,7 @@ public class LeafField : MonoBehaviour
 
     private void Start()
     {
-        foreach (RevealableObject target in FindObjectsByType<RevealableObject>(FindObjectsSortMode.None))
+        foreach (RevealableObject target in FindObjectsByType<RevealableObject>())
         {
             if (!target.HasFootprint)
                 continue;

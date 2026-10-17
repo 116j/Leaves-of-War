@@ -21,9 +21,9 @@ namespace Hortensia.Runtime
             foreach (ParticleSystem system in rain)
                 if (system != null)
                     system.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-            foreach (LevelAudio audio in FindObjectsByType<LevelAudio>(FindObjectsSortMode.None))
+            foreach (LevelAudio audio in FindObjectsByType<LevelAudio>())
                 audio.ClearWeather(seconds);
-            foreach (LevelSky sky in FindObjectsByType<LevelSky>(FindObjectsSortMode.None))
+            foreach (LevelSky sky in FindObjectsByType<LevelSky>())
                 sky.ChangeNow(seconds);
             StartCoroutine(Brighten());
         }
@@ -31,7 +31,7 @@ namespace Hortensia.Runtime
         private IEnumerator Brighten()
         {
             Light sun = null;
-            foreach (Light l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+            foreach (Light l in FindObjectsByType<Light>())
                 if (l.type == LightType.Directional)
                 {
                     sun = l;

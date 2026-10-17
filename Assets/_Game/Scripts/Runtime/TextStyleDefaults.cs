@@ -16,7 +16,7 @@ namespace Hortensia.Runtime
         private static bool searched;
 
         public static TextStyle SubtitleStyle => Load() != null ? cached.subtitles : TextStyle.SubtitleDefaults();
-        public static TextStyle ScreenStyle => Load() != null ? cached.screen : TextStyle.ScreenDefaults();
+        public static TextStyle ScreenStyle => MenuLook.Current.ScreenStyle(Load() != null ? cached.screen : TextStyle.ScreenDefaults());
 
         private static TextStyleDefaults Load()
         {

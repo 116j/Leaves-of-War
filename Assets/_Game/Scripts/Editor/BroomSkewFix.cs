@@ -17,7 +17,7 @@ public static class BroomSkewFix
         foreach (Transform t in Selection.transforms)
             roots.Add(t);
         if (roots.Count == 0)
-            foreach (BroomSweeper sweeper in Object.FindObjectsByType<BroomSweeper>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (BroomSweeper sweeper in Object.FindObjectsByType<BroomSweeper>(FindObjectsInactive.Include))
             {
                 var so = new SerializedObject(sweeper);
                 if (so.FindProperty("broom")?.objectReferenceValue is Transform broom && !roots.Contains(broom))
@@ -45,7 +45,7 @@ public static class BroomSkewFix
     private static string SamePose(Transform broom)
     {
         int count = 0;
-        foreach (BroomSweeper sweeper in Object.FindObjectsByType<BroomSweeper>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (BroomSweeper sweeper in Object.FindObjectsByType<BroomSweeper>(FindObjectsInactive.Include))
         {
             var so = new SerializedObject(sweeper);
             if (so.FindProperty("broom")?.objectReferenceValue as Transform != broom)

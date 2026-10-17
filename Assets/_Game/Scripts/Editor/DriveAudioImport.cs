@@ -395,7 +395,7 @@ public sealed class DriveAudioImport : EditorWindow
         if (clip == null)
             return null;
         int count = 0;
-        foreach (AssignPoem assign in Object.FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (AssignPoem assign in Object.FindObjectsByType<AssignPoem>(FindObjectsInactive.Include))
         {
             var so = new SerializedObject(assign);
             so.FindProperty("_poemVoice").objectReferenceValue = clip;
@@ -480,7 +480,7 @@ public sealed class DriveAudioImport : EditorWindow
         }
 
         int windows = 0;
-        foreach (OpenableWindow window in Object.FindObjectsByType<OpenableWindow>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (OpenableWindow window in Object.FindObjectsByType<OpenableWindow>(FindObjectsInactive.Include))
         {
             bool shutters = window.name.ToLowerInvariant().Contains("shutter");
             AudioClip open = First(shutters ? "SFX_Window_Shutters_Open" : "SFX_Window_Open");
@@ -510,7 +510,7 @@ public sealed class DriveAudioImport : EditorWindow
         AudioClip[] hangs = Clips("SFX_Lantern_Hang_", 2);
         int lanterns = 0;
         if (flicker != null || hangs.Length > 0)
-            foreach (Transform t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (Transform t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
             {
                 if (!t.name.Contains("Lantern") || t.parent != null && t.parent.GetComponentsInParent<Transform>(true).Any(p => p.name.Contains("Lantern")))
                     continue;
@@ -551,7 +551,7 @@ public sealed class DriveAudioImport : EditorWindow
         if (gusts.Length == 0)
             gusts = Clips("SFX_Wind_Gust_", 5);
         AudioClip laugh = First("SFX_Child_Laugh", "SFX_Child_Laugh_1");
-        foreach (LookAwayCue cue in Object.FindObjectsByType<LookAwayCue>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (LookAwayCue cue in Object.FindObjectsByType<LookAwayCue>(FindObjectsInactive.Include))
             if (laugh != null)
             {
                 var cueSo = new SerializedObject(cue);
@@ -560,7 +560,7 @@ public sealed class DriveAudioImport : EditorWindow
                 done.Add("child's laugh");
             }
         AudioClip umbrellaOpen = First("SFX_Umbrella_Open");
-        foreach (Umbrella umbrella in Object.FindObjectsByType<Umbrella>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (Umbrella umbrella in Object.FindObjectsByType<Umbrella>(FindObjectsInactive.Include))
             if (umbrellaOpen != null)
             {
                 var umbrellaSo = new SerializedObject(umbrella);
@@ -610,7 +610,7 @@ public sealed class DriveAudioImport : EditorWindow
 
         AudioClip chairMove = First("SFX_Chair_Move");
         if (chairMove != null)
-            foreach (Transform t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => t.name.Contains("(moves)")))
+            foreach (Transform t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include).Where(t => t.name.Contains("(moves)")))
             {
                 MoveSfx move = t.GetComponent<MoveSfx>();
                 if (move == null)

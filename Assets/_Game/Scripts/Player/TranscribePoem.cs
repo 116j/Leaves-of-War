@@ -236,7 +236,7 @@ public class TranscribePoem : RevealableObject
 
     private void RestoreNotebook()
     {
-        foreach (AssignPoem piece in FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (AssignPoem piece in FindObjectsByType<AssignPoem>(FindObjectsInactive.Include))
         {
             if (!piece.IsFragment)
                 continue;
@@ -444,7 +444,7 @@ public class TranscribePoem : RevealableObject
             if (!poem.IsFragment || poem.Fragment >= poem.FragmentCount)
                 LeafField.Instance.ClearRemaining();
             else
-                LeafField.Instance.ClearRemainingExcept(FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                LeafField.Instance.ClearRemainingExcept(FindObjectsByType<AssignPoem>(FindObjectsInactive.Include)
                     .Where(p => p.PoemId == poem.PoemId && p.Fragment > poem.Fragment).Cast<RevealableObject>().ToList());
         }
     }

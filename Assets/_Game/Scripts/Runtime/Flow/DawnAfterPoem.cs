@@ -34,7 +34,7 @@ namespace Hortensia.Runtime
         {
             yield return new WaitForSeconds(delay);
             Light light = null;
-            foreach (Light l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+            foreach (Light l in FindObjectsByType<Light>())
                 if (l.type == LightType.Directional)
                 {
                     light = l;

@@ -283,6 +283,83 @@ namespace Hortensia.Runtime
             StartAudio();
         }
 
+        public void CopyLook(MenuLook look)
+        {
+            look.entryFont = entryFont;
+            look.entryFontFile = entryFontFile;
+            look.entryBold = entryBold;
+            look.menuWordSize = menuWordSize;
+            look.inkColor = inkColor;
+            look.entryHighlightColor = entryHighlightColor;
+            look.entryHighlightScale = entryHighlightScale;
+            look.entryTextOutlineWidth = entryTextOutlineWidth;
+            look.entryTextOutlineColor = entryTextOutlineColor;
+            look.entrySize = entrySize;
+            look.entrySpacing = entrySpacing;
+            look.useEntryBackground = useEntryBackground;
+            look.entryBackgroundOnHover = entryBackgroundOnHover;
+            look.entryBackgroundUnfoldTime = entryBackgroundUnfoldTime;
+            look.entryBackgroundCrumpleTime = entryBackgroundCrumpleTime;
+            look.entryBackground = entryBackground;
+            look.entryBackgroundColor = entryBackgroundColor;
+            look.entryBackgroundHighlightColor = entryBackgroundHighlightColor;
+            look.entryBorderWidth = entryBorderWidth;
+            look.entryBorderColor = entryBorderColor;
+            look.panelFont = panelFont;
+            look.panelFontFile = panelFontFile;
+            look.panelBold = panelBold;
+            look.panelTextColor = PanelTextColor;
+            look.hintFont = hintFont;
+            look.hintFontFile = hintFontFile;
+            look.hintBold = hintBold;
+            look.hintColor = hintColor;
+            look.hintTextOutlineWidth = hintTextOutlineWidth;
+            look.hintTextOutlineColor = hintTextOutlineColor;
+            look.useHintBackground = useHintBackground;
+            look.hintBackground = hintBackground;
+            look.hintBackgroundColor = hintBackgroundColor;
+            look.fallbackFloorColor = fallbackFloorColor;
+            look.floorTiling = floorTiling;
+            look.entryEnterSound = entryEnterSound;
+            look.entryExitSound = entryExitSound;
+            look.entryClickSound = entryClickSound;
+            look.entryPaperSounds = entryPaperSounds;
+            look.entryPaperVolume = entryPaperVolume;
+            look.entryPaperFoldPitch = entryPaperFoldPitch;
+            look.entryBackSounds = entryBackSounds;
+            look.entrySoundVolume = entrySoundVolume;
+            look.entrySoundPitch = entrySoundPitch;
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (UnityEditor.EditorUtility.IsPersistent(this))
+                return;
+            UnityEditor.EditorApplication.delayCall += SaveLookAsset;
+        }
+
+        public void SaveLookAsset()
+        {
+            if (this == null || UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+            MenuLook look = UnityEditor.AssetDatabase.LoadAssetAtPath<MenuLook>(MenuLook.AssetPath);
+            if (look == null)
+            {
+                if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Resources"))
+                    UnityEditor.AssetDatabase.CreateFolder("Assets", "Resources");
+                if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Resources/MainMenu"))
+                    UnityEditor.AssetDatabase.CreateFolder("Assets/Resources", "MainMenu");
+                look = ScriptableObject.CreateInstance<MenuLook>();
+                UnityEditor.AssetDatabase.CreateAsset(look, MenuLook.AssetPath);
+            }
+            CopyLook(look);
+            UnityEditor.EditorUtility.SetDirty(look);
+            UnityEditor.AssetDatabase.SaveAssetIfDirty(look);
+            MenuLook.Refresh();
+        }
+#endif
+
         private void OnEnable()
         {
             ApplyCursor();

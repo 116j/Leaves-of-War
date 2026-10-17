@@ -51,7 +51,7 @@ public class ReadingBlur : MonoBehaviour
     private static Volume GlobalVolume()
     {
         Volume best = null;
-        foreach (Volume volume in FindObjectsByType<Volume>(FindObjectsSortMode.None))
+        foreach (Volume volume in FindObjectsByType<Volume>())
             if (volume.isGlobal && volume.enabled && (best == null || volume.priority > best.priority))
                 best = volume;
         return best;

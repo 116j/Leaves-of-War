@@ -14,7 +14,7 @@ public static class AmbienceMono
     {
         Scene scene = SceneManager.GetActiveScene();
         int count = 0;
-        foreach (LevelAudio audio in Object.FindObjectsByType<LevelAudio>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (LevelAudio audio in Object.FindObjectsByType<LevelAudio>(FindObjectsInactive.Include))
         {
             var so = new SerializedObject(audio);
             SerializedProperty list = so.FindProperty("ambience");

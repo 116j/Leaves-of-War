@@ -23,6 +23,8 @@ namespace Hortensia.Runtime
         [SerializeField] private Texture2D cornice;
 
         private TMP_FontAsset font;
+        private MenuLook look;
+        private GameObject backdrop;
         private GameObject panel;
         private GameObject slotPanel;
         private GameObject corniceOverlay;
@@ -35,8 +37,9 @@ namespace Hortensia.Runtime
         private int pendingDelete = -1;
         private bool pendingDeleteAll;
         private TMP_Text deleteLabel;
-        private readonly List<(TMP_Text text, float size)> styledTexts = new List<(TMP_Text, float)>();
-        private readonly List<Image> buttonImages = new List<Image>();
+        private readonly List<Button> panelButtons = new List<Button>();
+        private Transform canvasRoot;
+        private float nextOptionsStyle;
 
         private FirstPersonController boundPlayer;
         private float previousTimeScale = 1f;
@@ -55,7 +58,8 @@ namespace Hortensia.Runtime
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            font = Resources.Load<TMP_FontAsset>(FontPath) ?? TMP_Settings.defaultFontAsset;
+            look = MenuLook.Current;
+            font = look.PanelFont ?? Resources.Load<TMP_FontAsset>(FontPath) ?? TMP_Settings.defaultFontAsset;
             BuildUi();
             GameSettings.Applied += ApplyStyle;
             ApplyStyle();
@@ -70,6 +74,13 @@ namespace Hortensia.Runtime
 
         private void Update()
         {
+            if (IsPaused && optionsPanel != null && !panel.activeSelf && !slotPanel.activeSelf && Time.unscaledTime >= nextOptionsStyle)
+            {
+                nextOptionsStyle = Time.unscaledTime + 0.2f;
+                foreach (TMP_Text text in canvasRoot.GetComponentsInChildren<TMP_Text>(true))
+                    if (!text.transform.IsChildOf(panel.transform))
+                        look.StylePanelText(text);
+            }
             if (!PausePressed())
                 return;
 
@@ -129,6 +140,7 @@ namespace Hortensia.Runtime
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
 
+            backdrop.SetActive(true);
             panel.SetActive(true);
             corniceOverlay?.SetActive(true);
         }
@@ -139,6 +151,7 @@ namespace Hortensia.Runtime
                 return;
 
             IsPaused = false;
+            backdrop.SetActive(false);
             panel.SetActive(false);
             slotPanel.SetActive(false);
             optionsPanel.Hide();
@@ -153,6 +166,12 @@ namespace Hortensia.Runtime
 
             Cursor.lockState = previousLockState;
             Cursor.visible = previousCursorVisible;
+        }
+
+        private void BackToPausePanel()
+        {
+            look.PlayBackSound();
+            ShowPausePanel();
         }
 
         private void ShowPausePanel()
@@ -184,7 +203,7 @@ namespace Hortensia.Runtime
                 string level = LevelProgress.Slot(number);
                 button.interactable = deleteMode ? !string.IsNullOrEmpty(level)
                     : slotPanelSaves ? LevelProgress.CurrentLevel != null : LevelProgress.CanLoad(level);
-                Color color = GameSettings.Current.screenStyle.textColor;
+                Color color = look.panelTextColor;
                 if (!button.interactable)
                     color.a *= 0.45f;
                 label.color = color;
@@ -279,43 +298,57 @@ namespace Hortensia.Runtime
             Canvas canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 31000;
+            canvasRoot = canvas.transform;
 
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.matchWidthOrHeight = 0.5f;
 
-            panel = CreatePanel(canvas.transform, "PausePanel");
-            CreateText(panel.transform, "Header", 64f, new Vector2(0f, 300f), new Vector2(560f, 90f)).text = "PAUSED";
+            backdrop = CreateFloor(canvas.transform);
 
-            var entries = new (string label, UnityAction action)[]
+            panel = CreateLayer(canvas.transform, "PausePanel");
+            TMP_Text header = CreateText(panel.transform, "Header", 140f, new Vector2(0f, 320f), new Vector2(1400f, 240f));
+            header.text = "Paused";
+            look.StyleEntryText(header, false);
+
+            var entries = new List<(string label, UnityAction action)>
             {
-                ("CONTINUE", Resume),
-                ("SAVE", () => ShowSlots(true)),
-                ("LOAD", () => ShowSlots(false)),
-                ("OPTIONS", ShowOptions),
-                ("MAIN MENU", OnMainMenu),
-                ("QUIT", OnQuit)
+                ("Continue", Resume),
+                ("Save Game", () => ShowSlots(true)),
+                ("Load Game", () => ShowSlots(false)),
+                ("Options", ShowOptions),
+                ("Main Menu", OnMainMenu)
             };
-            for (int i = 0; i < entries.Length; i++)
-                CreateButton(panel.transform, entries[i].label, new Vector2(0f, 150f - i * 90f), new Vector2(420f, 72f), 30f, entries[i].action);
+#if !UNITY_WEBGL || UNITY_EDITOR
+            entries.Add(("Quit", OnQuit));
+#endif
+            float top = 40f;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                UnityAction chosen = entries[i].action;
+                GameMenuEntry.Create(panel.transform, entries[i].label, new Vector2(0f, top - i * look.entrySpacing), () => chosen());
+            }
 
-            slotPanel = CreatePanel(canvas.transform, "SlotPanel");
-            slotHeader = CreateText(slotPanel.transform, "Header", 56f, new Vector2(0f, 330f), new Vector2(760f, 80f));
+            slotPanel = CreateLayer(canvas.transform, "SlotPanel");
+            RectTransform box = CreateBox(slotPanel.transform, new Vector2(1360f, 900f));
+            slotHeader = CreateText(box, "Header", 52f, new Vector2(0f, 360f), new Vector2(1000f, 72f));
+            slotHeader.color = look.panelHeaderColor;
             for (int i = 0; i < LevelProgress.SlotCount; i++)
             {
                 int number = i + 1;
-                Vector2 position = new Vector2(i % 2 == 0 ? -230f : 230f, 205f - i / 2 * 82f);
-                TMP_Text label = CreateButton(slotPanel.transform, $"Slot {number:D2}", position, new Vector2(410f, 62f), 22f, () => OnSlot(number));
+                Vector2 position = new Vector2(i % 2 == 0 ? -245f : 245f, 250f - i / 2 * 70f);
+                TMP_Text label = CreateButton(box, $"Slot {number:D2}", position, new Vector2(440f, 58f), 23f, () => OnSlot(number));
                 slots.Add((number, label.GetComponentInParent<Button>(), label));
             }
-            slotStatus = CreateText(slotPanel.transform, "Status", 22f, new Vector2(0f, -235f), new Vector2(820f, 70f));
-            CreateButton(slotPanel.transform, "BACK", new Vector2(-320f, -310f), new Vector2(300f, 62f), 26f, ShowPausePanel);
-            deleteLabel = CreateButton(slotPanel.transform, "DELETE", new Vector2(0f, -310f), new Vector2(300f, 62f), 26f, () => SetDeleteMode(!deleteMode));
-            CreateButton(slotPanel.transform, "DELETE ALL SAVES", new Vector2(320f, -310f), new Vector2(300f, 62f), 26f, OnDeleteAll);
+            slotStatus = CreateText(box, "Status", 20f, new Vector2(0f, -240f), new Vector2(1120f, 62f));
+            CreateButton(box, "BACK", new Vector2(-330f, -350f), new Vector2(300f, 58f), 23f, BackToPausePanel, false);
+            deleteLabel = CreateButton(box, "DELETE", new Vector2(0f, -350f), new Vector2(300f, 58f), 23f, () => SetDeleteMode(!deleteMode));
+            CreateButton(box, "DELETE ALL SAVES", new Vector2(330f, -350f), new Vector2(300f, 58f), 23f, OnDeleteAll);
 
-            optionsPanel = new OptionsPanel(canvas.transform, font, font, ShowPausePanel);
+            optionsPanel = new OptionsPanel(canvas.transform, font, font, BackToPausePanel);
 
+            backdrop.SetActive(false);
             panel.SetActive(false);
             slotPanel.SetActive(false);
             optionsPanel.Hide();
@@ -335,43 +368,66 @@ namespace Hortensia.Runtime
 
         private void ApplyStyle()
         {
-            TextStyle style = GameSettings.Current.screenStyle;
-            foreach (var (text, size) in styledTexts)
-            {
-                text.fontSize = size * style.scale;
-                TextStyling.Apply(text, style, style.textColor);
-            }
-            slotStatus.color = style.accentColor;
-            buttonImages.ForEach(image => image.color = style.backgroundColor);
+            slotStatus.color = look.panelStatusColor;
+            panelButtons.ForEach(look.StylePanelButton);
             RefreshSlots();
         }
 
-        private static GameObject CreatePanel(Transform parent, string name)
+        private GameObject CreateFloor(Transform parent)
         {
-            var panelObject = new GameObject(name, typeof(RectTransform), typeof(Image));
-            panelObject.transform.SetParent(parent, false);
-            Stretch((RectTransform)panelObject.transform);
-            panelObject.GetComponent<Image>().color = new Color(0.015f, 0.013f, 0.011f, 0.88f);
-            return panelObject;
+            var floorObject = new GameObject("Floor", typeof(RectTransform), typeof(RawImage));
+            floorObject.transform.SetParent(parent, false);
+            Stretch((RectTransform)floorObject.transform);
+            RawImage floor = floorObject.GetComponent<RawImage>();
+            floor.raycastTarget = true;
+            Texture2D texture = look.FloorTexture;
+            if (texture != null)
+            {
+                texture.wrapMode = TextureWrapMode.Repeat;
+                floor.texture = texture;
+                floor.uvRect = new Rect(0f, 0f, look.floorTiling, look.floorTiling * 9f / 16f);
+                floor.color = Color.white;
+            }
+            else
+            {
+                floor.color = look.fallbackFloorColor;
+            }
+            return floorObject;
         }
 
-        private TMP_Text CreateButton(Transform parent, string label, Vector2 position, Vector2 size, float fontSize, UnityAction action)
+        private static GameObject CreateLayer(Transform parent, string name)
+        {
+            var layer = new GameObject(name, typeof(RectTransform));
+            layer.transform.SetParent(parent, false);
+            Stretch((RectTransform)layer.transform);
+            return layer;
+        }
+
+        private RectTransform CreateBox(Transform parent, Vector2 size)
+        {
+            var boxObject = new GameObject("Panel", typeof(RectTransform), typeof(Image));
+            boxObject.transform.SetParent(parent, false);
+            var rect = (RectTransform)boxObject.transform;
+            Place(rect, Vector2.zero, size);
+            boxObject.GetComponent<Image>().color = look.panelColor;
+            return rect;
+        }
+
+        private TMP_Text CreateButton(Transform parent, string label, Vector2 position, Vector2 size, float fontSize, UnityAction action, bool clickSound = true)
         {
             var buttonObject = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button));
             buttonObject.transform.SetParent(parent, false);
             Place((RectTransform)buttonObject.transform, position, size);
-            buttonImages.Add(buttonObject.GetComponent<Image>());
 
             Button button = buttonObject.GetComponent<Button>();
-            ColorBlock colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(0.72f, 0.77f, 0.58f);
-            colors.pressedColor = new Color(0.48f, 0.52f, 0.37f);
-            colors.disabledColor = new Color(0.34f, 0.32f, 0.28f, 0.6f);
-            button.colors = colors;
+            look.StylePanelButton(button);
+            panelButtons.Add(button);
+            if (clickSound)
+                button.onClick.AddListener(() => look.PlayEntrySound(2));
             button.onClick.AddListener(action);
 
-            TMP_Text text = CreateText(buttonObject.transform, "Label", fontSize, Vector2.zero, size - new Vector2(20f, 12f));
+            TMP_Text text = CreateText(buttonObject.transform, "Label", fontSize, Vector2.zero, size - new Vector2(30f, 12f));
+            text.color = look.panelTextColor;
             text.text = label;
             return text;
         }
@@ -388,7 +444,7 @@ namespace Hortensia.Runtime
             text.alignment = TextAlignmentOptions.Center;
             text.textWrappingMode = TextWrappingModes.Normal;
             text.raycastTarget = false;
-            styledTexts.Add((text, size));
+            look.StylePanelText(text);
             return text;
         }
 

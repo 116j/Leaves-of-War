@@ -81,8 +81,7 @@ public sealed class ObjectInspector : MonoBehaviour
         Instance = this;
 
         EnsureEventSystem();
-        menuFont = MainMenuController.ResolveFont(titleFontFile, titleFont, "Inspector Title Font")
-            ?? Resources.Load<TMP_FontAsset>("Fonts/OSerif") ?? TMP_Settings.defaultFontAsset;
+        menuFont = MenuLook.Current.PanelFont;
         TranscribePoem transcribe = FindAnyObjectByType<TranscribePoem>();
         textFont = MainMenuController.ResolveFont(descriptionFontFile, descriptionFont, "Inspector Description Font")
             ?? (transcribe != null && transcribe.PoemFont != null ? transcribe.PoemFont : menuFont);
@@ -329,7 +328,7 @@ public sealed class ObjectInspector : MonoBehaviour
         stageCamera.targetTexture = stageTexture;
         stageCamera.enabled = false;
 
-        foreach (Camera other in FindObjectsByType<Camera>(FindObjectsSortMode.None))
+        foreach (Camera other in FindObjectsByType<Camera>())
             if (other != stageCamera)
                 other.cullingMask &= ~(1 << stageLayer);
     }
@@ -399,9 +398,10 @@ public sealed class ObjectInspector : MonoBehaviour
         panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
         panel.transform.SetParent(canvasObject.transform, false);
         Stretch((RectTransform)panel.transform, Vector2.zero, Vector2.zero);
-        panel.GetComponent<Image>().color = new Color(0.02f, 0.018f, 0.015f, 0.94f);
+        panel.GetComponent<Image>().color = MenuLook.Current.panelColor;
 
         titleText = Text(panel.transform, "Title", titleSize, new Vector2(384f, 900f), new Vector2(-384f, -100f), TextAlignmentOptions.Center, menuFont);
+        titleText.color = MenuLook.Current.panelHeaderColor;
 
         var previewObject = new GameObject("Preview", typeof(RectTransform), typeof(RawImage));
         previewObject.transform.SetParent(panel.transform, false);
@@ -438,7 +438,7 @@ public sealed class ObjectInspector : MonoBehaviour
         description.font = textFont;
         description.fontSize = descriptionSize;
         description.alignment = TextAlignmentOptions.TopLeft;
-        description.color = new Color(0.9f, 0.86f, 0.74f);
+        description.color = MenuLook.Current.panelTextColor;
         description.raycastTarget = false;
         description.textWrappingMode = TextWrappingModes.Normal;
         descriptionObject.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -462,7 +462,8 @@ public sealed class ObjectInspector : MonoBehaviour
         buttonRect.pivot = new Vector2(0.5f, 0f);
         buttonRect.sizeDelta = new Vector2(260f, 48f);
         buttonRect.anchoredPosition = new Vector2(0f, 60f);
-        buttonObject.GetComponent<Image>().color = new Color(0.115f, 0.1f, 0.075f, 0.96f);
+        MenuLook.Current.StylePanelButton(buttonObject.GetComponent<Button>());
+        buttonObject.GetComponent<Button>().onClick.AddListener(MenuLook.Current.PlayBackSound);
         buttonObject.GetComponent<Button>().onClick.AddListener(Close);
         closeLabel = Text(buttonObject.transform, "Label", 24f, new Vector2(10f, 6f), new Vector2(-10f, -6f), TextAlignmentOptions.Center, menuFont);
         closeLabel.text = "PUT DOWN";
@@ -491,8 +492,9 @@ public sealed class ObjectInspector : MonoBehaviour
             text.font = font;
         text.fontSize = size;
         text.alignment = alignment;
-        text.color = new Color(0.9f, 0.86f, 0.74f);
+        text.color = MenuLook.Current.panelTextColor;
         text.raycastTarget = false;
+        MenuLook.Current.StylePanelText(text);
         return text;
     }
 }

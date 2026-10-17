@@ -30,9 +30,7 @@ public static class ScreenPrompt
         prompt.alignment = TextAlignmentOptions.Center;
         prompt.fontSize = size;
         prompt.raycastTarget = false;
-        prompt.color = Color.white;
-        prompt.outlineWidth = 0.2f;
-        prompt.outlineColor = Color.black;
+        Hortensia.Runtime.ScreenTextStyle.Attach(prompt, size);
         textObject.SetActive(false);
         return prompt;
     }

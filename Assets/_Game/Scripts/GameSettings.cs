@@ -85,7 +85,7 @@ namespace Hortensia.Runtime
     [Serializable]
     public struct SettingsData
     {
-        public const int CurrentTextStyleVersion = 1;
+        public const int CurrentTextStyleVersion = 2;
 
         public float mouseSensitivity;
         public bool holdToSprint;
@@ -195,8 +195,9 @@ namespace Hortensia.Runtime
         {
             if (d.textStyleVersion != SettingsData.CurrentTextStyleVersion)
             {
+                if (d.textStyleVersion < 1)
+                    d.subtitleStyle = TextStyleDefaults.SubtitleStyle;
                 d.textStyleVersion = SettingsData.CurrentTextStyleVersion;
-                d.subtitleStyle = TextStyleDefaults.SubtitleStyle;
                 d.screenStyle = TextStyleDefaults.ScreenStyle;
             }
 

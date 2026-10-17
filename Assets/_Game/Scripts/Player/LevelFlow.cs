@@ -35,7 +35,8 @@ public class LevelFlow : MonoBehaviour
         LoadNextLevel,
         CharacterEnters,
         JoinFragments,
-        WeatherClears
+        WeatherClears,
+        CharacterCardsThenNextLevel
     }
 
     [Serializable]
@@ -109,7 +110,7 @@ public class LevelFlow : MonoBehaviour
 
     public static bool Drives(Observable observable)
     {
-        foreach (LevelFlow flow in FindObjectsByType<LevelFlow>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (LevelFlow flow in FindObjectsByType<LevelFlow>(FindObjectsInactive.Include))
         {
             if (flow.observables == null || flow.steps == null)
                 continue;
@@ -194,7 +195,7 @@ public class LevelFlow : MonoBehaviour
         diary = FindAnyObjectByType<DiaryInteraction>();
         sweeper = FindAnyObjectByType<BroomSweeper>();
         transcribe = FindAnyObjectByType<TranscribePoem>();
-        fragments = Array.FindAll(FindObjectsByType<AssignPoem>(FindObjectsInactive.Include, FindObjectsSortMode.None), p => p.IsFragment);
+        fragments = Array.FindAll(FindObjectsByType<AssignPoem>(FindObjectsInactive.Include), p => p.IsFragment);
         if (observables != null)
         {
         }
@@ -305,7 +306,7 @@ public class LevelFlow : MonoBehaviour
                     if (!PoemAllowed)
                     {
                         PoemAllowed = true;
-                        foreach (AssignPoem poem in FindObjectsByType<AssignPoem>(FindObjectsSortMode.None))
+                        foreach (AssignPoem poem in FindObjectsByType<AssignPoem>())
                             if (poem.IsRevealed && transcribe != null)
                                 transcribe.OnPoemRevealed(poem);
                     }
@@ -423,8 +424,15 @@ public class LevelFlow : MonoBehaviour
                     observables[step.observableIndex].OnChangeAllowed.AddListener(changeBehaviour.OnChange);
                 }
                 break;
+            case StepAction.CharacterCardsThenNextLevel:
+                StartCoroutine(Hortensia.Runtime.CharacterCards.Play(() =>
+                {
+                    LoadNext();
+                    Activate();
+                }));
+                break;
             case StepAction.WeatherClears:
-                foreach (Weather weather in FindObjectsByType<Weather>(FindObjectsSortMode.None))
+                foreach (Weather weather in FindObjectsByType<Weather>())
                     weather.Clear();
                 break;
             case StepAction.ShowFollowerLeaf:
