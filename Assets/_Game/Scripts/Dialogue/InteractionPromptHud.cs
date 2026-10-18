@@ -61,10 +61,11 @@ namespace Hortensia.Runtime
             if (player == null)
                 player = FindAnyObjectByType<FirstPersonController>();
 
-            string prompt = GameSettings.Current.inGameTextEnabled && player != null && player.isActiveAndEnabled && !DialogueRunner.IsPlaying && !DiaryInteraction.IsReading &&
+            string englishPrompt = GameSettings.Current.inGameTextEnabled && player != null && player.isActiveAndEnabled && !DialogueRunner.IsPlaying && !DiaryInteraction.IsReading &&
                             (PauseController.Instance == null || !PauseController.Instance.IsPaused)
                 ? player.InteractionPrompt
                 : string.Empty;
+            string prompt = Loc.T(englishPrompt);
 
             bool show = !string.IsNullOrWhiteSpace(prompt);
             if (show && (prompt != lastPrompt || BroomSweeper.Holding != lastHolding))
@@ -72,11 +73,17 @@ namespace Hortensia.Runtime
                 lastPrompt = prompt;
                 lastHolding = BroomSweeper.Holding;
                 string text = string.Format(format, prompt);
+                string english = string.Format(format, englishPrompt);
                 if (BroomSweeper.Holding && !text.Contains("["))
-                    text = "[" + ScreenPrompt.KeyName(player.InteractAction, "E") + "] " + text;
+                {
+                    string key = "[" + ScreenPrompt.KeyName(player.InteractAction, "E") + "] ";
+                    text = key + text;
+                    english = key + english;
+                }
                 if (label.text != text)
                 {
                     label.text = text;
+                    LocFit.Apply(label, english, text);
                     Vector2 preferred = label.GetPreferredValues(text);
                     plate.sizeDelta = preferred + padding * 2f;
                 }

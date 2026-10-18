@@ -82,7 +82,8 @@ public sealed class DriveAudioImport : EditorWindow
         new LevelSound("Roma", 5, "MUS_P5",
             new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_05_Roma_Inside"),
             new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_05_Roma_Outside")),
-        new LevelSound("Courton", 6, "MUS_06_FINALE"),
+        new LevelSound("Courton", 6, "MUS_06_FINALE",
+            new Amb(LevelAudio.Mix.Always, 0.6f, "AMB_06_Courton")),
     };
 
     private Vector2 scroll;
@@ -493,6 +494,12 @@ public sealed class DriveAudioImport : EditorWindow
                 so.FindProperty("doorOpenClip").objectReferenceValue = open;
             if (close != null)
                 so.FindProperty("doorCloseClip").objectReferenceValue = close;
+            AudioClip ending = First("MUS_07_CREDITS");
+            if (ending != null && so.FindProperty("endingMusic") != null && so.FindProperty("nextScene").stringValue == "MainMenu")
+            {
+                so.FindProperty("endingMusic").objectReferenceValue = ending;
+                done.Add("ending music (MUS_07_CREDITS)");
+            }
             DialogueTrigger character = so.FindProperty("character").objectReferenceValue as DialogueTrigger;
             so.ApplyModifiedPropertiesWithoutUndo();
             if (open != null || close != null)

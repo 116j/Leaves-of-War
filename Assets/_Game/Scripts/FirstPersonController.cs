@@ -242,8 +242,24 @@ public sealed class FirstPersonController : MonoBehaviour
         cameraData.antialiasingQuality = AntialiasingQuality.High;
     }
 
+    public static Transform HoldLook;
+
+    private void HoldGaze()
+    {
+        Vector3 to = HoldLook.position - playerCamera.transform.position;
+        Vector3 flat = new Vector3(to.x, 0f, to.z);
+        float k = 1f - Mathf.Exp(-3f * Time.deltaTime);
+        if (flat.sqrMagnitude > 0.0004f)
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(flat.normalized, Vector3.up), k);
+        float want = Mathf.Clamp(-Mathf.Atan2(to.y, flat.magnitude) * Mathf.Rad2Deg, -lookLimit, lookLimit);
+        pitch = Mathf.Lerp(pitch, want, k);
+        playerCamera.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
     private void Update()
     {
+        if (HoldLook != null && playerCamera != null && Time.timeScale > 0f)
+            HoldGaze();
         if (IsLocked)
         {
             SetFocusedInteractable(null);
@@ -268,7 +284,7 @@ public sealed class FirstPersonController : MonoBehaviour
         }
 
         bool sweeping = SweepAction != null && SweepAction.IsPressed() && BroomSweeper.Ready;
-        if (lookAction.controls.Count > 0 && !sweeping)
+        if (lookAction.controls.Count > 0 && !sweeping && HoldLook == null)
         {
             Vector2 delta = lookAction.ReadValue<Vector2>() * mouseSensitivity;
             transform.Rotate(0f, delta.x, 0f);
@@ -276,7 +292,7 @@ public sealed class FirstPersonController : MonoBehaviour
             playerCamera.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
 
-        if (!DiaryInteraction.IsWriting)
+        if (!DiaryInteraction.IsWriting && HoldLook == null)
             UpdateMovement();
         UpdateInteraction(!recapturedCursor && !sweeping && !DiaryInteraction.IsWriting);
     }

@@ -191,7 +191,7 @@ namespace Hortensia.Runtime
             if (hasVoice)
                 VoiceTrim.Play(source, piece.voice, piece.Volume);
 
-            pieceText = piece.text ?? string.Empty;
+            pieceText = Loc.T(piece.text ?? string.Empty);
             float fullReveal = pieceText.Length + fadeLetters;
             ApplyReveal(0f);
             continueText.gameObject.SetActive(false);

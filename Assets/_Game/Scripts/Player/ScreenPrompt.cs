@@ -35,12 +35,16 @@ public static class ScreenPrompt
         return prompt;
     }
 
-    public static void Show(TextMeshProUGUI prompt, bool show, string text)
+    public static void Show(TextMeshProUGUI prompt, bool show, string text, string english = null)
     {
         if (prompt == null)
             return;
         if (show)
-            prompt.text = text;
+        {
+            string shown = Loc.T(text);
+            prompt.text = shown;
+            LocFit.Apply(prompt, english ?? text, shown);
+        }
         if (prompt.gameObject.activeSelf != show)
             prompt.gameObject.SetActive(show);
     }
@@ -48,6 +52,6 @@ public static class ScreenPrompt
     public static string KeyName(InputAction action, string fallback)
     {
         string name = action != null ? action.GetBindingDisplayString(0, InputBinding.DisplayStringOptions.DontIncludeInteractions) : fallback;
-        return string.IsNullOrWhiteSpace(name) ? fallback : name.ToUpperInvariant();
+        return Loc.T(string.IsNullOrWhiteSpace(name) ? fallback : name.ToUpperInvariant());
     }
 }

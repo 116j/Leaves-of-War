@@ -21,7 +21,7 @@ public class Examinable : MonoBehaviour, IInteractable
 
     public static bool IsOpen => ObjectInspector.Instance != null && ObjectInspector.Instance.IsOpen;
 
-    public string Prompt => IsOpen ? string.Empty : (prompt + " " + DisplayName.ToUpperInvariant()).Trim();
+    public string Prompt => IsOpen ? string.Empty : (Loc.T(prompt) + " " + Loc.T(DisplayName).ToUpperInvariant()).Trim();
     public string DisplayName => !string.IsNullOrWhiteSpace(displayName) ? displayName : CleanName(name);
     public string Description => caption;
     public GameObject Model => model != null ? model : gameObject;

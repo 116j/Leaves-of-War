@@ -1,0 +1,851 @@
+# Leaves of War — Italian translations.
+# Each entry: a line starting with >>> holds the English text exactly as the game shows it (it may continue on the next lines),
+# then a line starting with <<< holds the Italian (it may continue on the next lines too).
+# Font size: if an Italian text needs to be smaller or bigger than the automatic fit, start it with @ and a percentage, e.g. <<< @85 TIENI PREMUTO {0} PER TRASCRIVERE
+# {0}, {1}: parts that change (a key, a slot number...). {character}, {diaryKey}, {sweepKey}, {writeKey}: filled in by the game.
+# English texts not found here stay in English. Tools > Leaves of War > Localization > Add untranslated texts appends the missing ones at the end.
+# Poems, places and dates of the levels are never translated.
+
+# ===== MAIN MENU =====
+>>> New Game
+<<< Nuova partita
+>>> Continue
+<<< Continua
+>>> Load Game
+<<< Carica partita
+>>> Options
+<<< Impostazioni
+>>> Credits
+<<< Crediti
+>>> Quit
+<<< Esci
+>>> Save Game
+<<< Salva partita
+>>> Main Menu
+<<< Menu principale
+>>> Paused
+<<< In pausa
+>>> Hold left mouse button and move
+(or scratch the screen) to sweep the leaves.
+
+ Enter or space to blow them away.
+<<< Tieni premuto il tasto sinistro del mouse e muovilo
+(o strofina lo schermo) per spazzare le foglie.
+
+Invio o spazio per soffiarle via.
+>>> Hold the left mouse button and move to sweep the leaves  ·  Enter to blow them away
+<<< Tieni premuto il tasto sinistro del mouse e muovilo per spazzare le foglie  ·  Invio per soffiarle via
+>>> Swipe to sweep the leaves  ·  Double-tap to blow them away
+<<< Scorri per spazzare le foglie  ·  Tocca due volte per soffiarle via
+>>> Click to skip  ·  Esc to go back
+<<< Clic per andare avanti  ·  Esc per tornare indietro
+>>> Click or press Esc to go back
+<<< Clic o Esc per tornare indietro
+>>> LOAD GAME
+<<< CARICA PARTITA
+>>> SAVE GAME
+<<< SALVA PARTITA
+>>> AUTOSAVE
+<<< SALVATAGGIO AUTOMATICO
+>>> Autosave
+<<< Salvataggio automatico
+>>> EMPTY
+<<< VUOTO
+>>> {0} — EMPTY
+<<< {0} — VUOTO
+>>> SELECT A SAVE TO LOAD. CURRENT PROGRESS WILL BE REPLACED.
+<<< SCEGLI UN SALVATAGGIO DA CARICARE. I PROGRESSI ATTUALI VERRANNO SOSTITUITI.
+>>> SCENE '{0}' IS NOT IN THE BUILD SETTINGS.
+<<< LA SCENA '{0}' NON È NELLE BUILD SETTINGS.
+>>> BACK
+<<< INDIETRO
+>>> Back
+<<< Indietro
+
+# ===== PAUSE =====
+>>> DELETE
+<<< ELIMINA
+>>> CANCEL DELETE
+<<< ANNULLA
+>>> DELETE ALL SAVES
+<<< ELIMINA TUTTO
+>>> DELETE MODE - CLICK A SLOT TWICE TO ERASE IT.
+<<< MODALITÀ ELIMINAZIONE - CLICCA DUE VOLTE SU UNO SLOT PER CANCELLARLO.
+>>> CHOOSE A SLOT TO SAVE THE CURRENT LEVEL.
+<<< SCEGLI UNO SLOT IN CUI SALVARE IL LIVELLO ATTUALE.
+>>> CHOOSE A SLOT TO LOAD. CURRENT PROGRESS WILL BE REPLACED.
+<<< SCEGLI UNO SLOT DA CARICARE. I PROGRESSI ATTUALI VERRANNO SOSTITUITI.
+>>> CLICK DELETE ALL SAVES AGAIN TO ERASE EVERY SLOT AND THE AUTOSAVE.
+<<< CLICCA DI NUOVO SU ELIMINA TUTTO PER CANCELLARE OGNI SLOT E IL SALVATAGGIO AUTOMATICO.
+>>> ALL SAVES DELETED.
+<<< TUTTI I SALVATAGGI SONO STATI ELIMINATI.
+>>> CLICK SLOT {0} AGAIN TO DELETE IT.
+<<< CLICCA DI NUOVO SULLO SLOT {0} PER ELIMINARLO.
+>>> SLOT {0} DELETED.
+<<< SLOT {0} ELIMINATO.
+>>> SLOT {0} SAVED.
+<<< SLOT {0} SALVATO.
+
+# ===== OPTIONS =====
+>>> OPTIONS
+<<< IMPOSTAZIONI
+>>> DEFAULTS
+<<< PREDEFINITI
+>>> APPLY
+<<< APPLICA
+>>> CONTROLS
+<<< CONTROLLI
+>>> KEY BINDINGS
+<<< TASTI
+>>> CONFIGURE
+<<< CONFIGURA
+>>> MOUSE SENSITIVITY
+<<< SENSIBILITÀ DEL MOUSE
+>>> DISPLAY
+<<< SCHERMO
+>>> RESOLUTION
+<<< RISOLUZIONE
+>>> FULL SCREEN
+<<< SCHERMO INTERO
+>>> V-SYNC
+<<< V-SYNC
+>>> FPS LIMIT
+<<< LIMITE FPS
+>>> FIELD OF VIEW
+<<< CAMPO VISIVO
+>>> GRAPHICS
+<<< GRAFICA
+>>> SHADOW QUALITY
+<<< QUALITÀ DELLE OMBRE
+>>> OFF
+<<< NO
+>>> ON
+<<< SÌ
+>>> LOW
+<<< BASSA
+>>> MEDIUM
+<<< MEDIA
+>>> HIGH
+<<< ALTA
+>>> ULTRA
+<<< ULTRA
+>>> ANTI-ALIASING
+<<< ANTI-ALIASING
+>>> AUDIO
+<<< AUDIO
+>>> MASTER VOLUME
+<<< VOLUME GENERALE
+>>> VOICE / DIALOGUE VOLUME
+<<< VOLUME VOCI / DIALOGHI
+>>> MUSIC VOLUME
+<<< VOLUME MUSICA
+>>> SOUND EFFECTS VOLUME
+<<< VOLUME EFFETTI SONORI
+>>> VIDEO VOLUME
+<<< VOLUME VIDEO
+>>> TEXT & SUBTITLES
+<<< TESTI E SOTTOTITOLI
+>>> SHOW SUBTITLES
+<<< MOSTRA I SOTTOTITOLI
+>>> SUBTITLE STYLE
+<<< STILE DEI SOTTOTITOLI
+>>> CUSTOMIZE
+<<< PERSONALIZZA
+>>> SHOW IN-GAME TEXT
+<<< MOSTRA I TESTI DI GIOCO
+>>> SCREEN TEXT STYLE
+<<< STILE DEI TESTI A SCHERMO
+>>> LANGUAGE
+<<< LINGUA
+>>> UNSAVED CHANGES — PRESS APPLY TO SAVE.
+<<< MODIFICHE NON SALVATE — PREMI APPLICA PER SALVARE.
+>>> SETTINGS SAVED.
+<<< IMPOSTAZIONI SALVATE.
+>>> DEFAULTS LOADED — PRESS APPLY TO SAVE.
+<<< VALORI PREDEFINITI CARICATI — PREMI APPLICA PER SALVARE.
+>>> DISCARD UNSAVED CHANGES? PRESS BACK AGAIN.
+<<< SCARTARE LE MODIFICHE NON SALVATE? PREMI DI NUOVO INDIETRO.
+>>> PRESS REBIND, THEN A NEW KEY OR MOUSE BUTTON. USE CANCEL TO ABORT.
+<<< PREMI CAMBIA, POI UN NUOVO TASTO O PULSANTE DEL MOUSE. ANNULLA PER INTERROMPERE.
+>>> RESET KEYS
+<<< RIPRISTINA TASTI
+>>> CANCEL
+<<< ANNULLA
+>>> REBIND
+<<< CAMBIA
+>>> PRESS A KEY...
+<<< PREMI UN TASTO...
+>>> REBINDING {0} — PRESS A KEY.
+<<< NUOVO TASTO PER {0} — PREMI UN TASTO.
+>>> NO REBIND IN PROGRESS.
+<<< NESSUNA MODIFICA IN CORSO.
+>>> DEFAULT KEYS RESTORED — PRESS APPLY TO SAVE.
+<<< TASTI PREDEFINITI RIPRISTINATI — PREMI APPLICA PER SALVARE.
+>>> KEY BINDINGS SAVED.
+<<< TASTI SALVATI.
+>>> PREVIEW
+<<< ANTEPRIMA
+>>> DEFAULT STYLE LOADED — PRESS APPLY TO SAVE.
+<<< STILE PREDEFINITO CARICATO — PREMI APPLICA PER SALVARE.
+>>> TEXT
+<<< TESTO
+>>> SIZE
+<<< GRANDEZZA
+>>> COLOUR
+<<< COLORE
+>>> OPACITY
+<<< OPACITÀ
+>>> BOLD
+<<< GRASSETTO
+>>> FONT WEIGHT
+<<< SPESSORE DEL CARATTERE
+>>> OUTLINE
+<<< CONTORNO
+>>> OUTLINE THICKNESS
+<<< SPESSORE DEL CONTORNO
+>>> OUTLINE COLOUR
+<<< COLORE DEL CONTORNO
+>>> SPEAKER NAME
+<<< NOME DI CHI PARLA
+>>> MESSAGES
+<<< MESSAGGI
+>>> NAME COLOUR
+<<< COLORE DEL NOME
+>>> MESSAGE COLOUR
+<<< COLORE DEI MESSAGGI
+>>> NAME OPACITY
+<<< OPACITÀ DEL NOME
+>>> MESSAGE OPACITY
+<<< OPACITÀ DEI MESSAGGI
+>>> BACKGROUND
+<<< SFONDO
+>>> BUTTONS & LABELS
+<<< PULSANTI ED ETICHETTE
+>>> BACKGROUND COLOUR
+<<< COLORE DELLO SFONDO
+>>> BACKGROUND OPACITY
+<<< OPACITÀ DELLO SFONDO
+>>> PRESETS
+<<< PREDEFINITI
+>>> CONTINUE
+<<< CONTINUA
+>>> MOVE FORWARD
+<<< AVANTI
+>>> MOVE BACKWARD
+<<< INDIETRO
+>>> MOVE LEFT
+<<< SINISTRA
+>>> MOVE RIGHT
+<<< DESTRA
+>>> SPRINT
+<<< CORSA
+>>> INTERACT
+<<< INTERAGISCI
+>>> SWEEP (HOLD)
+<<< SPAZZA (TIENI PREMUTO)
+>>> DIARY
+<<< QUADERNO
+>>> WRITE (HOLD)
+<<< SCRIVI (TIENI PREMUTO)
+>>> TOGGLE CURSOR
+<<< MOSTRA/NASCONDI CURSORE
+>>> PAUSE
+<<< PAUSA
+>>> LEFT BUTTON
+<<< TASTO SINISTRO
+>>> RIGHT BUTTON
+<<< TASTO DESTRO
+>>> MIDDLE BUTTON
+<<< TASTO CENTRALE
+>>> LMB
+<<< TASTO SINISTRO
+>>> SPACE
+<<< SPAZIO
+>>> ENTER
+<<< INVIO
+>>> LEFT SHIFT
+<<< MAIUSC SINISTRO
+>>> UP ARROW
+<<< FRECCIA SU
+>>> DOWN ARROW
+<<< FRECCIA GIÙ
+>>> LEFT ARROW
+<<< FRECCIA SINISTRA
+>>> RIGHT ARROW
+<<< FRECCIA DESTRA
+
+# ===== IN GAME =====
+>>> TALK
+<<< PARLA
+>>> PICK UP
+<<< RACCOGLI
+>>> PICK UP THE BROOM
+<<< RACCOGLI LA SCOPA
+>>> EXAMINE
+<<< ESAMINA
+>>> READ
+<<< LEGGI
+>>> OPEN WINDOW
+<<< APRI LA FINESTRA
+>>> CLOSE WINDOW
+<<< CHIUDI LA FINESTRA
+>>> OPEN SHUTTERS
+<<< APRI LE PERSIANE
+>>> CLOSE SHUTTERS
+<<< CHIUDI LE PERSIANE
+>>> OPEN DOOR
+<<< APRI LA PORTA
+>>> CLOSE DOOR
+<<< CHIUDI LA PORTA
+>>> OPEN
+<<< APRI
+>>> CLOSE
+<<< CHIUDI
+>>> HOLD {0} AND MOVE THE MOUSE TO SWEEP
+<<< TIENI PREMUTO {0} E MUOVI IL MOUSE PER SPAZZARE
+>>> HOLD {0} TO TRANSCRIBE
+<<< TIENI PREMUTO {0} PER TRASCRIVERE
+>>> PRESS {0} TO CLOSE THE NOTEBOOK
+<<< PREMI {0} PER CHIUDERE IL QUADERNO
+>>> A / D TO TURN THE PAGES
+<<< A / D PER GIRARE LE PAGINE
+>>> GET CLOSER TO THE POEM ON THE GROUND TO START TRANSCRIBING
+<<< AVVICINATI ALLA POESIA PER TERRA PER INIZIARE LA TRASCRIZIONE
+>>> HOLD TO SKIP
+<<< TIENI PREMUTO PER SALTARE
+>>> TOUCH AND HOLD TO SKIP
+<<< TIENI IL DITO SULLO SCHERMO PER SALTARE
+>>> PUT DOWN
+<<< POSA
+>>> DRAG THE OBJECT TO ROTATE IT, MOUSE WHEEL ON THE OBJECT TO ZOOM, ON THE TEXT (OR ARROWS) TO SCROLL IT
+<<< TRASCINA L'OGGETTO PER RUOTARLO, ROTELLINA SULL'OGGETTO PER AVVICINARLO, SUL TESTO (O FRECCE) PER SCORRERLO
+>>> Click to continue
+<<< Clic per continuare
+>>> Click to continue  ·  Esc to skip the credits
+<<< Clic per continuare  ·  Esc per saltare i crediti
+
+# ===== OBJECTIVES =====
+>>> PICK UP THE BROOM
+<<< RACCOGLI LA SCOPA
+>>> HOLD {sweepKey} AND MOVE THE MOUSE TO SWEEP
+<<< TIENI PREMUTO {sweepKey} E MUOVI IL MOUSE PER SPAZZARE
+>>> PRESS {diaryKey} TO OPEN THE NOTEBOOK
+<<< PREMI {diaryKey} PER APRIRE IL QUADERNO
+>>> HOLD {writeKey} TO TRANSCRIBE
+<<< TIENI PREMUTO {writeKey} PER TRASCRIVERE
+>>> TALK TO {character}
+<<< PARLA CON {character}
+>>> LOOK AT {character}
+<<< GUARDA {character}
+>>> LOOK AWAY FROM {character}
+<<< DISTOGLI LO SGUARDO DA {character}
+>>> TURN AROUND
+<<< VOLTATI
+>>> CLOSE THE SHUTTERS
+<<< CHIUDI LE PERSIANE
+>>> FOLLOW THE LANTERN: EACH TIME YOU LOOK AWAY, PIETRO MOVES ON
+<<< SEGUI LA LANTERNA: OGNI VOLTA CHE DISTOGLI LO SGUARDO, PIETRO VA AVANTI
+>>> KEEP SWEEPING THE CLEARING
+<<< CONTINUA A SPAZZARE LA RADURA
+>>> KEEP YOUR EYES ON THE POEM WHILE YOU TRANSCRIBE
+<<< TIENI GLI OCCHI SULLA POESIA MENTRE LA TRASCRIVI
+>>> KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE
+<<< TIENI GLI OCCHI SULLE PAROLE MENTRE LE TRASCRIVI
+>>> LOOK AT LEONE
+<<< GUARDA LEONE
+>>> LOOK AT LEONE, BY THE SHUTTERS
+<<< GUARDA LEONE, VICINO ALLE PERSIANE
+>>> LOOK AT LUCIEN
+<<< GUARDA LUCIEN
+>>> LOOK AT MOAMMED, THEN LOOK AWAY
+<<< GUARDA MOAMMED, POI DISTOGLI LO SGUARDO
+>>> LOOK AT RUI, BY THE GARDEN DOOR
+<<< GUARDA RUI, VICINO ALLA PORTA DEL GIARDINO
+>>> LOOK AT THE BOOKS ON THE SHELF, THEN LOOK AWAY
+<<< GUARDA I LIBRI SULLO SCAFFALE, POI DISTOGLI LO SGUARDO
+>>> LOOK AT THE COAT ON THE CHAIR, THEN LOOK AWAY
+<<< GUARDA IL CAPPOTTO SULLA SEDIA, POI DISTOGLI LO SGUARDO
+>>> LOOK AT THE LANTERN AT THE END OF THE TRENCH
+<<< GUARDA LA LANTERNA IN FONDO ALLA TRINCEA
+>>> LOOK AT THE MAN BY THE WINDOW
+<<< GUARDA L'UOMO ALLA FINESTRA
+>>> LOOK AT THE PLACE BESIDE YOU, UNDER THE BLANKET
+<<< GUARDA IL POSTO ACCANTO A TE, SOTTO LA COPERTA
+>>> LOOK AT THE WINDOW
+<<< GUARDA LA FINESTRA
+>>> LOOK AT YOUR COMPANION, THEN LOOK AWAY
+<<< GUARDA IL TUO COMPAGNO, POI DISTOGLI LO SGUARDO
+>>> LOOK AWAY FROM LUCIEN
+<<< DISTOGLI LO SGUARDO DA LUCIEN
+>>> LOOK AWAY FROM PIETRO
+<<< DISTOGLI LO SGUARDO DA PIETRO
+>>> LOOK AWAY FROM THE CHILD'S CORNER
+<<< DISTOGLI LO SGUARDO DALL'ANGOLO DEL BAMBINO
+>>> LOOK AWAY FROM THE CORNER AGAIN
+<<< DISTOGLI DI NUOVO LO SGUARDO DALL'ANGOLO
+>>> LOOK AWAY: PIETRO IS COMING BACK FOR THE LANTERN
+<<< DISTOGLI LO SGUARDO: PIETRO STA TORNANDO A PRENDERE LA LANTERNA
+>>> SWEEP BESIDE YOUR COMPANION, IN THE LANTERN LIGHT
+<<< SPAZZA ACCANTO AL TUO COMPAGNO, ALLA LUCE DELLA LANTERNA
+>>> SWEEP BETWEEN THE TWO BEDS
+<<< SPAZZA TRA I DUE LETTI
+>>> SWEEP IN FRONT OF THE DESK
+<<< SPAZZA DAVANTI ALLA SCRIVANIA
+>>> SWEEP THE BIG PILE IN THE MIDDLE OF THE ROOM
+<<< SPAZZA IL GRANDE MUCCHIO IN MEZZO ALLA STANZA
+>>> SWEEP THE CLEARING
+<<< SPAZZA LA RADURA
+>>> SWEEP THE LEAVES BY THE DOOR
+<<< SPAZZA LE FOGLIE VICINO ALLA PORTA
+>>> SWEEP THE LEAVES IN THE EMPTY CORNER
+<<< SPAZZA LE FOGLIE NELL'ANGOLO VUOTO
+>>> SWEEP THE LEAVES IN THE MIDDLE OF THE CLEARING
+<<< SPAZZA LE FOGLIE IN MEZZO ALLA RADURA
+>>> SWEEP THE LIVING ROOM
+<<< SPAZZA IL SOGGIORNO
+>>> SWEEP THE STUDY
+<<< SPAZZA LO STUDIO
+>>> SWEEP THE TRENCH FLOOR
+<<< SPAZZA IL FONDO DELLA TRINCEA
+>>> SWEEP UNDER THE WINDOW
+<<< SPAZZA SOTTO LA FINESTRA
+>>> TURN AWAY FROM THE END OF THE TRENCH
+<<< VOLTA LE SPALLE ALLA FINE DELLA TRINCEA
+>>> TURN AWAY FROM THE FRONT DOOR
+<<< VOLTA LE SPALLE ALLA PORTA D'INGRESSO
+>>> TURN AWAY FROM THE ROOM
+<<< VOLTA LE SPALLE ALLA STANZA
+>>> TURN AWAY FROM THE DOOR
+<<< VOLTA LE SPALLE ALLA PORTA
+
+# ===== SUBTITLES: CARLO =====
+>>> Professor! The window again. Half the trees of Milan are on my floor.
+<<< Professore! Di nuovo la finestra. Mezzi alberi di Milano sono sul mio pavimento.
+>>> Then you sweep it. There's the broom.
+<<< Allora le spazzi lei. Ecco la scopa.
+>>> And that notebook you carry everywhere. Do you ever let it go?
+<<< E quel quaderno che si porta sempre dietro. Non lo lascia mai?
+>>> Show me, then. What do you write in it?
+<<< Me lo faccia vedere, allora. Cosa ci scrive?
+>>> Of course it was. And now it's by the window. Things don't wait for you to look at them, Professor.
+<<< Certo che c'era. E adesso è vicino alla finestra. Le cose non aspettano che lei le guardi, professore.
+>>> Is that yours? It looks like your hand.
+<<< È suo? Sembra la sua calligrafia.
+>>> Keep your eyes on it! Paper is like a cat, it runs as soon as you turn around.
+<<< Non gli tolga gli occhi di dosso! La carta è come un gatto, scappa appena si volta.
+>>> I don't understand poetry, Professor. But that one sounded like you.
+<<< Io di poesia non capisco niente, professore. Ma questa le somigliava.
+>>> I'll leave you to your leaves. Don't turn around too fast, or you won't know where you are.
+<<< La lascio alle sue foglie. Non si volti troppo in fretta, o non saprà più dov'è.
+>>> Whatever you're looking at, keep your eyes on it. Things like that run as soon as you turn around.
+<<< Qualunque cosa stia guardando, non le tolga gli occhi di dosso. Cose così scappano appena ci si volta.
+>>> Words? I only see floorboards, Professor. You look like you've seen a ghost.
+<<< Parole? Io vedo solo assi di legno, professore. Sembra che abbia visto un fantasma.
+
+# ===== SUBTITLES: APOLLINAIRE =====
+>>> Giuseppe. I thought I'd find you here.
+<<< Giuseppe. Pensavo di trovarti qui.
+>>> The landlady hasn't touched anything. His things are still here.
+<<< La padrona non ha toccato niente. Le sue cose sono ancora qui.
+>>> He never seemed to belong anywhere. Not in Egypt, not in Paris. Like most of us in this city.
+<<< Non sembrava appartenere a nessun luogo. Né all'Egitto, né a Parigi. Come quasi tutti noi, in questa città.
+>>> You told me he always slept on the left. The light woke him on the other side.
+<<< Mi dicevi che dormiva sempre a sinistra. Dall'altra parte la luce lo svegliava.
+>>> The landlady gave it away. Someone needed it more than a memory did.
+<<< La padrona l'ha regalato. Qualcuno ne aveva più bisogno di un ricordo.
+>>> He wrote letters at that desk, at night. Did he ever send one?
+<<< Scriveva lettere a quella scrivania, di notte. Ne ha mai spedita una?
+>>> He liked the window. He said Paris looked better from above. Poets and exiles always choose the window.
+<<< Gli piaceva la finestra. Diceva che Parigi, vista dall'alto, era più bella. I poeti e gli esuli scelgono sempre la finestra.
+>>> I know. I'm sorry I wasn't there.
+<<< Lo so. Mi dispiace di non esserci stato.
+>>> You wrote it for him.
+<<< L'hai scritta per lui.
+>>> Then go. And don't look back too much, my friend. Paris will wait for you.
+<<< Allora va'. E non voltarti troppo indietro, amico mio. Parigi ti aspetterà.
+
+# ===== SUBTITLES: PIETRO =====
+>>> Who's there? Are you hurt?
+<<< Chi c'è? Sei ferito?
+>>> Everyone is awake tonight. Nobody can sleep with the guns like this.
+<<< Stanotte sono tutti svegli. Nessuno riesce a dormire con i cannoni così.
+>>> What are you looking for down there?
+<<< Cosa cerchi lì per terra?
+>>> Then you need light. Stay close, I'll come back this way.
+<<< Allora ti serve luce. Resta qui vicino, ripasso da questa parte.
+>>> I'm sorry. I can't do anything for him now. We'll take him down at first light.
+<<< Mi dispiace. Per lui non posso fare più niente. Lo porteremo giù alle prime luci.
+>>> Then I'll leave you the light for a while.
+<<< Allora ti lascio la luce per un po'.
+>>> Don't lose it. Whatever you're writing, it matters tonight.
+<<< Non perderlo. Qualunque cosa tu stia scrivendo, stanotte conta.
+>>> You wrote all night.
+<<< Hai scritto tutta la notte.
+>>> Keep writing, then. Some of us need to know someone is.
+<<< Allora continua a scrivere. Qualcuno di noi ha bisogno di sapere che c'è chi lo fa.
+
+# ===== SUBTITLES: RUI =====
+>>> You're sweeping again. The students keep asking for you, Giuseppe.
+<<< Stai spazzando di nuovo. Gli studenti continuano a chiedere di te, Giuseppe.
+>>> Neither do you.
+<<< E nemmeno tu.
+>>> Jeanne asked me to tell you: leave his corner. She doesn't want anything moved.
+<<< Jeanne mi ha chiesto di dirti di lasciare stare il suo angolo. Non vuole che si sposti niente.
+>>> His drawings... Did Jeanne take them down?
+<<< I suoi disegni... Li ha tolti Jeanne?
+>>> Then don't stop looking.
+<<< Allora non smettere di guardare.
+>>> What is that?
+<<< Cos'è?
+>>> Read it. I'll listen.
+<<< Leggila. Io ascolto.
+>>> It's him. You kept him.
+<<< È lui. L'hai tenuto con te.
+>>> The war is coming here too. Soon they'll send you home, to Italy.
+<<< La guerra sta arrivando anche qui. Presto ti rimanderanno a casa, in Italia.
+
+# ===== SUBTITLES: LEONE =====
+>>> Professor, stay away from the window. There are soldiers at the corner again.
+<<< Professore, si allontani dalla finestra. Ci sono di nuovo i soldati all'angolo.
+>>> You sweep when you're worried. You've swept this floor three times since I arrived.
+<<< Lei spazza quando è in pensiero. Da quando sono arrivato ha spazzato questo pavimento tre volte.
+>>> Do you hear them? They're shouting again.
+<<< Li sente? Gridano di nuovo.
+>>> Then keep looking. Someone in this house should.
+<<< Allora continui a guardare. Qualcuno in questa casa deve farlo.
+>>> It stopped. For now.
+<<< Hanno smesso. Per ora.
+>>> They're taking someone away. Don't look too long, Professor.
+<<< Stanno portando via qualcuno. Non guardi troppo a lungo, professore.
+>>> It's quiet. Too quiet. Write it down before it starts again.
+<<< C'è silenzio. Troppo silenzio. Lo scriva prima che ricominci.
+>>> There's something under the leaves. By the door.
+<<< C'è qualcosa sotto le foglie. Vicino alla porta.
+>>> Don't let them win, Professor. Finish it.
+<<< Non li lasci vincere, professore. La finisca.
+>>> You never talk about the other war. The first one.
+<<< Lei non parla mai dell'altra guerra. La prima.
+>>> Then close them. I'll keep watch.
+<<< Allora li chiuda. Faccio io la guardia.
+
+# ===== SUBTITLES: LUCIEN =====
+>>> Water, soldier? It's a warm night.
+<<< Acqua, soldato? È una notte calda.
+>>> Nobody should be here. But here we all are.
+<<< Nessuno dovrebbe essere qui. Eppure ci siamo tutti.
+>>> Strange. They were green a moment ago.
+<<< Strano. Un momento fa erano verdi.
+>>> My son wrote that the wood is full of men you can't see.
+<<< Mio figlio mi ha scritto che il bosco è pieno di uomini che non si vedono.
+>>> Then don't turn around. Look at what you're writing.
+<<< Allora non si volti. Guardi quello che scrive.
+>>> Is it finished?
+<<< È finita?
+>>> Then keep it safe. Some of these leaves won't see the autumn.
+<<< Allora la custodisca. Alcune di queste foglie non vedranno l'autunno.
+
+# ===== SUBTITLES: UNGARETTI (the Italian is the original line) =====
+>>> Milan. I teach French to the boys, and in the evening the wind comes in through this window.
+<<< Milano. Insegno il francese ai ragazzi, e la sera il vento entra da questa finestra.
+>>> Forgive me, Signor Carlo. I like to feel the air from the street.
+<<< Mi scusi, signor Carlo. Mi piace sentire l'aria della strada.
+>>> Never. The broom in one hand, the notebook in the other.
+<<< Mai. La scopa in una mano, il quaderno nell'altra.
+>>> Nothing yet. Words come when they please.
+<<< Ancora niente. Le parole arrivano quando vogliono loro.
+>>> The chair... it was at the table.
+<<< La sedia... era al tavolo.
+>>> There's something underneath. Words... as if written on the floor.
+<<< C'è qualcosa, sotto. Parole... come scritte sul pavimento.
+>>> I don't remember writing them. And yet it's my handwriting.
+<<< Non ricordo di averle scritte. Eppure è la mia scrittura.
+>>> Thank you, Signor Carlo. That's the finest compliment you could pay me.
+<<< Grazie, signor Carlo. È il complimento più bello che potesse farmi.
+>>> I can feel the room changing behind me. Like a page turning by itself.
+<<< Sento la stanza cambiare alle mie spalle. Come una pagina che si volta da sola.
+>>> Rue des Carmes. I know this room. Two of us lived here.
+<<< Rue des Carmes. Questa stanza la conosco. Ci abitavamo in due.
+>>> Only for a moment, Guillaume. I wanted to see the room again.
+<<< Solo per un momento, Guillaume. Volevo rivedere la stanza.
+>>> Moammed. He came from Alexandria with me. Here he called himself Marcel.
+<<< Moammed. Era venuto da Alessandria con me. Qui si faceva chiamare Marcel.
+>>> The words are in pieces. Like my memories of those days.
+<<< Le parole sono a pezzi. Come i ricordi di quei giorni.
+>>> His coat...
+<<< Il suo cappotto...
+>>> He read late into the night, by candlelight. Now the shelf is empty.
+<<< Leggeva fino a tardi, con la candela accesa. Ora lo scaffale è vuoto.
+>>> At the cemetery there was only me and the landlady.
+<<< Al cimitero c'eravamo solo io e la padrona dell'albergo.
+>>> I'm the only one left who remembers him. If I don't write it down, no one ever will.
+<<< Sono rimasto solo io a ricordarlo. Se non lo scrivo, nessuno lo saprà più.
+>>> He left when I stopped looking.
+<<< Se n'è andato quando ho smesso di guardare.
+>>> I wrote it three years later, in the trenches. The leaves were falling there too.
+<<< L'ho scritta tre anni dopo, in trincea. Anche là cadevano le foglie.
+>>> Cima Quattro. The night before Christmas.
+<<< Cima Quattro. La notte prima di Natale.
+>>> This is home now. Stones, sandbags, a blanket.
+<<< Questa è casa, adesso. Pietre, sacchi, una coperta.
+>>> No, friend. I'm just awake.
+<<< No, amico. Sono solo sveglio.
+>>> Words. Sometimes I see them among the stones, before I've even written them.
+<<< Parole. A volte le vedo tra le pietre, prima ancora di scriverle.
+>>> I know. I'll stay with him until morning.
+<<< Lo so. Resto io con lui fino a mattina.
+>>> To stay awake. To stay alive.
+<<< Per restare sveglio. Per restare vivo.
+>>> One day, the war ended. The leaves kept falling. And I crossed the sea.
+<<< La guerra è finita, un giorno. Le foglie hanno continuato a cadere. E io ho attraversato il mare.
+>>> Brazil. A vast nature, that keeps growing even when you aren't looking.
+<<< Il Brasile. Una natura enorme, che cresce anche quando non la guardi.
+>>> The leaves come in from the garden, Rui. They never stop.
+<<< Le foglie entrano dal giardino, Rui. Non smettono mai.
+>>> I won't touch a thing. I promise.
+<<< Non tocco niente. Glielo prometto.
+>>> No one, Rui. Things leave on their own, when we stop looking at them.
+<<< Nessuno, Rui. Le cose se ne vanno da sole, quando smettiamo di guardarle.
+>>> Antonietto was nine years old.
+<<< Antonietto aveva nove anni.
+>>> Not for you, Rui. For me, there's what I can't say to anyone. I wrote it for him.
+<<< Per te no, Rui. Per me c'è quello che non riesco a dire a nessuno. L'ho scritto per lui.
+>>> It's all I know how to do. I sweep, I find, I write.
+<<< Non so fare altro. Spazzo, trovo, scrivo.
+>>> I'm going back. I'll take the notebook.
+<<< Torno. Porto il quaderno.
+>>> There's nothing left to sweep here. Only to remember.
+<<< Non c'è più niente da spazzare qui. Solo da ricordare.
+>>> If I close my eyes, I'm still there. In a wood, in France.
+<<< Se chiudo gli occhi, sono ancora là. In un bosco, in Francia.
+>>> Rome. The city is occupied. We rarely go out, we speak softly.
+<<< Roma. La città è occupata. Si esce poco, si parla piano.
+>>> I'm not looking, Leone. I'm sweeping.
+<<< Non guardo, Leone. Spazzo.
+>>> When I look, they fall silent. When I turn away, they start again.
+<<< Quando guardo, tacciono. Quando mi volto, ricominciano.
+>>> Words. Only I can see them. They're for those who can no longer speak.
+<<< Parole. Le vedo solo io. Sono per quelli che non possono più parlare.
+>>> I think about it all the time. If I close my eyes I'm still there. In a wood, in France.
+<<< Ci penso sempre. Se chiudo gli occhi sono ancora là. In un bosco, in Francia.
+>>> Courton. France. The last summer of the war.
+<<< Courton. Francia. L'ultima estate della guerra.
+>>> Thank you. You shouldn't be out here at night.
+<<< Grazie. Lei non dovrebbe essere qui, di notte.
+>>> They fall when I'm not looking. Like us.
+<<< Cadono quando non le guardo. Come noi.
+>>> He's right. We're all here. You only have to turn around.
+<<< Ha ragione. Ci siamo tutti, qui. Basta voltarsi.
+>>> Yes. It was already here. I only found it, under the leaves.
+<<< Sì. Era già qui. Io l'ho solo trovata, sotto le foglie.
+>>> The poems were already here. You only had to look at them. Without turning away.
+<<< Le poesie erano già qui. Bisognava solo guardarle. Senza voltarsi.
+>>> Beside me there's a comrade who no longer moves.
+<<< Accanto a me c'è un compagno che non si muove più.
+>>> I've felt him there all night, even without looking.
+<<< L'ho sentito tutta la notte, anche senza guardarlo.
+>>> Beside me there's a comrade who no longer moves. I've felt him there all night, even without looking.
+<<< Accanto a me c'è un compagno che non si muove più. L'ho sentito tutta la notte, anche senza guardarlo.
+
+# ===== OBJECTS TO READ =====
+>>> Newspaper, 1914
+<<< Giornale, 1914
+>>> Exercise Sheets
+<<< Fogli di esercizi
+>>> Moammed's Letters
+<<< Le lettere di Moammed
+>>> Antonietto's Drawing
+<<< Disegno di Antonietto
+>>> Envelope
+<<< Busta
+>>> This morning's paper. All of Europe talks of nothing but war.
+
+<b>MILAN — EVENING EDITION — 3 AUGUST 1914</b>
+
+<b>ITALY DECLARES ITS NEUTRALITY</b>
+The Government announced last night that the Kingdom will take no part in the conflict now spreading across Europe. The Triple Alliance, the Council of Ministers declared, is a pact of defence, and the war Austria-Hungary has opened against Serbia is not a war of defence.
+
+<b>GERMANY AT WAR WITH RUSSIA AND FRANCE</b>
+Telegrams from Berlin confirm the general mobilisation. Trains full of soldiers leave the stations every hour. In Paris the crowds sing in the boulevards; in Vienna, in the squares.
+
+<b>IN THE CITY</b>
+Long queues outside the banks since dawn. The price of bread has risen by two centesimi. In the cafés of the Galleria, students argue until late into the night: some say Italy must stay out, others that she cannot stay out for long.
+
+<b>WEATHER</b>
+Clear skies over Lombardy. Wind from the north in the evening.
+<<< Il giornale di stamattina. In Europa non si parla d'altro che di guerra.
+
+<b>MILANO — EDIZIONE DELLA SERA — 3 AGOSTO 1914</b>
+
+<b>L'ITALIA DICHIARA LA NEUTRALITÀ</b>
+Il Governo ha annunciato ieri sera che il Regno non prenderà parte al conflitto che si sta estendendo in Europa. La Triplice Alleanza, ha dichiarato il Consiglio dei Ministri, è un patto difensivo, e la guerra aperta dall'Austria-Ungheria contro la Serbia non è una guerra di difesa.
+
+<b>LA GERMANIA IN GUERRA CON LA RUSSIA E LA FRANCIA</b>
+I telegrammi da Berlino confermano la mobilitazione generale. Treni carichi di soldati lasciano le stazioni ogni ora. A Parigi la folla canta sui boulevard; a Vienna, nelle piazze.
+
+<b>IN CITTÀ</b>
+Lunghe code davanti alle banche fin dall'alba. Il prezzo del pane è salito di due centesimi. Nei caffè della Galleria gli studenti discutono fino a tarda notte: c'è chi dice che l'Italia deve restarne fuori, e chi dice che non potrà restarne fuori a lungo.
+
+<b>TEMPO</b>
+Cielo sereno sulla Lombardia. In serata vento da nord.
+>>> My pupils' homework. They conjugate French verbs better than I can put my own thoughts in order.
+
+<b>Exercise 12 — Conjugate in the present tense.</b>
+<i>être</i>: je suis, tu es, il est, nous sommes, vous êtes, ils sont.
+<i>avoir</i>: j'ai, tu as, il a, nous avons, vous avez, ils ont.
+<i>partir</i>: je pars, tu pars, il part, nous partons, vous partez, ils partent.
+<i>tomber</i>: je tombe, tu tombes, il tombe, nous tombons, vous tombez, ils tombent.
+
+<b>Exercise 13 — Translate into French.</b>
+The leaves fall in the courtyard. — <i>Les feuilles tombent dans la cour.</i>
+My brother leaves for the army. — <i>Mon frère part pour l'armée.</i>
+We will write to him every week. — <i>Nous lui écrirons chaque semaine.</i>
+
+<color=#8b2a1a>In red ink, in the margin: Good. Watch the accents. — G.U.</color>
+<<< I compiti dei miei ragazzi. Coniugano i verbi francesi meglio di quanto io riesca a mettere in ordine i miei pensieri.
+
+<b>Esercizio 12 — Coniugare al presente.</b>
+<i>être</i>: je suis, tu es, il est, nous sommes, vous êtes, ils sont.
+<i>avoir</i>: j'ai, tu as, il a, nous avons, vous avez, ils ont.
+<i>partir</i>: je pars, tu pars, il part, nous partons, vous partez, ils partent.
+<i>tomber</i>: je tombe, tu tombes, il tombe, nous tombons, vous tombez, ils tombent.
+
+<b>Esercizio 13 — Tradurre in francese.</b>
+Le foglie cadono nel cortile. — <i>Les feuilles tombent dans la cour.</i>
+Mio fratello parte per l'esercito. — <i>Mon frère part pour l'armée.</i>
+Gli scriveremo ogni settimana. — <i>Nous lui écrirons chaque semaine.</i>
+
+<color=#8b2a1a>A penna rossa, nel margine: Bene. Attenzione agli accenti. — G.U.</color>
+>>> Moammed's letters. He wrote them at night, at this desk. He never sent them.
+
+<i>Paris, rue des Carmes, a winter night.</i>
+
+Dear mother,
+
+Here they call me Marcel. I wear their coats, I speak their language, I drink coffee in their cafés and laugh when they laugh. But when I close my eyes I still hear the sea at Alexandria, and the voice of the muezzin over the roofs.
+
+I do not know how to tell you who I am now. I am no longer the son you remember, and I have not become anyone else.
+
+Giuseppe writes all night by the candle. He says that words can hold a man together. I try, but mine fall apart before the end of the page.
+
+I will write again tomorrow. Perhaps tomorrow I will send it.
+
+— M.
+<<< Le lettere di Moammed. Le scriveva di notte, a questa scrivania. Non le ha mai spedite.
+
+<i>Parigi, rue des Carmes, una notte d'inverno.</i>
+
+Cara madre,
+
+qui mi chiamano Marcel. Porto i loro cappotti, parlo la loro lingua, bevo il caffè nei loro caffè e rido quando ridono. Ma quando chiudo gli occhi sento ancora il mare di Alessandria, e la voce del muezzin sopra i tetti.
+
+Non so come dirti chi sono adesso. Non sono più il figlio che ricordi, e non sono diventato nessun altro.
+
+Giuseppe scrive tutta la notte alla luce della candela. Dice che le parole possono tenere insieme un uomo. Ci provo, ma le mie si sfaldano prima della fine della pagina.
+
+Ti scriverò di nuovo domani. Forse domani la spedirò.
+
+— M.
+>>> One of Antonietto's drawings. He always drew the sun bigger than the house.
+<<< Un disegno di Antonietto. Il sole lo faceva sempre più grande della casa.
+>>> Another drawing. All three of us, hand in hand.
+<<< Un altro disegno. Ci siamo tutti e tre, mano nella mano.
+>>> He hung this one himself, crooked. No one has had the heart to straighten it.
+<<< L'aveva appeso lui, storto. Nessuno ha avuto il coraggio di raddrizzarlo.
+>>> The garden, with the tree and the butterflies. He said the tree was his.
+<<< Il giardino, con l'albero e le farfalle. Diceva che l'albero era suo.
+
+# ===== CHARACTER CARDS =====
+>>> A landlord in Milan. He stands for the ordinary people who gave Ungaretti a roof. (fictional)
+<<< Un padrone di casa a Milano. Rappresenta la gente comune che diede un tetto a Ungaretti. (personaggio inventato)
+>>> The French poet, Ungaretti's friend in Paris. He died of the Spanish flu in November 1918. (real)
+<<< Il poeta francese, amico di Ungaretti a Parigi. Morì di febbre spagnola nel novembre 1918. (personaggio reale)
+>>> A stretcher-bearer on the Carso. He stands for the men who carried the wounded through the trenches. (fictional)
+<<< Un portaferiti sul Carso. Rappresenta gli uomini che portavano i feriti attraverso le trincee. (personaggio inventato)
+>>> A colleague at the University of São Paulo. He stands for the friends who stayed close in grief. (fictional)
+<<< Un collega dell'Università di San Paolo. Rappresenta gli amici che restarono vicini nel lutto. (personaggio inventato)
+>>> A student in occupied Rome. He stands for the young who protected their teachers. (fictional)
+<<< Uno studente nella Roma occupata. Rappresenta i giovani che protessero i loro maestri. (personaggio inventato)
+>>> An old farmer near the Bois de Courton. He stands for the civilians who lived beside the war. (fictional)
+<<< Un vecchio contadino vicino al Bois de Courton. Rappresenta i civili che vissero accanto alla guerra. (personaggio inventato)
+
+# ===== CREDITS =====
+>>> MADE BY
+<<< REALIZZATO DA
+>>> TheCelticArtist — Team Lead, Developer, Game Designer & 2D Artist
+<<< TheCelticArtist — Direzione, sviluppo, game design e grafica 2D
+>>> E2Dev — Developer
+<<< E2Dev — Sviluppo
+>>> Niko — 3D Artist
+<<< Niko — Grafica 3D
+>>> MIDORIUZU — 3D Artist
+<<< MIDORIUZU — Grafica 3D
+>>> Tommaso Motteran — Voice Actor (Giuseppe Ungaretti and cast) & Music
+<<< Tommaso Motteran — Doppiaggio (Giuseppe Ungaretti e cast) e musica
+>>> Usagi-Chan ASMR — Voice Actor (Guillaume Apollinaire)
+<<< Usagi-Chan ASMR — Doppiaggio (Guillaume Apollinaire)
+>>> Benno Roch Jr. — Composer
+<<< Benno Roch Jr. — Musiche
+>>> Beach Towel Production — Sound Designer
+<<< Beach Towel Production — Sound design
+>>> TEXTURES
+<<< TEXTURE
+>>> 3D MODELS
+<<< MODELLI 3D
+>>> CHARACTERS AND ANIMATION
+<<< PERSONAGGI E ANIMAZIONI
+>>> Base bodies made with MakeHuman, makehumancommunity.org (CC0)
+<<< Corpi di base realizzati con MakeHuman, makehumancommunity.org (CC0)
+>>> Animations - Mixamo, mixamo.com (Adobe)
+<<< Animazioni - Mixamo, mixamo.com (Adobe)
+>>> FONTS
+<<< CARATTERI
+>>> Poems
+<<< Poesie
+>>> from "Vita d'un uomo. Tutte le poesie"
+<<< da "Vita d'un uomo. Tutte le poesie"
+>>> edited by Carlo Ossola
+<<< a cura di Carlo Ossola
+>>> Made for Comfy Jam Autumn 2026
+<<< Realizzato per la Comfy Jam Autumn 2026
+>>> In memory of Giuseppe Ungaretti
+<<< In memoria di Giuseppe Ungaretti
+>>> LEAVES OF WAR
+
+A game by TheCelticArtist
+<<< LEAVES OF WAR
+
+Un gioco di TheCelticArtist
+
+
+# ===== TO TRANSLATE (added 2026-10-18 06:47): write the Italian after <<< =====
+# Level 1 - Milano
+>>> Forgive me, Mr. Carlo. I like to feel the air from the street.
+<<< 
+# Level 1 - Milano
+>>> Words? I only see the floorboards, Professor. You look like you've seen a ghost.
+<<< 
+# Level 1 - Milano
+>>> Thank you,Mr. Carlo. That's the finest compliment you could pay me.
+<<< 
+# Level 1 - Milano
+>>> Brumbà, telòn sfarì, ufà!
+<<< 
+# Level 1 - Milano
+>>> Tamburèl dalò, sgrinfà la mantóla... ombrè, ombrè scrovà!
+<<< 
+# Level 1 - Milano
+>>> Sfòrilo... lumàrde scrènzia. Gòrvalo dù brùnzo... ferlàmia ondìre, tràsco. Velìmbre sgaùlo, nìlvo.
+<<< 
+# Level 1 - Milano
+>>> Pèrvola... sgùnzio ràmbe, tirlìmbo drè.
+<<< 
+# Level 4 - San Paolo
+>>> No one did, Rui. Things leave on their own, when we stop looking at them.
+<<< 
+# Level 4 - San Paolo
+>>> What are you staring at, Giuseppe?
+There is nothing there.
+<<< 
+# Level 5 - Roma
+>>> WHAT IS IT, PROFESSOR? YOU'RE STARING AT THE FLOOR BY THE DOOR.
+<<< 

@@ -37,7 +37,8 @@ public class LevelFlow : MonoBehaviour
         CharacterEnters,
         JoinFragments,
         WeatherClears,
-        CharacterCardsThenNextLevel
+        CharacterCardsThenNextLevel,
+        ForestFalls
     }
 
     [Serializable]
@@ -98,6 +99,11 @@ public class LevelFlow : MonoBehaviour
     [Tooltip("Played from the exit when the next level starts loading (e.g. distant artillery behind the door).")]
     [SerializeField] private AudioClip exitCue;
     [SerializeField, Range(0f, 1f)] private float exitCueVolume = 0.7f;
+    [Tooltip("Forest Falls: seconds for the leaves of the whole forest to come down and cover the ground.")]
+    [SerializeField, Min(1f)] private float forestFallSeconds = 7f;
+    [Tooltip("Character Cards Then Next Level (the ending): played from the last page of the notebook to the end of the credits, while the level sounds fade away.")]
+    [SerializeField] private AudioClip endingMusic;
+    [SerializeField, Range(0f, 1f)] private float endingMusicVolume = 0.8f;
 
     [Header("Script")]
     [SerializeField] private Step[] steps = new Step[0];
@@ -221,8 +227,6 @@ public class LevelFlow : MonoBehaviour
             Carry.Active = false;
             if (FadeScreen.Instance == null)
                 Blink(false);
-            Transform entry = entryAnchor != null ? entryAnchor : transform;
-            player.Place(new Vector3(entry.position.x, player.transform.position.y, entry.position.z), entry.eulerAngles.y + Carry.Yaw, Carry.Pitch);
         }
         else if (lookAtCharacterOnStart && player != null && character != null)
         {
@@ -248,7 +252,7 @@ public class LevelFlow : MonoBehaviour
         {
             if (step == null)
                 continue;
-            objectiveText = Format(step.objective);
+            objectiveText = step.objective;
 
             if (step.waitFor == Condition.TalkToCharacter && character != null)
             {
@@ -434,11 +438,16 @@ public class LevelFlow : MonoBehaviour
                 }
                 break;
             case StepAction.CharacterCardsThenNextLevel:
-                StartCoroutine(Hortensia.Runtime.CharacterCards.Play(() =>
+                StartCoroutine(Hortensia.Runtime.GameEnding.Play(transcribe != null ? transcribe.PoemFont : null, endingMusic, endingMusicVolume, () =>
                 {
                     LoadNext();
                     Activate();
                 }));
+                break;
+            case StepAction.ForestFalls:
+                AutumnTree.FallAll();
+                if (LeafField.Instance != null)
+                    LeafField.Instance.Fall(forestFallSeconds);
                 break;
             case StepAction.WeatherClears:
                 foreach (Weather weather in FindObjectsByType<Weather>())
@@ -765,11 +774,11 @@ public class LevelFlow : MonoBehaviour
         StartCoroutine(PlayLines(firstGustLines));
     }
 
-    private string Format(string text)
+    private string Format(string text, bool translate = true)
     {
         if (string.IsNullOrEmpty(text))
             return null;
-        return text.Replace("{character}", characterName)
+        return (translate ? Loc.T(text) : text).Replace("{character}", characterName)
             .Replace("{diaryKey}", ScreenPrompt.KeyName(player != null ? player.DiaryAction : null, "I"))
             .Replace("{sweepKey}", ScreenPrompt.KeyName(player != null ? player.SweepAction : null, "LMB"))
             .Replace("{writeKey}", ScreenPrompt.KeyName(player != null ? player.WriteAction : null, "T"));
@@ -781,6 +790,6 @@ public class LevelFlow : MonoBehaviour
             poemFound = true;
 
         bool hidden = string.IsNullOrEmpty(objectiveText) || DialogueRunner.IsPlaying || DiaryInteraction.IsRaised || Time.timeScale <= 0f;
-        ScreenPrompt.Show(objective, !hidden, objectiveText);
+        ScreenPrompt.Show(objective, !hidden, hidden ? null : Format(objectiveText), hidden ? null : Format(objectiveText, false));
     }
 }

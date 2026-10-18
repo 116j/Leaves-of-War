@@ -59,6 +59,17 @@ public static class LevelSkies
         EditorUtility.DisplayDialog("Skies", text, "OK");
     }
 
+    [MenuItem("Tools/Leaves of War/Skies (open scene only)")]
+    private static void MenuOpen()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        Sky sky = Skies.FirstOrDefault(s => scene.name.Contains(s.scene));
+        string text = sky == null ? scene.name + ": no sky chosen for this level (add it to LevelSkies)." : scene.name + ": " + Apply(scene, sky);
+        if (sky != null)
+            EditorSceneManager.MarkSceneDirty(scene);
+        EditorUtility.DisplayDialog("Skies", text + "\n\nThe other levels are untouched. Save the scene (Ctrl+S).", "OK");
+    }
+
     private static string Apply(Scene scene, Sky sky)
     {
         Material material = Load(sky.material);

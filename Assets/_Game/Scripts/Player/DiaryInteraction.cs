@@ -335,14 +335,19 @@ public class DiaryInteraction : KeyboardControl
     {
         bool hint = HasDiary && IsReading && !busy && !DialogueRunner.IsPlaying &&
             !(PauseController.Instance != null && PauseController.Instance.IsPaused);
-        string hintText = null;
+        string hintText = null, hintEnglish = null;
         if (hint)
         {
-            hintText = string.Format(closeHint, ScreenPrompt.KeyName(player != null ? player.DiaryAction : null, "I"));
+            string key = ScreenPrompt.KeyName(player != null ? player.DiaryAction : null, "I");
+            hintEnglish = string.Format(closeHint, key);
+            hintText = string.Format(Loc.T(closeHint), key);
             if (transcribe != null && transcribe.PageCount > 1)
-                hintText += "   ·   " + turnHint;
+            {
+                hintEnglish += "   ·   " + turnHint;
+                hintText += "   ·   " + Loc.T(turnHint);
+            }
         }
-        ScreenPrompt.Show(closePrompt, hint, hintText);
+        ScreenPrompt.Show(closePrompt, hint, hintText, hintEnglish);
         if (hint && transcribe != null)
         {
             int direction = 0;

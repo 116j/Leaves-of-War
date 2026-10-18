@@ -189,6 +189,10 @@ namespace Hortensia.Runtime
 
         private void PopulateOptionsRows()
         {
+            CreateSectionLabel("LANGUAGE / LINGUA");
+            CreateDropdownRow("LANGUAGE / LINGUA", new[] { "ENGLISH", "ITALIANO" }, () => (int)Loc.Current,
+                i => Loc.Set((Language)i));
+
             CreateSectionLabel("CONTROLS");
             CreateButtonRow("KEY BINDINGS", "CONFIGURE", OpenKeyBindings);
             CreateSliderRow("MOUSE SENSITIVITY", 0.02f, 1f, () => draft.mouseSensitivity, false,

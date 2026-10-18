@@ -13,7 +13,7 @@ public static class CompanionBuilder
     private const string CharacterFolder = "Assets/_Game/Art/Characters/MakeHuman";
     private const string BodyName = "Companion Body";
     private const string BlanketName = "Companion Blanket";
-    private static readonly string[] Models = { "Leone", "Rui", "Carlo", "Lucien", "Pietro" };
+    internal static readonly string[] Models = { "Leone", "Rui", "Carlo", "Lucien", "Pietro" };
     private static readonly string[] OldParts = { "Body under Blanket", "Boots" };
 
     [MenuItem("Tools/Leaves of War/Build Carso Companion")]
@@ -102,7 +102,7 @@ public static class CompanionBuilder
         return "The companion is now a soldier (" + model.name + "'s body in grigioverde) lying on his back, a blanket over him up to the shoulders. He is there only while you look at him: look away and he is gone.\n\nSave the scene (Ctrl+S).";
     }
 
-    private static GameObject Model(string name)
+    internal static GameObject Model(string name)
     {
         string folder = CharacterFolder + "/" + name;
         if (!AssetDatabase.IsValidFolder(folder))
@@ -112,7 +112,7 @@ public static class CompanionBuilder
         return path != null ? AssetDatabase.LoadAssetAtPath<GameObject>(path) : null;
     }
 
-    private static Transform Bone(Transform root, string part, string side) =>
+    internal static Transform Bone(Transform root, string part, string side) =>
         root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t =>
         {
             string n = t.name.ToLowerInvariant();
@@ -138,7 +138,7 @@ public static class CompanionBuilder
         }
     }
 
-    private static Mesh Bake(GameObject source, Transform space, out Material[] materials)
+    internal static Mesh Bake(GameObject source, Transform space, out Material[] materials)
     {
         var positions = new List<Vector3>();
         var normals = new List<Vector3>();
@@ -345,7 +345,7 @@ public static class CompanionBuilder
         return m;
     }
 
-    private static Mesh Save(Mesh mesh, string path)
+    internal static Mesh Save(Mesh mesh, string path)
     {
         if (AssetDatabase.LoadAssetAtPath<Mesh>(path) != null)
             AssetDatabase.DeleteAsset(path);
@@ -353,7 +353,7 @@ public static class CompanionBuilder
         return mesh;
     }
 
-    private static void EnsureFolder(string path)
+    internal static void EnsureFolder(string path)
     {
         if (AssetDatabase.IsValidFolder(path))
             return;

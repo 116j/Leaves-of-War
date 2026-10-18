@@ -91,6 +91,7 @@ public class TranscribePoem : RevealableObject
     public static bool IsVoicePlaying { get; private set; }
 
     private static readonly Dictionary<int, PoemInfoContainer> Written = new();
+    public static List<PoemInfoContainer> Notebook => Written.Values.Where(p => p != null).OrderBy(p => p.poemId).ToList();
 
     public static void NewSession() => ResetSession();
 
@@ -144,6 +145,12 @@ public class TranscribePoem : RevealableObject
     private bool poemSeen;
     private bool voiceStarted;
     private Coroutine transcriptionCoroutine;
+
+    private void Awake()
+    {
+        TMP_FontAsset look = _assignedPoemTextCurrent != null ? _assignedPoemTextCurrent.font : null;
+        NotebookFont.Apply(AllTexts().Select(t => t.font), look);
+    }
 
     private void OnEnable()
     {
@@ -781,7 +788,7 @@ public class TranscribePoem : RevealableObject
         {
             if (text == null)
                 continue;
-            text.lineSpacing = _lineSpacing - _tighterLines;
+            text.lineSpacing = _lineSpacing - _tighterLines + (NotebookFont.Active ? NotebookFont.LineSpacing : 0f);
             text.horizontalAlignment = HorizontalAlignmentOptions.Left;
             text.paragraphSpacing = _paragraphSpacing;
             text.linkedTextComponent = null;

@@ -141,8 +141,8 @@ public sealed class ObjectInspector : MonoBehaviour
         rotationPivot.localRotation = Quaternion.identity;
         FrameCamera(currentModel);
 
-        titleText.text = item.DisplayName;
-        descriptionText.text = item.Description;
+        titleText.text = Loc.T(item.DisplayName);
+        descriptionText.text = Loc.T(item.Description);
         if (descriptionScroll != null)
             descriptionScroll.verticalNormalizedPosition = 1f;
         panel.SetActive(true);

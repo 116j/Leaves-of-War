@@ -572,6 +572,7 @@ namespace Hortensia.Runtime
                 TMP_Text title = CreateText(parent, "Logo", handwritingFont, 140f, new Vector2(0f, 320f), new Vector2(1400f, 240f));
                 title.text = "Leaves of War";
                 title.color = inkColor;
+                AddFinishedLeaf(title.rectTransform);
                 return title.gameObject;
             }
 
@@ -580,7 +581,32 @@ namespace Hortensia.Runtime
             RawImage image = rect.GetComponent<RawImage>();
             image.texture = logo;
             image.raycastTarget = false;
+            AddFinishedLeaf(rect);
             return rect.gameObject;
+        }
+
+        [Header("Game Finished")]
+        [Tooltip("After the ending: a small golden leaf on the paper, by the title.")]
+        [SerializeField] private Vector2 finishedLeafPosition = new Vector2(0.4f, -0.42f);
+        [SerializeField, Min(10f)] private float finishedLeafSize = 90f;
+        [SerializeField, Range(-180f, 180f)] private float finishedLeafAngle = -28f;
+        [SerializeField] private Color finishedLeafColor = new Color(1f, 0.82f, 0.35f, 1f);
+
+        private void AddFinishedLeaf(RectTransform logo)
+        {
+            if (!GameEnding.Finished)
+                return;
+            Texture2D leaf = Resources.Load<Texture2D>(GoldenLeafPath);
+            if (leaf == null)
+                return;
+            RectTransform rect = Place(NewRect("Golden Leaf (game finished)", logo, typeof(RawImage)),
+                new Vector2(finishedLeafSize, finishedLeafSize * leaf.height / Mathf.Max(1f, leaf.width)),
+                Vector2.Scale(logo.sizeDelta, finishedLeafPosition));
+            rect.localRotation = Quaternion.Euler(0f, 0f, finishedLeafAngle);
+            RawImage image = rect.GetComponent<RawImage>();
+            image.texture = leaf;
+            image.color = finishedLeafColor;
+            image.raycastTarget = false;
         }
 
         private FloorMenuItem AddItem(string label, float y, System.Action action)
@@ -767,7 +793,7 @@ namespace Hortensia.Runtime
             creditsScroll.pivot = new Vector2(0.5f, 1f);
 
             TMP_Text back = CreateText(panel, "Back Hint", readableFont, 24f, new Vector2(0f, -500f), new Vector2(1200f, 40f));
-            back.text = "Click or press Esc to go back";
+            back.text = "Click to skip  ·  Esc to go back";
             back.color = new Color(OverlayTextColor.r, OverlayTextColor.g, OverlayTextColor.b, 0.7f);
             return panel.gameObject;
         }
@@ -1387,6 +1413,9 @@ namespace Hortensia.Runtime
             if (creditsRoutine != null)
                 StopCoroutine(creditsRoutine);
             creditsRoutine = null;
+            Transform running = creditsPanel != null ? creditsPanel.transform.Find("Credits") : null;
+            if (running != null)
+                Destroy(running.gameObject);
 
             if (inputLocked && !starting && entryBackSounds != null && entryBackSounds.Length > 0 && entrySource != null)
                 entrySource.PlayOneShot(entryBackSounds[Random.Range(0, entryBackSounds.Length)], entrySoundVolume);
@@ -1419,32 +1448,17 @@ namespace Hortensia.Runtime
 
         private IEnumerator RunCredits()
         {
-            Canvas.ForceUpdateCanvases();
-            float textHeight = creditsScroll.GetComponent<TMP_Text>().preferredHeight;
-            creditsScroll.sizeDelta = new Vector2(creditsScroll.sizeDelta.x, textHeight);
-            float y = -450f;
-            creditsScroll.anchoredPosition = new Vector2(0f, y);
+            creditsScroll.gameObject.SetActive(false);
             yield return null;
-
-            while (true)
-            {
-                y += 60f * Time.unscaledDeltaTime;
-                if (y > textHeight + 450f)
-                    y = -450f;
-                creditsScroll.anchoredPosition = new Vector2(0f, y);
-
-                if ((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
-                    (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame) ||
-                    (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                    (Gamepad.current != null && (Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.buttonSouth.wasPressedThisFrame)))
-                {
-                    creditsRoutine = null;
-                    ShowMainMenu();
-                    yield break;
-                }
-                yield return null;
-            }
+            yield return GameEnding.Credits(creditsPanel.transform, CreditsBack);
+            creditsRoutine = null;
+            ShowMainMenu();
         }
+
+        private static bool CreditsBack() =>
+            Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame ||
+            Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame ||
+            Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
 
         private void RefreshContinueAvailability() =>
             continueItem?.SetAvailable(LevelProgress.CanLoad(LevelProgress.Autosave));

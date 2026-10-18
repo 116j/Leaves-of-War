@@ -60,6 +60,7 @@ Stardos Stencil - Vernon Adams (SIL Open Font License 1.1)
 Limelight - Sorkin Type Co (SIL Open Font License 1.1)
 Special Elite - Astigmatic (Apache License 2.0)
 Old Standard TT - The Old Standard Project Authors (SIL Open Font License 1.1)
+Playwrite IT Moderna - The Playwrite Project Authors (SIL Open Font License 1.1)
 
 Poems
 Giuseppe Ungaretti

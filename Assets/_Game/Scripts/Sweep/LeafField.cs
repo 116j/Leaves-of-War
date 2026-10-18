@@ -43,6 +43,9 @@ public class LeafField : MonoBehaviour
     [SerializeField, Range(0f, 0.4f)] private float floorViewMargin = 0.1f;
     [Tooltip("How many leaves per second come back.")]
     [SerializeField, Min(1f)] private float returnPerSecond = 60f;
+    [Tooltip("Fall (end of the game): how fast the leaves come down from the trees, metres per second.")]
+    [SerializeField, Min(0.1f)] private float fallSpeed = 0.9f;
+    [SerializeField] private Vector2 fallHeight = new Vector2(2.5f, 8f);
 
     public static LeafField Instance { get; private set; }
     public Bounds Area => area;
@@ -81,6 +84,62 @@ public class LeafField : MonoBehaviour
     private Bounds area;
     private int count;
     private float nextCoverage;
+    private bool falling;
+
+    public void Fall(float seconds)
+    {
+        if (position == null)
+            return;
+        returnStopped = true;
+        StartCoroutine(Falling(Mathf.Max(0.1f, seconds)));
+    }
+
+    private System.Collections.IEnumerator Falling(float seconds)
+    {
+        falling = true;
+        var order = new List<int>();
+        for (int i = 0; i < count; i++)
+            if (life[i] != Alive)
+                order.Add(i);
+        dead.Clear();
+        for (int i = order.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (order[i], order[j]) = (order[j], order[i]);
+        }
+        float rate = order.Count / seconds;
+        float budget = 0f;
+        int next = 0;
+        while (next < order.Count)
+        {
+            budget += rate * Time.deltaTime;
+            while (budget >= 1f && next < order.Count)
+            {
+                Drop(order[next++]);
+                budget -= 1f;
+            }
+            yield return null;
+        }
+        yield return new WaitForSeconds(fallHeight.y / fallSpeed + 1f);
+        falling = false;
+    }
+
+    private void Drop(int i)
+    {
+        position[i] = origin[i];
+        yaw[i] = originYaw[i];
+        lift[i] = Random.Range(fallHeight.x, fallHeight.y);
+        liftVelocity[i] = 0f;
+        velocity[i] = Random.insideUnitCircle * 0.35f;
+        spin[i] = Random.Range(-240f, 240f);
+        life[i] = Alive;
+        if (!moving[i])
+        {
+            moving[i] = true;
+            active.Add(i);
+        }
+        UpdateMatrix(i);
+    }
 
     private void Awake() => Instance = this;
 
@@ -453,6 +512,14 @@ public class LeafField : MonoBehaviour
             position[i].z += velocity[i].y * dt;
             velocity[i] *= damping;
             liftVelocity[i] -= gravity * dt;
+            if (falling && lift[i] > 0f)
+            {
+                liftVelocity[i] = Mathf.Max(liftVelocity[i], -fallSpeed);
+                float sway = Mathf.Sin(Time.time * 1.7f + i * 0.37f) * 0.35f * dt;
+                position[i].x += sway;
+                position[i].z += Mathf.Cos(Time.time * 1.3f + i * 0.21f) * 0.25f * dt;
+                spin[i] = Mathf.Max(Mathf.Abs(spin[i]), 60f) * Mathf.Sign(spin[i] == 0f ? 1f : spin[i]);
+            }
             lift[i] = Mathf.Max(0f, lift[i] + liftVelocity[i] * dt);
             if (lift[i] <= 0f)
                 liftVelocity[i] = Mathf.Max(0f, liftVelocity[i]);

@@ -19,6 +19,13 @@ public class FollowerLeaf : MonoBehaviour
     private Vector3 velocity;
     private float seed;
     private bool shown = true;
+    private bool landing;
+    private bool descending;
+    private float landStart;
+    private Vector3 landPoint;
+    private Vector3 descendFrom;
+    private Quaternion descendRotation;
+    private float landYaw;
 
     public static AudioClip[] Sounds;
     public static float SoundVolume = 0.35f;
@@ -98,6 +105,50 @@ public class FollowerLeaf : MonoBehaviour
         Destroy(go, clip.length + 0.2f);
     }
 
+    public static void LandOn(Vector3 point)
+    {
+        FollowerLeaf follower = Spawn();
+        follower.landing = true;
+        follower.descending = false;
+        follower.landStart = Time.time;
+        follower.landPoint = point;
+        follower.landYaw = Random.Range(0f, 360f);
+    }
+
+    private void Land()
+    {
+        if (leaf != null && !leaf.gameObject.activeSelf)
+        {
+            leaf.gameObject.SetActive(true);
+            shown = true;
+            PlaySound();
+        }
+        float t = Time.time - landStart;
+        const float Centre = 1.6f, Descend = 2.8f;
+        if (t < Centre)
+        {
+            Vector3 middle = view.ViewportToWorldPoint(new Vector3(0.5f + (Mathf.PerlinNoise(t, 1f) - 0.5f) * flutter, 0.56f + (Mathf.PerlinNoise(2f, t) - 0.5f) * flutter, distance));
+            transform.position = Vector3.SmoothDamp(transform.position, middle, ref velocity, smoothTime * 0.8f, Mathf.Infinity, Time.deltaTime);
+            float s = Time.time + seed;
+            transform.rotation = Quaternion.LookRotation(view.transform.forward, view.transform.up) * Quaternion.Euler(0f, 0f, Mathf.Sin(s * 1.3f) * 20f);
+            return;
+        }
+        if (!descending)
+        {
+            descending = true;
+            descendFrom = transform.position;
+            descendRotation = transform.rotation;
+            if (leaf != null)
+                leaf.gameObject.layer = 0;
+        }
+        float k = Mathf.Clamp01((t - Centre) / Descend);
+        float e = k * k * (3f - 2f * k);
+        Vector3 sway = Vector3.Cross(Vector3.up, view.transform.forward).normalized * Mathf.Sin(k * Mathf.PI * 2.5f) * 0.12f * (1f - e);
+        transform.position = Vector3.Lerp(descendFrom, landPoint, e) + sway;
+        Quaternion flat = Quaternion.LookRotation(Vector3.down, Quaternion.Euler(0f, landYaw, 0f) * Vector3.forward);
+        transform.rotation = Quaternion.Slerp(descendRotation, flat, e) * Quaternion.Euler(0f, 0f, Mathf.Sin(k * Mathf.PI * 3f) * 25f * (1f - e));
+    }
+
     private Vector2 NewSlot() => new Vector2(Random.Range(viewportX.x, viewportX.y), Random.Range(viewportY.x, viewportY.y));
 
     private Vector3 Target()
@@ -114,6 +165,12 @@ public class FollowerLeaf : MonoBehaviour
             view = Gaze.View;
             if (view == null)
                 return;
+        }
+
+        if (landing)
+        {
+            Land();
+            return;
         }
 
         bool show = !onlyWhileWriting || DiaryInteraction.IsWriting;

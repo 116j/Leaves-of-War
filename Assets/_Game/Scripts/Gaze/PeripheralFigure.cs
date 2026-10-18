@@ -7,6 +7,8 @@ public class PeripheralFigure : MonoBehaviour
     [SerializeField, Min(1f)] float _maxDistance = 30f;
     [Tooltip("On: the opposite - the figure is there only while looked at, and disappears as soon as the player looks away.")]
     [SerializeField] bool _onlyWhileLookedAt;
+    [Tooltip("On: the figure stays hidden until a Level Flow step reveals it (Reveal Change on a parent).")]
+    [SerializeField] bool _hiddenUntilRevealed;
 
     Renderer[] _renderers;
 
@@ -15,10 +17,18 @@ public class PeripheralFigure : MonoBehaviour
         _renderers = GetComponentsInChildren<Renderer>(true);
     }
 
+    public void Reveal() => _hiddenUntilRevealed = false;
+
     void LateUpdate()
     {
         if (_renderers.Length == 0)
             return;
+        if (_hiddenUntilRevealed)
+        {
+            foreach (Renderer r in _renderers)
+                r.forceRenderingOff = true;
+            return;
+        }
         Camera cam = Gaze.View;
         if (cam == null)
             return;
