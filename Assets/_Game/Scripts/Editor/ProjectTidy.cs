@@ -150,9 +150,30 @@ public sealed class ProjectTidy : EditorWindow
         }
     }
 
+    public static void RunAuto(List<string> log)
+    {
+        ProjectTidy tidy = CreateInstance<ProjectTidy>();
+        try
+        {
+            tidy.allLevels = true;
+            tidy.CleanScenes();
+            if (!string.IsNullOrEmpty(tidy.sceneReport))
+                log.Add(tidy.sceneReport);
+            tidy.Plan();
+            List<Step> chosen = tidy.steps.Where(s => s.on).ToList();
+            List<string> errors = tidy.Move(chosen);
+            log.Add("Assets tidied: " + chosen.Count + " moves (" + chosen.Count(s => s.to.StartsWith(Trash)) + " unused items to " + Trash + ")." +
+                (errors.Count > 0 ? "\n" + string.Join("\n", errors) : ""));
+        }
+        finally
+        {
+            DestroyImmediate(tidy);
+        }
+    }
+
     private void CleanScenes()
     {
-        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+        if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             return;
         string active = SceneManager.GetActiveScene().path;
         var paths = (allLevels ? EditorBuildSettings.scenes.Select(s => s.path).ToList() : new List<string> { active })
@@ -365,6 +386,13 @@ public sealed class ProjectTidy : EditorWindow
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             return;
 
+        List<string> errors = Move(chosen);
+        Plan();
+        EditorUtility.DisplayDialog("Project Tidy", errors.Count == 0 ? "Done." : string.Join("\n", errors), "OK");
+    }
+
+    private List<string> Move(List<Step> chosen)
+    {
         var errors = new List<string>();
         foreach (Step step in chosen)
         {
@@ -378,8 +406,7 @@ public sealed class ProjectTidy : EditorWindow
             DeleteIfEmpty(folder);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Plan();
-        EditorUtility.DisplayDialog("Project Tidy", errors.Count == 0 ? "Done." : string.Join("\n", errors), "OK");
+        return errors;
     }
 
     private void RestoreTrash()

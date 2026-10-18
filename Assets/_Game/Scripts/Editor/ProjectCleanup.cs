@@ -32,6 +32,13 @@ public static class ProjectCleanup
             "keeps one copy of each MakeHuman texture (capped at 512) and repoints the materials to it.\n\nCommit or back up first.", "Clean", "Cancel"))
             return;
 
+        List<string> log = Clean();
+        Debug.Log("Project Cleanup\n" + string.Join("\n", log));
+        EditorUtility.DisplayDialog("Project Cleanup", string.Join("\n", log), "OK");
+    }
+
+    public static List<string> Clean()
+    {
         var log = new List<string>();
         EnsureFolder(UiFolder);
         foreach (var (from, to) in Keep)
@@ -48,8 +55,7 @@ public static class ProjectCleanup
         log.Add(SharedMakeHumanTextures());
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("Project Cleanup\n" + string.Join("\n", log));
-        EditorUtility.DisplayDialog("Project Cleanup", string.Join("\n", log), "OK");
+        return log;
     }
 
     private static string SharedMakeHumanTextures()
@@ -120,78 +126,6 @@ public static class ProjectCleanup
             }
         }
         return "MakeHuman: " + canonical.Count + " shared textures (max 512), " + removed + " copies removed, " + repointed + " materials repointed.";
-    }
-
-    [MenuItem("Tools/Leaves of War/Optimize Build Size")]
-    private static void OptimizeBuildSize()
-    {
-        if (!EditorUtility.DisplayDialog("Optimize Build Size",
-            "Voices and poems: mono, 22 kHz, Vorbis 50%.\nSound effects: 32 kHz, Vorbis 50%.\nMusic: Vorbis 45%, streamed. Ambience: Vorbis 45%, compressed in memory (needed for the loop crossfade).\n" +
-            "Game textures: at most 1024 px (PS1 look), crunch compression 50.\n\nIt reimports many files: it can take a few minutes.", "Optimize", "Cancel"))
-            return;
-        int audio = 0, textures = 0;
-        AssetDatabase.StartAssetEditing();
-        try
-        {
-            foreach (string guid in AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets/_Game/Audio" }))
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                if (!(AssetImporter.GetAtPath(path) is AudioImporter importer))
-                    continue;
-                string lower = path.ToLowerInvariant();
-                bool voice = lower.Contains("/voices/");
-                bool monoCopy = lower.Contains("/ambience/mono/");
-                bool longClip = lower.Contains("/music/") || lower.Contains("/ambience/");
-                AudioImporterSampleSettings settings = importer.defaultSampleSettings;
-                settings.compressionFormat = AudioCompressionFormat.Vorbis;
-                settings.quality = longClip ? 0.45f : 0.5f;
-                if (longClip)
-                {
-                    settings.loadType = lower.Contains("/music/") ? AudioClipLoadType.Streaming : AudioClipLoadType.CompressedInMemory;
-                    settings.sampleRateSetting = AudioSampleRateSetting.PreserveSampleRate;
-                }
-                else
-                {
-                    settings.sampleRateSetting = AudioSampleRateSetting.OverrideSampleRate;
-                    settings.sampleRateOverride = voice ? 22050u : 32000u;
-                }
-                importer.defaultSampleSettings = settings;
-                if (voice || monoCopy)
-                    importer.forceToMono = true;
-                importer.SaveAndReimport();
-                audio++;
-            }
-            foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/_Game/Art" }))
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                if (!(AssetImporter.GetAtPath(path) is TextureImporter importer) || importer.textureType == TextureImporterType.Sprite || path.Contains("/Fonts/"))
-                    continue;
-                bool changed = false;
-                if (importer.maxTextureSize > 1024)
-                {
-                    importer.maxTextureSize = 1024;
-                    changed = true;
-                }
-                if (!importer.crunchedCompression)
-                {
-                    importer.crunchedCompression = true;
-                    importer.compressionQuality = 50;
-                    changed = true;
-                }
-                if (changed)
-                {
-                    importer.SaveAndReimport();
-                    textures++;
-                }
-            }
-        }
-        finally
-        {
-            AssetDatabase.StopAssetEditing();
-        }
-        AssetDatabase.Refresh();
-        EditorUtility.DisplayDialog("Optimize Build Size", audio + " audio clips and " + textures + " textures set up for a smaller build.\n\n" +
-            "Last step by hand: File > Build Profiles > Windows > Compression Method = LZ4HC.", "OK");
     }
 
     private static void EnsureFolder(string path)

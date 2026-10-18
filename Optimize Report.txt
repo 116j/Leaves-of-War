@@ -1,0 +1,20 @@
+Leaves of War - optimize 2026-10-18 07:24
+
+== CLEANUP ==
+MakeHuman: 0 shared textures (max 512), 0 copies removed, 0 materials repointed.
+
+== TIDY ==
+Level 1 - Milano: removed nothing; 16 root objects ordered.
+Level 2 - Parigi: removed nothing; 14 root objects ordered.
+Level 3 - Carso: removed nothing; 13 root objects ordered.
+Level 4 - San Paolo: removed nothing; 13 root objects ordered.
+Level 5 - Roma: removed nothing; 13 root objects ordered.
+Level 6 - Courton: removed nothing; 14 root objects ordered.
+Assets tidied: 0 moves (0 unused items to Assets/_Trash).
+
+== SMALLEST BUILDS ==
+Audio: 259 clips. Voices mono 22 kHz Vorbis 35%; sound effects mono 22 kHz Vorbis 30%; music (streamed) and ambience 32 kHz Vorbis 30%. Same on WebGL.
+Textures: 0 set to at most 512 px with crunch compression 50 (also on WebGL); 13 left as they are (fonts, UI, menu, readable).
+Models: 0 with mesh compression, optimized meshes and optimal animation compression.
+Player: unused mesh data and engine code stripped, managed stripping Medium; WebGL IL2CPP optimized for size (Master), Brotli with decompression fallback (works on itch.io), no debug exceptions; Windows build compression LZ4HC.
+Shaders: 0 URP stripping options turned on (debug and unused variants are left out of the build).
