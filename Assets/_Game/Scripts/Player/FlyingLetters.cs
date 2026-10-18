@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class FlyingLetters : MonoBehaviour
 {
+    private const float MinFlightHeight = 0.08f;
+    private const float BaseSize = 48f;
+
     private struct Spot
     {
         public int section;
@@ -11,7 +14,10 @@ public class FlyingLetters : MonoBehaviour
         public float along;
     }
 
-    private TextMeshPro text;
+    private static Canvas sharedCanvas;
+
+    private TextMeshPro floor;
+    private TextMeshProUGUI text;
     private Vector3[][] baseVertices;
     private float[] launched;
     private Spot[] spots;
@@ -24,30 +30,27 @@ public class FlyingLetters : MonoBehaviour
     private bool ready;
     private bool active;
     private float finish = -1f;
-    private DiaryInteraction diary;
+    private Vector3 pageCentre;
 
     public static FlyingLetters Create(TextMeshPro source, float flightSeconds, float flightSize, float spiralRadius, float spiralTurns)
     {
-        var go = new GameObject(source.name + " (flying letters)", typeof(RectTransform), typeof(TextMeshPro));
-        go.transform.SetParent(source.transform.parent, false);
-        go.transform.SetPositionAndRotation(source.transform.position, source.transform.rotation);
-        go.transform.localScale = source.transform.localScale;
-        int held = LayerMask.NameToLayer("HeldItems");
-        if (held >= 0)
-            go.layer = held;
+        var go = new GameObject(source.name + " (flying letters)", typeof(RectTransform), typeof(TextMeshProUGUI));
+        var rect = (RectTransform)go.transform;
+        rect.SetParent(SharedCanvas().transform, false);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(20000f, 20000f);
         FlyingLetters letters = go.AddComponent<FlyingLetters>();
-        TextMeshPro copy = go.GetComponent<TextMeshPro>();
-        copy.rectTransform.sizeDelta = source.rectTransform.sizeDelta;
+        TextMeshProUGUI copy = go.GetComponent<TextMeshProUGUI>();
         copy.font = source.font;
         copy.text = source.text;
-        copy.alignment = source.alignment;
-        copy.enableAutoSizing = source.enableAutoSizing;
-        copy.fontSizeMin = source.fontSizeMin;
-        copy.fontSizeMax = source.fontSizeMax;
-        copy.fontSize = source.fontSize;
-        copy.lineSpacing = source.lineSpacing;
-        copy.textWrappingMode = source.textWrappingMode;
+        copy.fontSize = BaseSize;
+        copy.enableAutoSizing = false;
+        copy.alignment = TextAlignmentOptions.Center;
+        copy.textWrappingMode = TextWrappingModes.NoWrap;
+        copy.raycastTarget = false;
         copy.color = source.color;
+        letters.floor = source;
         letters.text = copy;
         letters.flight = Mathf.Max(0.3f, flightSeconds);
         letters.size = Mathf.Max(1f, flightSize);
@@ -58,16 +61,49 @@ public class FlyingLetters : MonoBehaviour
         return letters;
     }
 
+    private static Canvas SharedCanvas()
+    {
+        if (sharedCanvas != null)
+            return sharedCanvas;
+        var go = new GameObject("Flying Letters", typeof(RectTransform), typeof(Canvas));
+        sharedCanvas = go.GetComponent<Canvas>();
+        sharedCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        sharedCanvas.sortingOrder = 450;
+        return sharedCanvas;
+    }
+
+    private void OnEnable() => TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
+
+    private void OnDisable() => TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
+
+    private void OnTextChanged(Object changed)
+    {
+        if (!ready || changed != text)
+            return;
+        Capture();
+        Animate();
+    }
+
+    private void Capture()
+    {
+        TMP_TextInfo info = text.textInfo;
+        if (info == null)
+            return;
+        if (baseVertices == null || baseVertices.Length != info.meshInfo.Length)
+            baseVertices = new Vector3[info.meshInfo.Length][];
+        for (int m = 0; m < info.meshInfo.Length; m++)
+            baseVertices[m] = (Vector3[])info.meshInfo[m].vertices.Clone();
+    }
+
     private void Prepare()
     {
         text.ForceMeshUpdate(true);
-        TMP_TextInfo info = text.textInfo;
-        baseVertices = new Vector3[info.meshInfo.Length][];
-        for (int m = 0; m < info.meshInfo.Length; m++)
-            baseVertices[m] = (Vector3[])info.meshInfo[m].vertices.Clone();
-        launched = new float[info.characterCount];
-        spots = new Spot[info.characterCount];
-        for (int i = 0; i < launched.Length; i++)
+        floor.ForceMeshUpdate();
+        Capture();
+        int count = text.textInfo.characterCount;
+        launched = new float[count];
+        spots = new Spot[count];
+        for (int i = 0; i < count; i++)
         {
             launched[i] = -1f;
             spots[i].section = -1;
@@ -99,8 +135,9 @@ public class FlyingLetters : MonoBehaviour
 
     private void Launch(int index)
     {
-        if (launched[index] < 0f)
-            launched[index] = Time.time;
+        if (launched[index] >= 0f)
+            return;
+        launched[index] = Time.time;
     }
 
     private void Map(List<TextMeshProUGUI> sections)
@@ -163,14 +200,21 @@ public class FlyingLetters : MonoBehaviour
     private void Animate()
     {
         TMP_TextInfo info = text.textInfo;
-        if (info == null || info.characterCount == 0)
+        TMP_TextInfo floorInfo = floor != null ? floor.textInfo : null;
+        if (info == null || info.characterCount == 0 || baseVertices == null)
             return;
         Camera cam = Camera.main;
-        Transform view = cam != null ? cam.transform : transform;
-        Transform notebook = Notebook();
-        bool shown = notebook != null && DiaryInteraction.IsWriting;
-        Vector3 middle = notebook != null ? notebook.position : view.position + view.forward * 0.6f;
+        bool shown = cam != null && (DiaryInteraction.IsWriting || DiaryInteraction.IsRaised);
+        float scale = sharedCanvas != null && sharedCanvas.scaleFactor > 0f ? sharedCanvas.scaleFactor : 1f;
+        Vector2 screenCentre = new Vector2(Screen.width, Screen.height) * 0.5f;
+        float pixelsPerMetre = cam != null ? Screen.height / (2f * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad)) : 1000f;
+        Vector3 hubWorld = PageCentre() ? pageCentre : cam != null ? cam.transform.position + cam.transform.forward * 0.6f : Vector3.zero;
+        Vector3 hubScreen = cam != null ? cam.WorldToScreenPoint(hubWorld) : Vector3.zero;
+        float hubDepth = Mathf.Max(0.05f, hubScreen.z);
+        float radiusPx = radius * pixelsPerMetre / hubDepth;
+        float minPx = MinFlightHeight * pixelsPerMetre / hubDepth;
         float ending = finish < 0f ? 1f : 1f - Mathf.Clamp01((Time.time - finish - flight) / 0.8f);
+
         for (int i = 0; i < info.characterCount && i < launched.Length; i++)
         {
             TMP_CharacterInfo character = info.characterInfo[i];
@@ -184,46 +228,46 @@ public class FlyingLetters : MonoBehaviour
             Vector3[] vertices = info.meshInfo[m].vertices;
             Color32[] colors = info.meshInfo[m].colors32;
             float p = launched[i] < 0f ? -1f : (Time.time - launched[i]) / flight;
-            byte alpha = 0;
             bool landed = spots[i].section >= 0;
-            if (shown && p >= 0f && (p < 1f || landed))
+            byte alpha = 0;
+            Vector3 centre = (source[v0] + source[v0 + 2]) * 0.5f;
+            float baseHeight = Mathf.Max(0.001f, (source[v0 + 1] - source[v0]).magnitude);
+
+            if (shown && p >= 0f && (p < 1f || landed) && FloorQuad(floorInfo, i, out Vector3 floorCentre, out float floorHeight))
             {
                 float u = Mathf.Clamp01(p);
-                Vector3 centre = (source[v0] + source[v0 + 2]) * 0.5f;
-                Vector3 start = transform.TransformPoint(centre);
-                float startHeight = transform.TransformVector(source[v0 + 1] - source[v0]).magnitude;
-                float seed = Mathf.Sin(i * 12.9898f) * 43758.5453f;
-                seed -= Mathf.Floor(seed);
+                Vector3 startScreen = cam.WorldToScreenPoint(floorCentre);
+                if (startScreen.z <= 0.01f)
+                    startScreen = new Vector3(startScreen.x, -Screen.height * 0.1f, 1f);
+                float startPx = floorHeight * pixelsPerMetre / Mathf.Max(0.05f, startScreen.z);
 
-                Vector3 goal = middle;
-                Quaternion goalRotation = view.rotation;
-                float goalScale = 0.4f;
-                if (landed && Goal(spots[i], out Vector3 spot, out Quaternion spotRotation, out float spotHeight))
+                Vector2 goal = hubScreen;
+                float goalPx = startPx * 0.4f;
+                if (landed && Goal(spots[i], cam, out Vector2 spotScreen, out float spotPx))
                 {
-                    goal = spot;
-                    goalRotation = spotRotation;
-                    goalScale = startHeight > 0f ? spotHeight / startHeight : 1f;
+                    goal = spotScreen;
+                    goalPx = spotPx;
                 }
 
+                float seed = Mathf.Sin(i * 12.9898f) * 43758.5453f;
+                seed -= Mathf.Floor(seed);
                 float rise = Smooth(0f, 0.4f, u);
                 float close = Smooth(0.45f, 1f, u);
                 float angle = (seed + u * turns) * Mathf.PI * 2f;
-                float r = radius * (1f - close) * Mathf.Lerp(0.6f, 1f, rise);
-                Vector3 hub = Vector3.Lerp(middle, goal, close);
-                Vector3 orbit = hub + (Mathf.Cos(angle) * view.right + Mathf.Sin(angle) * view.up) * r - view.forward * (0.03f + 0.08f * (1f - close));
-                Vector3 lifted = start + Vector3.up * Mathf.Sin(rise * Mathf.PI * 0.5f) * 0.4f;
-                Vector3 world = Vector3.Lerp(lifted, orbit, rise);
+                float r = radiusPx * (1f - close) * Mathf.Lerp(0.6f, 1f, rise);
+                Vector2 hub = Vector2.Lerp(hubScreen, goal, close);
+                Vector2 orbit = hub + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
+                Vector2 lifted = (Vector2)startScreen + Vector2.up * Mathf.Sin(rise * Mathf.PI * 0.5f) * radiusPx * 0.6f;
+                Vector2 screen = Vector2.Lerp(lifted, orbit, rise);
 
-                Quaternion facing = Quaternion.Slerp(view.rotation, goalRotation, close);
-                Quaternion turn = Quaternion.Slerp(transform.rotation, facing, Smooth(0f, 0.3f, u)) * Quaternion.Inverse(transform.rotation);
-                Quaternion spin = Quaternion.AngleAxis(Mathf.Sin(u * Mathf.PI) * (seed - 0.5f) * 120f * (1f - close), view.forward);
-                float big = Mathf.Lerp(1f, size, rise);
-                float scale = Mathf.Lerp(big, goalScale, close);
+                float peakPx = Mathf.Max(startPx * size, minPx);
+                float px = Mathf.Lerp(Mathf.Lerp(startPx, peakPx, rise), goalPx, close);
+                float spin = Mathf.Sin(u * Mathf.PI) * (seed - 0.5f) * 120f * (1f - close);
+                Quaternion turn = Quaternion.Euler(0f, 0f, spin);
+                float k = px / baseHeight;
+                Vector3 local = (Vector3)((screen - screenCentre) / scale);
                 for (int c = 0; c < 4; c++)
-                {
-                    Vector3 offset = transform.TransformVector(source[v0 + c] - centre);
-                    vertices[v0 + c] = transform.InverseTransformPoint(world + spin * (turn * offset) * scale);
-                }
+                    vertices[v0 + c] = local + turn * ((source[v0 + c] - centre) * k / scale);
                 float a = Mathf.Clamp01(u * 8f) * (landed ? ending : Mathf.Clamp01((1f - u) * 4f));
                 alpha = (byte)Mathf.RoundToInt(255f * Mathf.Lerp(ink.a / 255f, 1f, rise) * a);
             }
@@ -235,19 +279,34 @@ public class FlyingLetters : MonoBehaviour
             for (int c = 0; c < 4; c++)
                 colors[v0 + c] = new Color32(ink.r, ink.g, ink.b, alpha);
         }
-        for (int m = 0; m < info.meshInfo.Length; m++)
-        {
-            info.meshInfo[m].mesh.vertices = info.meshInfo[m].vertices;
-            info.meshInfo[m].mesh.colors32 = info.meshInfo[m].colors32;
-            text.UpdateGeometry(info.meshInfo[m].mesh, m);
-        }
+        text.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices | TMP_VertexDataUpdateFlags.Colors32);
     }
 
-    private bool Goal(Spot spot, out Vector3 position, out Quaternion rotation, out float height)
+    private bool FloorQuad(TMP_TextInfo floorInfo, int index, out Vector3 centre, out float height)
     {
-        position = default;
-        rotation = Quaternion.identity;
+        centre = default;
         height = 0f;
+        if (floorInfo == null || index >= floorInfo.characterCount)
+            return false;
+        TMP_CharacterInfo character = floorInfo.characterInfo[index];
+        if (character.materialReferenceIndex >= floorInfo.meshInfo.Length)
+            return false;
+        Vector3[] quad = floorInfo.meshInfo[character.materialReferenceIndex].vertices;
+        if (quad == null || character.vertexIndex + 3 >= quad.Length)
+            return false;
+        Transform t = floor.transform;
+        Vector3 bl = t.TransformPoint(quad[character.vertexIndex]);
+        Vector3 tl = t.TransformPoint(quad[character.vertexIndex + 1]);
+        Vector3 tr = t.TransformPoint(quad[character.vertexIndex + 2]);
+        centre = (bl + tr) * 0.5f;
+        height = (tl - bl).magnitude;
+        return true;
+    }
+
+    private bool Goal(Spot spot, Camera cam, out Vector2 screen, out float px)
+    {
+        screen = default;
+        px = 0f;
         if (mappedSections == null || spot.section >= mappedSections.Count)
             return false;
         TextMeshProUGUI page = mappedSections[spot.section];
@@ -262,23 +321,36 @@ public class FlyingLetters : MonoBehaviour
         Vector3[] quad = info.meshInfo[character.materialReferenceIndex].vertices;
         if (quad == null || character.vertexIndex + 3 >= quad.Length)
             return false;
-        Vector3 bottomLeft = page.transform.TransformPoint(quad[character.vertexIndex]);
-        Vector3 topLeft = page.transform.TransformPoint(quad[character.vertexIndex + 1]);
-        Vector3 topRight = page.transform.TransformPoint(quad[character.vertexIndex + 2]);
-        position = (bottomLeft + topRight) * 0.5f;
-        rotation = page.transform.rotation;
-        height = (topLeft - bottomLeft).magnitude;
-        Camera cam = Camera.main;
-        if (cam != null)
-            position += (cam.transform.position - position).normalized * 0.002f;
+        Camera view = page.canvas != null && page.canvas.worldCamera != null ? page.canvas.worldCamera : cam;
+        Vector3 a = view.WorldToScreenPoint(page.transform.TransformPoint(quad[character.vertexIndex]));
+        Vector3 b = view.WorldToScreenPoint(page.transform.TransformPoint(quad[character.vertexIndex + 1]));
+        Vector3 c = view.WorldToScreenPoint(page.transform.TransformPoint(quad[character.vertexIndex + 2]));
+        if (a.z <= 0f)
+            return false;
+        screen = (a + c) * 0.5f;
+        px = ((Vector2)b - (Vector2)a).magnitude;
         return true;
     }
 
-    private Transform Notebook()
+    private bool PageCentre()
     {
-        if (diary == null)
-            diary = FindAnyObjectByType<DiaryInteraction>();
-        return diary != null && diary.Notebook != null && diary.Notebook.gameObject.activeInHierarchy ? diary.Notebook : null;
+        if (mappedSections == null)
+            return false;
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        var corners = new Vector3[4];
+        foreach (TextMeshProUGUI section in mappedSections)
+        {
+            if (section == null || !section.gameObject.activeInHierarchy)
+                continue;
+            section.rectTransform.GetWorldCorners(corners);
+            sum += (corners[0] + corners[2]) * 0.5f;
+            count++;
+        }
+        if (count == 0)
+            return false;
+        pageCentre = sum / count;
+        return true;
     }
 
     private static float Smooth(float from, float to, float value)

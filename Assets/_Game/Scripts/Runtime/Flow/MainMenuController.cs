@@ -446,6 +446,10 @@ namespace Hortensia.Runtime
             TMP_FontAsset rebuilt = asset.sourceFontFile != null ? CreateDynamicFont(asset.sourceFontFile, asset) : null;
             if (rebuilt != null)
                 return rebuilt;
+            Font sibling = Resources.Load<Font>("Fonts/" + asset.name);
+            rebuilt = sibling != null ? CreateDynamicFont(sibling, asset) : null;
+            if (rebuilt != null)
+                return rebuilt;
 
             Debug.LogWarning($"MainMenuController ({label}): '{asset.name}' has no letters, TextMeshPro will draw a fallback font. Use the matching Font File field.");
             return asset;

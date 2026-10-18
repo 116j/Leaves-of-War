@@ -39,7 +39,7 @@ public class AssignPoem : RevealableObject
     [SerializeField, Range(0f, 1f)] private float _shimmer = 0.35f;
     [SerializeField, Min(0.1f)] private float _fadeSeconds = 2.5f;
     [Header("Flying Letters")]
-    [Tooltip("While transcribing, the letters leave the floor one by one and fly into the notebook, in the floor font.")]
+    [Tooltip("While transcribing, the letters leave the floor one by one and fly into the notebook, in the floor font. The values set on Milano's poem are used by every level.")]
     [SerializeField] private bool _lettersFly = true;
     [SerializeField, Min(0.3f)] private float _flightSeconds = 2.4f;
     [Tooltip("How big the letters grow in flight, compared with the floor writing.")]
@@ -156,13 +156,28 @@ public class AssignPoem : RevealableObject
         floorText.textWrappingMode = TextWrappingModes.Normal;
         floorText.color = new Color(_floorColor.r, _floorColor.g, _floorColor.b, 1f);
         floorText.ForceMeshUpdate();
-        if (_lettersFly)
+        FlyingLettersLook look = FlyingLettersLook.Current;
+        if (look != null ? look.lettersFly : _lettersFly)
         {
             floorText.color = new Color(_floorColor.r, _floorColor.g, _floorColor.b, _floorColor.a);
-            flying = FlyingLetters.Create(floorText, _flightSeconds, _flightSize, _spiralRadius, _spiralTurns);
+            flying = look != null
+                ? FlyingLetters.Create(floorText, look.flightSeconds, look.flightSize, look.spiralRadius, look.spiralTurns)
+                : FlyingLetters.Create(floorText, _flightSeconds, _flightSize, _spiralRadius, _spiralTurns);
             floorText.color = new Color(_floorColor.r, _floorColor.g, _floorColor.b, 1f);
         }
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (!Application.isPlaying && gameObject.scene.IsValid() && gameObject.scene.name.Contains("Milano"))
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                if (this != null)
+                    FlyingLettersLook.Save(_lettersFly, _flightSeconds, _flightSize, _spiralRadius, _spiralTurns);
+            };
+    }
+#endif
 
     public void SetLifted(float fraction)
     {
