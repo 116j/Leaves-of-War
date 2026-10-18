@@ -129,7 +129,8 @@ public static class ProjectOptimizer
             else
             {
                 settings.quality = voice ? 0.35f : 0.3f;
-                settings.loadType = AudioClipLoadType.CompressedInMemory;
+                settings.loadType = AudioClipLoadType.DecompressOnLoad;
+                settings.preloadAudioData = true;
                 settings.sampleRateSetting = AudioSampleRateSetting.OverrideSampleRate;
                 settings.sampleRateOverride = 22050u;
                 importer.forceToMono = true;
@@ -140,7 +141,7 @@ public static class ProjectOptimizer
             importer.SaveAndReimport();
             count++;
         }
-        return "Audio: " + count + " clips. Voices mono 22 kHz Vorbis 35%; sound effects mono 22 kHz Vorbis 30%; music (streamed) and ambience 32 kHz Vorbis 30%. Same on WebGL.";
+        return "Audio: " + count + " clips. Voices mono 22 kHz Vorbis 35%, decompressed on load (needed to cut the long silences); sound effects mono 22 kHz Vorbis 30%; music (streamed) and ambience 32 kHz Vorbis 30%. Same on WebGL.";
     }
 
     private static string Textures()

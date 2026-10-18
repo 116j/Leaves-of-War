@@ -820,32 +820,44 @@ Un gioco di TheCelticArtist
 # ===== TO TRANSLATE (added 2026-10-18 06:47): write the Italian after <<< =====
 # Level 1 - Milano
 >>> Forgive me, Mr. Carlo. I like to feel the air from the street.
-<<< 
+<<< Mi scusi, signor Carlo. Mi piace sentire l'aria della strada.
 # Level 1 - Milano
 >>> Words? I only see the floorboards, Professor. You look like you've seen a ghost.
-<<< 
+<<< Parole? Io vedo solo assi di legno, professore. Sembra che abbia visto un fantasma.
 # Level 1 - Milano
 >>> Thank you,Mr. Carlo. That's the finest compliment you could pay me.
-<<< 
-# Level 1 - Milano
->>> Brumbà, telòn sfarì, ufà!
-<<< 
-# Level 1 - Milano
->>> Tamburèl dalò, sgrinfà la mantóla... ombrè, ombrè scrovà!
-<<< 
-# Level 1 - Milano
->>> Sfòrilo... lumàrde scrènzia. Gòrvalo dù brùnzo... ferlàmia ondìre, tràsco. Velìmbre sgaùlo, nìlvo.
-<<< 
-# Level 1 - Milano
->>> Pèrvola... sgùnzio ràmbe, tirlìmbo drè.
-<<< 
+<<< Grazie, signor Carlo. È il complimento più bello che potesse farmi.
 # Level 4 - San Paolo
 >>> No one did, Rui. Things leave on their own, when we stop looking at them.
-<<< 
+<<< Nessuno, Rui. Le cose se ne vanno da sole, quando smettiamo di guardarle.
 # Level 4 - San Paolo
 >>> What are you staring at, Giuseppe?
 There is nothing there.
-<<< 
+<<< CHE COSA STAI FISSANDO, GIUSEPPE?
+LI' NON C'E' NULLA.
 # Level 5 - Roma
 >>> WHAT IS IT, PROFESSOR? YOU'RE STARING AT THE FLOOR BY THE DOOR.
-<<< 
+<<< COSA HA VISTO, PROFESSORE? NON C'E' NULLA LI'.
+
+
+# ===== TO TRANSLATE (added 2026-10-18 07:56): write the Italian after <<< =====
+# Level 1 - Milano
+>>> Forgive me, Mr. Carlo. I like to feel the air from the street.
+<<< Mi scusi, signor Carlo. Mi piace sentire l'aria della strada.
+# Level 1 - Milano
+>>> Words? I only see the floorboards, Professor. You look like you've seen a ghost.
+<<< Parole? Io vedo solo assi di legno, professore. Sembra che abbia visto un fantasma.
+# Level 1 - Milano
+>>> Thank you,Mr. Carlo. That's the finest compliment you could pay me.
+<<< Grazie, signor Carlo. È il complimento più bello che potesse farmi.
+# Level 4 - San Paolo
+>>> No one did, Rui. Things leave on their own, when we stop looking at them.
+<<< Nessuno, Rui. Le cose se ne vanno da sole, quando smettiamo di guardarle.
+# Level 4 - San Paolo
+>>> What are you staring at, Giuseppe?
+There is nothing there.
+<<< CHE COSA STAI FISSANDO, GIUSEPPE?
+LI' NON C'E' NULLA.
+# Level 5 - Roma
+>>> WHAT IS IT, PROFESSOR? YOU'RE STARING AT THE FLOOR BY THE DOOR.
+<<< COSA HA VISTO, PROFESSORE? NON C'E' NULLA LI'.
