@@ -23,5 +23,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Game/Scenes/Level 4 - San Paolo.unity
     guid: efa26e3e6a0beaf46abb46b7bac53bb2
+  - enabled: 1
+    path: Assets/_Game/Scenes/Level 5 - Roma.unity
+    guid: c814e794f20b1964ba54fea9f824c9c8
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

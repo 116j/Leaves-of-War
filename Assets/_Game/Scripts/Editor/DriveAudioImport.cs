@@ -79,7 +79,9 @@ public sealed class DriveAudioImport : EditorWindow
             new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_04_SanPaolo_Outside") { open = true },
             new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_04_SanPaolo_Transition_Inside", "AMB_04_SanPaolo_Transition:Inside") { open = true, afterClear = true },
             new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_04_SanPaolo_Transition_Outside", "AMB_04_SanPaolo_Transition:Outside") { open = true, afterClear = true }),
-        new LevelSound("Roma", 5, "MUS_P5"),
+        new LevelSound("Roma", 5, "MUS_P5",
+            new Amb(LevelAudio.Mix.WindowClosed, 0.47f, "AMB_05_Roma_Inside"),
+            new Amb(LevelAudio.Mix.WindowOpen, 0.41f, "AMB_05_Roma_Outside")),
         new LevelSound("Courton", 6, "MUS_06_FINALE"),
     };
 
@@ -97,13 +99,15 @@ public sealed class DriveAudioImport : EditorWindow
         EditorGUILayout.HelpBox(
             "1. From the Leaves of War Drive, download: voice acting/definitives/ungaretti, Sound design (AMB_ folders and SFX) and music/Lullaby/MP3s.\n" +
             "2. Unzip them anywhere inside Assets (e.g. Assets/_Game/Audio/Import).\n" +
-            "3. Organize & Import, then Apply to all scenes.", MessageType.None);
+            "3. Organize & Import, then Apply to all scenes (overwrites the audio settings of every level) or Apply to open scene only (a new level, the others stay as they are).", MessageType.None);
         using (new EditorGUILayout.HorizontalScope())
         {
             if (GUILayout.Button("1. Organize & Import", GUILayout.Height(28f)))
                 Organize();
             if (GUILayout.Button("2. Apply to all scenes", GUILayout.Height(28f)))
                 ApplyAll();
+            if (GUILayout.Button("2b. Apply to open scene only", GUILayout.Height(28f)))
+                ApplyOpen();
         }
 
         UngarettiLines.Refresh();
@@ -176,6 +180,8 @@ public sealed class DriveAudioImport : EditorWindow
         yield return "SFX_Chair_Move";
         yield return "SFX_Child_Laugh";
         yield return "SFX_Umbrella_Open";
+        yield return "AMB_05_Voices_Outside";
+        yield return "AMB_05_Voices_Inside";
         foreach (string ui in MenuSounds)
             yield return ui;
     }
@@ -301,7 +307,31 @@ public sealed class DriveAudioImport : EditorWindow
         foreach (string path in paths)
         {
             Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
-            string name = Path.GetFileNameWithoutExtension(path);
+            string result = ApplyScene(scene);
+            if (result == null)
+                continue;
+            EditorSceneManager.SaveScene(scene);
+            lines.Add(result);
+        }
+        if (!string.IsNullOrEmpty(active) && File.Exists(active))
+            EditorSceneManager.OpenScene(active, OpenSceneMode.Single);
+        report = lines.Count == 0 ? "Nothing to apply." : string.Join("\n", lines);
+        Debug.Log("Drive Audio\n" + report);
+    }
+
+    private void ApplyOpen()
+    {
+        UngarettiLines.Refresh();
+        Scene scene = SceneManager.GetActiveScene();
+        string result = ApplyScene(scene);
+        report = (result ?? "Nothing to apply.") + "\n\nOnly " + scene.name + " was changed: save it (Ctrl+S).";
+        Debug.Log("Drive Audio\n" + report);
+    }
+
+    private static string ApplyScene(Scene scene)
+    {
+        {
+            string name = scene.name;
             var done = new List<string>();
             LevelSound level = Levels.FirstOrDefault(l => name.Contains(l.scene));
             if (level != null)
@@ -318,15 +348,10 @@ public sealed class DriveAudioImport : EditorWindow
                 done.Add(relinked + " Ungaretti lines in English, " + voiced + " with Drive voice");
             done.RemoveAll(string.IsNullOrEmpty);
             if (done.Count == 0)
-                continue;
+                return null;
             EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-            lines.Add(name + ": " + string.Join("; ", done) + ".");
+            return name + ": " + string.Join("; ", done) + ".";
         }
-        if (!string.IsNullOrEmpty(active) && File.Exists(active))
-            EditorSceneManager.OpenScene(active, OpenSceneMode.Single);
-        report = lines.Count == 0 ? "Nothing to apply." : string.Join("\n", lines);
-        Debug.Log("Drive Audio\n" + report);
     }
 
     private static AudioClip First(params string[] files)
@@ -558,6 +583,17 @@ public sealed class DriveAudioImport : EditorWindow
                 cueSo.FindProperty("clip").objectReferenceValue = laugh;
                 cueSo.ApplyModifiedPropertiesWithoutUndo();
                 done.Add("child's laugh");
+            }
+        AudioClip voicesOut = First("AMB_05_Voices_Outside");
+        AudioClip voicesIn = First("AMB_05_Voices_Inside");
+        foreach (StreetVoices voices in Object.FindObjectsByType<StreetVoices>(FindObjectsInactive.Include))
+            if (voicesOut != null || voicesIn != null)
+            {
+                var voicesSo = new SerializedObject(voices);
+                voicesSo.FindProperty("outside").objectReferenceValue = voicesOut;
+                voicesSo.FindProperty("inside").objectReferenceValue = voicesIn;
+                voicesSo.ApplyModifiedPropertiesWithoutUndo();
+                done.Add("street voices");
             }
         AudioClip umbrellaOpen = First("SFX_Umbrella_Open");
         foreach (Umbrella umbrella in Object.FindObjectsByType<Umbrella>(FindObjectsInactive.Include))

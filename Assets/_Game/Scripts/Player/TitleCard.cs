@@ -27,14 +27,14 @@ public static class TitleCard
     private static readonly Card[] Cards =
     {
         new Card { key = "milano", font = "BodoniModa", text = "MILANO — 1914–1915", ornament = InkOrnament.Kind.LibertyLine },
-        new Card { key = "parigi", font = "PlayfairDisplay", text = "PARIGI — 5 RUE DES CARMES — 1912–1914", ornament = InkOrnament.Kind.HotelStamp,
+        new Card { key = "parigi", font = "PlayfairDisplay", text = "PARIS — 5 RUE DES CARMES — 1912–1914", ornament = InkOrnament.Kind.HotelStamp,
             stampInk = new Color(0.32f, 0.25f, 0.55f, 0.78f), wear = 0.25f, tilt = -11f, top = "HÔTEL DES CARMES", bottom = "PARIS", middle = "5, RUE DES CARMES", middleSmall = "QUARTIER LATIN" },
-        new Card { key = "carso", font = "StardosStencil", text = "IL CARSO — CIMA QUATTRO — 23 DICEMBRE 1915", ornament = InkOrnament.Kind.MilitaryPost,
+        new Card { key = "carso", font = "StardosStencil", text = "IL CARSO — CIMA QUATTRO — 23 DECEMBER 1915", ornament = InkOrnament.Kind.MilitaryPost,
             stampInk = new Color(0.36f, 0.22f, 0.42f, 0.72f), wear = 0.45f, tilt = 9f, top = "POSTA MILITARE", bottom = "ZONA DI GUERRA", middle = "23 DIC 1915", middleSmall = "" },
-        new Card { key = "san paolo", font = "Limelight", text = "SAN PAOLO DEL BRASILE — 1937–1942", ornament = InkOrnament.Kind.DecoLine },
+        new Card { key = "san paolo", font = "Limelight", text = "SAO PAULO DO BRASIL — 1937–1942", ornament = InkOrnament.Kind.DecoLine },
         new Card { key = "roma", font = "SpecialElite", text = "ROMA — 1943–1944", ornament = InkOrnament.Kind.TypedDate,
             stampInk = new Color(0.17f, 0.24f, 0.42f, 0.8f), wear = 0.3f, tilt = -4f, top = "R O M A", middle = "1943 — 1944" },
-        new Card { key = "courton", font = "OldStandard", text = "BOSCO DI COURTON — LUGLIO 1918", ornament = InkOrnament.Kind.FieldPost,
+        new Card { key = "courton", font = "OldStandard", text = "COURTON — JULY 1918", ornament = InkOrnament.Kind.FieldPost,
             stampInk = new Color(0.12f, 0.12f, 0.14f, 0.42f), wear = 0.85f, tilt = 14f, top = "TRÉSOR ET POSTES", bottom = "", middle = "JUIL. 1918", middleSmall = "SECTEUR POSTAL" },
     };
 

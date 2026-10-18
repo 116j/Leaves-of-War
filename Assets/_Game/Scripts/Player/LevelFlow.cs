@@ -24,6 +24,7 @@ public class LevelFlow : MonoBehaviour
         FragmentFound = 1 << 10,     // 1024
         FragmentTranscribed = 1 << 11, // 2048
         LookAtObservable = 1 << 12,  // 4096
+        ShuttersClosed = 1 << 13,    // 8192
     }
 
     public enum StepAction
@@ -132,6 +133,7 @@ public class LevelFlow : MonoBehaviour
         public static float Pitch;
     }
 
+    private Hortensia.Runtime.OpenableWindow shutters;
     private TextMeshProUGUI objective;
     private string objectiveText;
     private FirstPersonController player;
@@ -338,6 +340,13 @@ public class LevelFlow : MonoBehaviour
                     {
                         AssignPoem piece = Fragment(step.fragment);
                         done = done && (piece == null || transcribe == null || transcribe.FragmentsDone(piece.PoemId) >= step.fragment);
+                        break;
+                    }
+                case Condition.ShuttersClosed:
+                    {
+                        if (shutters == null)
+                            shutters = FindAnyObjectByType<Hortensia.Runtime.OpenableWindow>();
+                        done = done && (shutters == null || !shutters.IsOpen && shutters.Openness < 0.05f);
                         break;
                     }
                 case Condition.LookAtObservable:

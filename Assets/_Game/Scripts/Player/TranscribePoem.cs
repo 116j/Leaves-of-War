@@ -108,6 +108,13 @@ public class TranscribePoem : RevealableObject
     public static float[] WritingSeconds { get; private set; }
     public static int WritingSection { get; private set; }
     public static float WritingProgress { get; private set; }
+    public static bool WordsHeld { get; private set; }
+
+    private void OnDestroy()
+    {
+        WritingSections = null;
+        WordsHeld = false;
+    }
     public TMP_FontAsset PoemFont => _assignedPoemTextCurrent != null ? _assignedPoemTextCurrent.font : null;
 
     private int currentp = 1;
@@ -244,8 +251,14 @@ public class TranscribePoem : RevealableObject
                 fragmentTexts[piece.PoemId] = texts = new SortedDictionary<int, string>();
             texts[piece.Fragment] = (piece.FragmentText ?? string.Empty).Trim();
         }
+        int levelPoem = int.MaxValue;
+        foreach (AssignPoem poem in FindObjectsByType<AssignPoem>(FindObjectsInactive.Include))
+            if (poem.PoemId > 0)
+                levelPoem = Mathf.Min(levelPoem, poem.PoemId);
+        foreach (int later in Written.Keys.Where(id => id >= levelPoem).ToList())
+            Written.Remove(later);
         foreach (PoemInfoContainer earlier in _earlierPoems)
-            if (earlier != null && earlier.poemId > 0 && !Written.ContainsKey(earlier.poemId))
+            if (earlier != null && earlier.poemId > 0 && earlier.poemId < levelPoem && !Written.ContainsKey(earlier.poemId))
                 Written[earlier.poemId] = earlier;
         foreach (KeyValuePair<int, PoemInfoContainer> pair in Written)
         {
@@ -581,7 +594,8 @@ public class TranscribePoem : RevealableObject
             writing = true;
             while (t < 1f)
             {
-                if (CanWrite())
+                WordsHeld = CanWrite();
+                if (WordsHeld)
                 {
                     t += Time.unscaledDeltaTime / duration * (1f - from[index]);
                     started = true;
@@ -611,6 +625,7 @@ public class TranscribePoem : RevealableObject
                 yield return Wait(_sectionPause);
         }
         writing = false;
+        WordsHeld = false;
         if (piece == null && voiceStarted && voiceSource != null && voiceSource.clip == poem.poemVoice && poem.poemVoice != null)
         {
             finishingVoice = true;
