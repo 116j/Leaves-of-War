@@ -78,7 +78,7 @@ public class TranscribePoem : RevealableObject
     [SerializeField] private PoemInfoContainer[] _earlierPoems = new PoemInfoContainer[0];
 
     [Header("Prompts")]
-    [SerializeField] private string _promptFormat = "HOLD {0} TO TRANSCRIBE";
+    [SerializeField] private string _promptFormat = "PRESS {0} TO TRANSCRIBE";
     [SerializeField, Min(8f)] private float _promptSize = 30f;
 
     public static event Action<int> Transcribed;
@@ -310,6 +310,8 @@ public class TranscribePoem : RevealableObject
 
     public int PageCount => WrittenPages().Count;
 
+    public int CurrentPoemId => currentp;
+
     private List<int> WrittenPages() => transcribed.Concat(poemsSectionProgress.Keys).Distinct().Where(id => Find(id) != null).OrderBy(id => id).ToList();
 
     public void TurnPage(int direction)
@@ -346,6 +348,7 @@ public class TranscribePoem : RevealableObject
         float dt = Time.unscaledDeltaTime;
         bool playing = Time.timeScale > 0f && !DialogueRunner.LocksPlayer;
         bool open = activePoem != null && !ActiveDone() || IsTranscribing;
+        UpdateToggle(open);
         poemSeen = activePoem != null && activePoem.IsRevealed && Gaze.IsSeen(activePoem.Footprint, 6f);
         bool holding = Holding() && playing && !DiaryInteraction.IsReading;
 
@@ -391,13 +394,14 @@ public class TranscribePoem : RevealableObject
             }
         }
 
-        bool showPrompt = (joining && IsTranscribing || open && activePoem != null && activePoem.IsRevealed) && playing && !DiaryInteraction.IsReading && !(holding && DiaryInteraction.IsWriting);
+        bool showPrompt = (joining && IsTranscribing || open && activePoem != null && activePoem.IsRevealed) && playing && !DiaryInteraction.IsReading && !holding;
         ScreenPrompt.Show(prompt, showPrompt, showPrompt ? string.Format(_promptFormat, ScreenPrompt.KeyName(player != null ? player.WriteAction : null, "T")) : null);
     }
 
     private void Gust()
     {
         unseenTime = 0f;
+        toggled = false;
         if (LeafField.Instance != null)
             LeafField.Instance.Cover(activePoem, _recoverCoverage);
         AudioClip gust = _gustClips != null && _gustClips.Length > 0 ? _gustClips[UnityEngine.Random.Range(0, _gustClips.Length)] : _gustClip;
@@ -437,12 +441,23 @@ public class TranscribePoem : RevealableObject
         }
     }
 
-    private bool Holding()
+    private bool toggled;
+
+    private bool Holding() => toggled;
+
+    private void UpdateToggle(bool open)
     {
+        if (!open)
+        {
+            toggled = false;
+            return;
+        }
         InputAction write = player != null ? player.WriteAction : null;
-        if (write != null)
-            return write.IsPressed();
-        return Keyboard.current != null && Keyboard.current.tKey.isPressed;
+        bool pressed = write != null
+            ? write.WasPressedThisFrame()
+            : Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame;
+        if (pressed && Time.timeScale > 0f && !DiaryInteraction.IsReading)
+            toggled = !toggled;
     }
 
     public bool IsTranscribed(int poemId) => transcribed.Contains(poemId);

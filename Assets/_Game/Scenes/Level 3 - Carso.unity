@@ -6108,7 +6108,7 @@ MonoBehaviour:
       discesa.\nRiposa\nnel camposanto d\u2019Ivry\nsobborgo che pare\nsempre\nin
       una giornata\ndi una\ndecomposta fiera\nE forse io solo\nso ancora\nche visse"
     poemVoice: {fileID: 8300000, guid: 77c9d58dd634ae54e9229db24262b160, type: 3}
-  _promptFormat: HOLD {0} TO TRANSCRIBE
+  _promptFormat: PRESS {0} TO TRANSCRIBE
   _promptSize: 30
 --- !u!114 &681735470
 MonoBehaviour:
@@ -7070,7 +7070,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 758197902}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bc9a93ef613a5b04cb0e673926259002, type: 3}
   m_Name: 
@@ -9062,7 +9062,7 @@ MonoBehaviour:
   - note: Pietro's lantern
     waitFor: 4096
     amount: 0
-    objective: LOOK AT THE LANTERN AT THE END OF THE TRENCH
+    objective: A LIGHT AT THE END OF THE TRENCH
     lines:
     - speakerId: pietro
       pieces:
@@ -9085,7 +9085,7 @@ MonoBehaviour:
   - note: Sweep in the dark
     waitFor: 4
     amount: 30
-    objective: SWEEP THE TRENCH FLOOR
+    objective: THE TRENCH FLOOR IS BURIED IN LEAVES
     lines:
     - speakerId: pietro
       pieces:
@@ -9109,7 +9109,7 @@ MonoBehaviour:
   - note: Follow the lantern
     waitFor: 512
     amount: 0
-    objective: 'FOLLOW THE LANTERN: EACH TIME YOU LOOK AWAY, PIETRO MOVES ON'
+    objective: PIETRO ONLY MOVES WHEN YOU ARE NOT WATCHING
     lines: []
     action: 0
     observableIndex: 0
@@ -9117,7 +9117,7 @@ MonoBehaviour:
   - note: The companion
     waitFor: 4096
     amount: 0
-    objective: LOOK AT THE PLACE BESIDE YOU, UNDER THE BLANKET
+    objective: YOU ARE NOT ALONE IN THIS TRENCH
     lines:
     - speakerId: ungaretti
       pieces:
@@ -9157,7 +9157,7 @@ MonoBehaviour:
   - note: The postcard
     waitFor: 32
     amount: 0
-    objective: SWEEP BESIDE YOUR COMPANION, IN THE LANTERN LIGHT
+    objective: SOMETHING IS WRITTEN IN THE LANTERN LIGHT
     lines: []
     action: 0
     observableIndex: 0
@@ -9165,7 +9165,7 @@ MonoBehaviour:
   - note: Veglia
     waitFor: 64
     amount: 0
-    objective: KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE
+    objective: THE WORDS FADE WHEN YOU LOOK AWAY
     lines: []
     action: 0
     observableIndex: 0
@@ -9181,7 +9181,7 @@ MonoBehaviour:
   - note: Pietro comes back
     waitFor: 512
     amount: 0
-    objective: 'LOOK AWAY: PIETRO IS COMING BACK FOR THE LANTERN'
+    objective: PIETRO WILL COME BACK FOR HIS LANTERN
     lines:
     - speakerId: pietro
       pieces:
@@ -9204,7 +9204,7 @@ MonoBehaviour:
   - note: Pietro is gone
     waitFor: 512
     amount: 0
-    objective: LOOK AWAY FROM PIETRO
+    objective: PIETRO WILL NOT MOVE WHILE YOU WATCH HIM
     lines: []
     action: 1
     observableIndex: 1
@@ -9212,7 +9212,7 @@ MonoBehaviour:
   - note: The place is empty
     waitFor: 512
     amount: 0
-    objective: LOOK AT YOUR COMPANION, THEN LOOK AWAY
+    objective: YOUR COMPANION IS STILL BESIDE YOU... FOR NOW
     lines:
     - speakerId: ungaretti
       pieces:
@@ -9226,7 +9226,7 @@ MonoBehaviour:
   - note: Turn around
     waitFor: 256
     amount: 0
-    objective: TURN AWAY FROM THE END OF THE TRENCH
+    objective: IT IS TIME TO TURN AWAY FROM THE TRENCH
     lines: []
     action: 0
     observableIndex: 0

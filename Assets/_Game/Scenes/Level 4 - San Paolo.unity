@@ -5231,7 +5231,7 @@ MonoBehaviour:
       mani\npenetrata\nnel mio silenzio\nho scritto\nlettere piene d\u2019amore\n\nNon
       sono mai stato\ntanto\nattaccato alla vita"
     poemVoice: {fileID: 8300000, guid: f781ad2495c12194993bee1d1d2bf266, type: 3}
-  _promptFormat: HOLD {0} TO TRANSCRIBE
+  _promptFormat: PRESS {0} TO TRANSCRIBE
   _promptSize: 30
 --- !u!114 &681735470
 MonoBehaviour:
@@ -6509,7 +6509,7 @@ MonoBehaviour:
   - note: Rui
     waitFor: 4096
     amount: 0
-    objective: LOOK AT RUI, BY THE GARDEN DOOR
+    objective: SOMEONE IS WAITING BY THE GARDEN DOOR
     lines:
     - speakerId: rui
       pieces:
@@ -6532,7 +6532,7 @@ MonoBehaviour:
   - note: Sweep the living room
     waitFor: 4
     amount: 30
-    objective: SWEEP THE LIVING ROOM
+    objective: THE LIVING ROOM IS FULL OF LEAVES
     lines:
     - speakerId: rui
       pieces:
@@ -6551,7 +6551,7 @@ MonoBehaviour:
   - note: The drawings are gone
     waitFor: 512
     amount: 0
-    objective: LOOK AWAY FROM THE CHILD'S CORNER
+    objective: THE CHILD'S CORNER CHANGES WHEN YOU ARE NOT LOOKING
     lines:
     - speakerId: rui
       pieces:
@@ -6583,7 +6583,7 @@ MonoBehaviour:
   - note: The toy is gone
     waitFor: 512
     amount: 0
-    objective: LOOK AWAY FROM THE CORNER AGAIN
+    objective: THE CORNER IS NOT EMPTY YET
     lines:
     - speakerId: ungaretti
       pieces:
@@ -6604,7 +6604,7 @@ MonoBehaviour:
   - note: The chair is gone
     waitFor: 512
     amount: 0
-    objective: LOOK AWAY FROM THE CORNER AGAIN
+    objective: THE CORNER IS NOT EMPTY YET
     lines: []
     action: 0
     observableIndex: 3
@@ -6612,7 +6612,7 @@ MonoBehaviour:
   - note: A sheet of paper
     waitFor: 32
     amount: 0
-    objective: SWEEP THE LEAVES IN THE EMPTY CORNER
+    objective: LEAVES HAVE GATHERED IN THE EMPTY CORNER
     lines:
     - speakerId: rui
       pieces:
@@ -6638,7 +6638,7 @@ MonoBehaviour:
   - note: Giorno per giorno
     waitFor: 64
     amount: 0
-    objective: KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE
+    objective: THE WORDS FADE WHEN YOU LOOK AWAY
     lines: []
     action: 0
     observableIndex: 0
@@ -6695,7 +6695,7 @@ MonoBehaviour:
   - note: Turn around
     waitFor: 256
     amount: 0
-    objective: TURN AWAY FROM THE FRONT DOOR
+    objective: IT IS TIME TO LEAVE THIS HOUSE
     lines: []
     action: 0
     observableIndex: 0

@@ -1769,7 +1769,7 @@ MonoBehaviour:
   - note: Carlo complains
     waitFor: 1
     amount: 0
-    objective: TALK TO {character}
+    objective: '{character} SEEMS TO WANT A WORD'
     lines:
     - speakerId: carlo
       pieces:
@@ -1792,7 +1792,7 @@ MonoBehaviour:
   - note: Broom
     waitFor: 2
     amount: 0
-    objective: PICK UP THE BROOM
+    objective: A BROOM WOULD HELP WITH ALL THESE LEAVES
     lines: []
     action: 0
     observableIndex: 0
@@ -1855,7 +1855,7 @@ MonoBehaviour:
   - note: The big pile
     waitFor: 160
     amount: 0
-    objective: SWEEP THE BIG PILE IN THE MIDDLE OF THE ROOM
+    objective: THE BIG PILE OF LEAVES IS HIDING SOMETHING
     lines:
     - speakerId: ungaretti
       pieces:
@@ -1879,7 +1879,7 @@ MonoBehaviour:
   - note: Transcription
     waitFor: 64
     amount: 0
-    objective: KEEP YOUR EYES ON THE POEM WHILE YOU TRANSCRIBE
+    objective: THE WORDS FADE WHEN YOU LOOK AWAY
     lines: []
     action: 0
     observableIndex: 0
@@ -1924,7 +1924,7 @@ MonoBehaviour:
   - note: Turn around
     waitFor: 256
     amount: 0
-    objective: TURN AROUND
+    objective: THE ROOM IS CHANGING BEHIND YOU
     lines: []
     action: 0
     observableIndex: 0
@@ -6235,7 +6235,7 @@ MonoBehaviour:
   _immuneToLookingAway: 0
   _lowerAfterRelease: 1
   _earlierPoems: []
-  _promptFormat: HOLD {0} TO TRANSCRIBE
+  _promptFormat: PRESS {0} TO TRANSCRIBE
   _promptSize: 30
 --- !u!114 &681735470
 MonoBehaviour:

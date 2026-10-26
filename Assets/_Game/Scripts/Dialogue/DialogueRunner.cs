@@ -84,6 +84,7 @@ namespace Hortensia.Runtime
         private readonly List<Image> borderLines = new List<Image>();
         private AudioSource voice2D;
         private bool playing;
+        private TMP_Text skipHint;
         private string pieceText = string.Empty;
         private readonly StringBuilder revealBuilder = new StringBuilder(256);
 
@@ -199,26 +200,45 @@ namespace Hortensia.Runtime
 
             float shown = 0f;
             float elapsed = 0f;
+            float hintBlink = 0f;
+            bool skipped = false;
             while (true)
             {
                 if (Time.timeScale > 0f)
                 {
                     elapsed += Time.unscaledDeltaTime;
+                    bool pressed = elapsed > 0.15f && AdvancePressed();
                     if (shown < fullReveal)
                     {
-                        shown = AdvancePressed() ? fullReveal : Mathf.Min(fullReveal, shown + charactersPerSecond * Time.unscaledDeltaTime);
+                        shown = pressed ? fullReveal : Mathf.Min(fullReveal, shown + charactersPerSecond * Time.unscaledDeltaTime);
                         ApplyReveal(shown);
+                    }
+                    else if (pressed)
+                    {
+                        skipped = true;
+                        if (hasVoice && source != null)
+                            source.Stop();
+                        break;
                     }
 
                     bool voiceDone = !hasVoice || VoiceTrim.Finished(source, piece.voice);
                     bool silentDone = hasVoice || elapsed >= silentPieceSeconds;
                     if (shown >= fullReveal && voiceDone && silentDone)
                         break;
+                    hintBlink += Time.unscaledDeltaTime * continueBlinkSpeed;
+                    ShowSkipHint(shown < fullReveal, hintBlink);
                 }
                 yield return null;
             }
+            HideSkipHint();
 
             ApplyReveal(fullReveal);
+            if (skipped)
+            {
+                speaker?.SetState(DialogueSpeaker.State.Waiting);
+                yield return null;
+                yield break;
+            }
             speaker?.SetState(DialogueSpeaker.State.Waiting);
             continueText.gameObject.SetActive(true);
             yield return null;
@@ -274,6 +294,26 @@ namespace Hortensia.Runtime
         {
             speaker = null;
             return !string.IsNullOrWhiteSpace(id) && speakers.TryGetValue(id.Trim(), out speaker) && speaker != null;
+        }
+
+        private void ShowSkipHint(bool twice, float blink)
+        {
+            if (skipHint == null)
+                return;
+            string english = twice ? "CLICK TWICE TO CONTINUE" : "CLICK TO CONTINUE";
+            if (!skipHint.gameObject.activeSelf)
+                skipHint.gameObject.SetActive(true);
+            if (skipHint.text != english && skipHint.text != Loc.T(english))
+                skipHint.text = english;
+            Color c = continueColor;
+            c.a *= 0.35f + 0.65f * (0.5f + 0.5f * Mathf.Cos(blink * Mathf.PI));
+            skipHint.color = c;
+        }
+
+        private void HideSkipHint()
+        {
+            if (skipHint != null && skipHint.gameObject.activeSelf)
+                skipHint.gameObject.SetActive(false);
         }
 
         private static bool AdvancePressed()
@@ -348,6 +388,14 @@ namespace Hortensia.Runtime
             continueRect.anchorMin = continueRect.anchorMax = continueRect.pivot = new Vector2(1f, 0f);
             continueRect.anchoredPosition = new Vector2(-padding.x * 0.5f, padding.y * 0.5f);
             continueText.gameObject.SetActive(false);
+
+            skipHint = CreateText(root.transform, "Skip Hint", resolved, textSize * 0.6f, continueColor, TextAlignmentOptions.BottomRight);
+            RectTransform hintRect = skipHint.rectTransform;
+            hintRect.anchorMin = hintRect.anchorMax = hintRect.pivot = new Vector2(1f, 0f);
+            hintRect.sizeDelta = new Vector2(900f, 60f);
+            hintRect.anchoredPosition = new Vector2(-40f, 24f);
+            skipHint.textWrappingMode = TextWrappingModes.NoWrap;
+            skipHint.gameObject.SetActive(false);
 
             leftPortrait = Portrait(box, "Ungaretti Portrait", 0f, out InkPortrait leftInk, out leftGroup);
             leftInk.Person = InkPortrait.Sitter.Ungaretti;

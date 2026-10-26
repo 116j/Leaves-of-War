@@ -59,6 +59,8 @@ public class LevelFlow : MonoBehaviour
         public int observableIndex;
         [Tooltip("Fragment Found / Fragment Transcribed: which piece of the poem (1, 2, 3...).")]
         public int fragment;
+        [Tooltip("Observable Behaviour Changed: the change happens when the player touches the object (Interact) instead of when he looks away.")]
+        public bool changeOnTouch;
     }
 
     [Header("Level")]
@@ -112,6 +114,14 @@ public class LevelFlow : MonoBehaviour
 
     [Header("Objective Text")]
     [SerializeField, Min(8f)] private float objectiveSize = 34f;
+    [Tooltip("Seconds the player can explore before the hint of a step appears. Hints with a key to press ({sweepKey}, {diaryKey}, {writeKey}) appear at once.")]
+    [SerializeField, Min(0f)] private float hintDelay = 35f;
+
+    [Header("Breathing Time")]
+    [Tooltip("Seconds of free play before a dialogue that would start right after another one. Not used for the arrival, the poem and the leaving.")]
+    [SerializeField, Min(0f)] private float breathingTime = 6f;
+    [Tooltip("Seconds of free play, at least, between two dialogues of the level, when the next one is not a key moment.")]
+    [SerializeField, Min(0f)] private float minimumGap = 2.5f;
 
     public static bool PoemAllowed { get; private set; } = true;
 
@@ -156,7 +166,11 @@ public class LevelFlow : MonoBehaviour
     private bool leaving;
     private bool loadingFallback;
     private int stepPushed;
+    private int idlePushed;
+    private float idleSweep;
     private float stepTime;
+    private float lastDialogueEnd = float.NegativeInfinity;
+    private bool firstStep;
     private float turnUnseen;
     private float activeTime;
     private float lookTime;
@@ -248,30 +262,52 @@ public class LevelFlow : MonoBehaviour
 
     private IEnumerator Run()
     {
+        firstStep = true;
         foreach (Step step in steps)
         {
             if (step == null)
                 continue;
+            bool first = firstStep;
+            firstStep = false;
             objectiveText = step.objective;
 
             if (step.waitFor == Condition.TalkToCharacter && character != null)
             {
+                stepTime = Time.time;
                 talked = false;
                 character.SetLines(step.lines);
                 yield return new WaitUntil(() => talked);
+                lastDialogueEnd = Time.time;
                 character.SetLines(new DialogueLine[0]);
                 objectiveText = null;
             }
             else
             {
                 stepPushed = sweeper != null ? sweeper.PushedTotal : 0;
+                idlePushed = stepPushed;
+                idleSweep = 0f;
                 stepTime = Time.time;
                 activeTime = 0f;
                 lookTime = 0f;
                 turnUnseen = 0f;
                 SweepBlocked = step.waitFor.HasFlag(Condition.OpenNotebook);
+                TouchToChange touch = null;
+                if (step.changeOnTouch && step.waitFor.HasFlag(Condition.ObservableBehaviourChanged) && changeBehaviourSet &&
+                    observables != null && step.observableIndex >= 0 && step.observableIndex < observables.Length && observables[step.observableIndex] != null)
+                {
+                    Observable target = observables[step.observableIndex];
+                    target.OnChangeAllowed.RemoveListener(changeBehaviour.OnChange);
+                    touch = TouchToChange.Attach(target, changeBehaviour, () => Blink(false));
+                }
                 yield return new WaitUntil(() => Done(step));
+                if (touch != null)
+                    Destroy(touch);
                 SweepBlocked = false;
+                if (!first && !KeyMoment(step) && step.lines != null && step.lines.Length > 0)
+                {
+                    float gap = step.waitFor == Condition.None ? breathingTime : minimumGap;
+                    yield return new WaitUntil(() => !DialogueRunner.IsPlaying && Time.time - lastDialogueEnd >= gap);
+                }
                 objectiveText = null;
                 yield return PlayLines(step.lines);
             }
@@ -300,7 +336,7 @@ public class LevelFlow : MonoBehaviour
                     done = done && (sweeper == null || sweeper.HasBroom);
                     break;
                 case Condition.SweepLeaves:
-                    done = done && (sweeper == null || sweeper.PushedTotal - stepPushed >= step.amount);
+                    done = done && (sweeper == null || sweeper.PushedTotal - stepPushed >= step.amount || NothingLeftToSweep());
                     break;
                 case Condition.OpenNotebook:
                     done = done && DiaryInteraction.IsReading;
@@ -367,6 +403,19 @@ public class LevelFlow : MonoBehaviour
         return done;
     }
 
+    private bool NothingLeftToSweep()
+    {
+        if (sweeper.PushedTotal != idlePushed)
+        {
+            idlePushed = sweeper.PushedTotal;
+            idleSweep = 0f;
+            return false;
+        }
+        if (BroomSweeper.Active)
+            idleSweep += Time.deltaTime;
+        return idleSweep >= 4f;
+    }
+
     private bool TurnedAround()
     {
         Transform exit = exitAnchor != null ? exitAnchor : transform;
@@ -386,6 +435,15 @@ public class LevelFlow : MonoBehaviour
         return true;
     }
 
+    private static bool KeyMoment(Step step)
+    {
+        const Condition poem = Condition.PoemFound | Condition.PoemTranscribed | Condition.FragmentFound | Condition.FragmentTranscribed;
+        return (step.waitFor & poem) != 0 ||
+               step.action == StepAction.CharacterLeaves || step.action == StepAction.LoadNextLevel ||
+               step.action == StepAction.CharacterCardsThenNextLevel || step.action == StepAction.ForestFalls ||
+               step.action == StepAction.CharacterEnters;
+    }
+
     private IEnumerator PlayLines(DialogueLine[] lines)
     {
         if (lines == null || lines.Length == 0)
@@ -395,6 +453,7 @@ public class LevelFlow : MonoBehaviour
         if (!DialogueRunner.GetOrCreate().Play(lines, () => finished = true))
             yield break;
         yield return new WaitUntil(() => finished);
+        lastDialogueEnd = Time.time;
     }
 
     private AssignPoem Fragment(int number) => Array.Find(fragments, p => p != null && p.Fragment == number);
@@ -774,6 +833,13 @@ public class LevelFlow : MonoBehaviour
         StartCoroutine(PlayLines(firstGustLines));
     }
 
+    private bool HintTime()
+    {
+        if (objectiveText.Contains("{sweepKey}") || objectiveText.Contains("{diaryKey}") || objectiveText.Contains("{writeKey}"))
+            return true;
+        return !GameSettings.Current.hintsOff && Time.time - stepTime >= hintDelay;
+    }
+
     private string Format(string text, bool translate = true)
     {
         if (string.IsNullOrEmpty(text))
@@ -789,7 +855,8 @@ public class LevelFlow : MonoBehaviour
         if (transcribe != null && transcribe.IsPoemUncovered)
             poemFound = true;
 
-        bool hidden = string.IsNullOrEmpty(objectiveText) || DialogueRunner.IsPlaying || DiaryInteraction.IsRaised || Time.timeScale <= 0f;
+        bool hidden = string.IsNullOrEmpty(objectiveText) || DialogueRunner.IsPlaying || DiaryInteraction.IsRaised || Time.timeScale <= 0f ||
+                      !HintTime();
         ScreenPrompt.Show(objective, !hidden, hidden ? null : Format(objectiveText), hidden ? null : Format(objectiveText, false));
     }
 }

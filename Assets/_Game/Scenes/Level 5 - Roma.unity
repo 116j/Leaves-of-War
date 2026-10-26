@@ -6147,7 +6147,7 @@ MonoBehaviour:
       volto,\nEd i miei occhi in me null'altro vedano\nQuando anch'essi vorr\xE0
       chiudere Iddio...\nE t'amo, t'amo, ed \xE8 continuo schianto!..."
     poemVoice: {fileID: 8300000, guid: b2fda8cb89bed324bb0da10e4b1e13ae, type: 3}
-  _promptFormat: HOLD {0} TO TRANSCRIBE
+  _promptFormat: PRESS {0} TO TRANSCRIBE
   _promptSize: 30
 --- !u!114 &681735470
 MonoBehaviour:
@@ -11692,7 +11692,7 @@ MonoBehaviour:
   - note: Leone
     waitFor: 4096
     amount: 0
-    objective: LOOK AT LEONE, BY THE SHUTTERS
+    objective: SOMEONE IS STANDING BY THE SHUTTERS
     lines:
     - speakerId: leone
       pieces:
@@ -11717,7 +11717,7 @@ MonoBehaviour:
   - note: Sweep the study
     waitFor: 4
     amount: 25
-    objective: SWEEP THE STUDY
+    objective: THE STUDY IS FULL OF LEAVES
     lines: []
     action: 1
     observableIndex: 1
@@ -11748,7 +11748,7 @@ MonoBehaviour:
   - note: First silence
     waitFor: 4096
     amount: 0
-    objective: LOOK AT THE WINDOW
+    objective: THE VOICES COME FROM OUTSIDE
     lines:
     - speakerId: leone
       pieces:
@@ -11769,7 +11769,7 @@ MonoBehaviour:
   - note: Second silence
     waitFor: 4096
     amount: 0
-    objective: LOOK AT THE WINDOW
+    objective: THE VOICES COME FROM OUTSIDE
     lines:
     - speakerId: leone
       pieces:
@@ -11790,7 +11790,7 @@ MonoBehaviour:
   - note: Third silence
     waitFor: 4096
     amount: 0
-    objective: LOOK AT THE WINDOW
+    objective: THE VOICES COME FROM OUTSIDE
     lines:
     - speakerId: leone
       pieces:
@@ -11803,7 +11803,7 @@ MonoBehaviour:
   - note: Words on the tiles
     waitFor: 32
     amount: 0
-    objective: SWEEP THE LEAVES BY THE DOOR
+    objective: LEAVES HAVE GATHERED BY THE DOOR
     lines:
     - speakerId: leone
       pieces:
@@ -11821,7 +11821,7 @@ MonoBehaviour:
   - note: "Non gridate pi\xF9"
     waitFor: 64
     amount: 0
-    objective: KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE
+    objective: THE WORDS FADE WHEN YOU LOOK AWAY
     lines: []
     action: 0
     observableIndex: 0
@@ -11848,7 +11848,7 @@ MonoBehaviour:
   - note: Look at Leone
     waitFor: 4096
     amount: 0
-    objective: LOOK AT LEONE
+    objective: LEONE IS STILL HERE
     lines:
     - speakerId: leone
       pieces:
@@ -11861,7 +11861,7 @@ MonoBehaviour:
   - note: Close the shutters
     waitFor: 8192
     amount: 0
-    objective: CLOSE THE SHUTTERS
+    objective: THE SHUTTERS ARE STILL OPEN
     lines: []
     action: 4
     observableIndex: 0
@@ -11869,7 +11869,7 @@ MonoBehaviour:
   - note: Turn away from the room
     waitFor: 256
     amount: 0
-    objective: TURN AWAY FROM THE ROOM
+    objective: IT IS TIME TO LEAVE THE ROOM
     lines: []
     action: 0
     observableIndex: 0

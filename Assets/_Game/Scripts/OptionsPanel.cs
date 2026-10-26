@@ -230,6 +230,7 @@ namespace Hortensia.Runtime
             CreateToggleRow("SHOW SUBTITLES", () => draft.subtitlesEnabled, v => draft.subtitlesEnabled = v);
             CreateButtonRow("SUBTITLE STYLE", "CUSTOMIZE", () => OpenStylePanel(true));
             CreateToggleRow("SHOW IN-GAME TEXT", () => draft.inGameTextEnabled, v => draft.inGameTextEnabled = v);
+            CreateToggleRow("SHOW HINTS", () => !draft.hintsOff, v => draft.hintsOff = !v);
             CreateButtonRow("SCREEN TEXT STYLE", "CUSTOMIZE", () => OpenStylePanel(false));
         }
 

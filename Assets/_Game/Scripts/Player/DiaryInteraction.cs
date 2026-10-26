@@ -52,6 +52,10 @@ public class DiaryInteraction : KeyboardControl
     [SerializeField] private string closeHint = "PRESS {0} TO CLOSE THE NOTEBOOK";
     [SerializeField, Min(8f)] private float closeHintSize = 28f;
     [SerializeField] private string turnHint = "A / D TO TURN THE PAGES";
+    [SerializeField] private string zoomHint = "HOLD RIGHT CLICK TO LOOK CLOSER";
+    [SerializeField] private string translationHint = "{0} FOR THE TRANSLATION";
+    [Tooltip("How much bigger the notebook gets while the right mouse button is held (the mouse moves around the page).")]
+    [SerializeField, Range(1.2f, 3f)] private float zoom = 1.9f;
 
     public Transform Notebook => diary;
     public static bool IsReading { get; private set; }
@@ -346,8 +350,21 @@ public class DiaryInteraction : KeyboardControl
                 hintEnglish += "   ·   " + turnHint;
                 hintText += "   ·   " + Loc.T(turnHint);
             }
+            if (!string.IsNullOrEmpty(zoomHint))
+            {
+                hintEnglish += "   ·   " + zoomHint;
+                hintText += "   ·   " + Loc.T(zoomHint);
+            }
+            if (TranslationAvailable())
+            {
+                string writeKey = ScreenPrompt.KeyName(player != null ? player.WriteAction : null, "T");
+                hintEnglish += "   ·   " + string.Format(translationHint, writeKey);
+                hintText += "   ·   " + string.Format(Loc.T(translationHint), writeKey);
+            }
         }
         ScreenPrompt.Show(closePrompt, hint, hintText, hintEnglish);
+        UpdateZoom();
+        UpdateTranslation(hint);
         if (hint && transcribe != null)
         {
             int direction = 0;
@@ -427,10 +444,166 @@ public class DiaryInteraction : KeyboardControl
             Cursor.lockState = CursorLockMode.None;
         }
         busy = false;
+        if (!writing)
+            PrepareZoom();
+    }
+
+    private Vector3 readPosition;
+    private Vector3 zoomPosition;
+    private Vector3 panRight;
+    private Vector3 panUp;
+    private bool zoomReady;
+    private float zoomBlend;
+
+    private void PrepareZoom()
+    {
+        if (diary == null || viewCamera == null)
+            return;
+        Vector3 keepPosition = diary.localPosition;
+        Quaternion keepRotation = diary.localRotation;
+        GetReadingPose(out readPosition, out _, readingSize, 0f);
+        float fill = readingSize * zoom;
+        GetReadingPose(out zoomPosition, out _, fill, 0f);
+        diary.localPosition = keepPosition;
+        diary.localRotation = keepRotation;
+        Transform parent = diary.parent;
+        Transform cam = viewCamera.transform;
+        Vector3 world = parent != null ? parent.TransformPoint(zoomPosition) : zoomPosition;
+        float depth = Mathf.Max(0.01f, Vector3.Dot(world - cam.position, cam.forward));
+        float halfV = depth * Mathf.Tan(viewCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+        float halfH = halfV * viewCamera.aspect;
+        float extra = Mathf.Max(0f, fill - 1f);
+        Vector3 right = cam.right * halfH * extra;
+        Vector3 up = cam.up * halfV * extra;
+        panRight = parent != null ? parent.InverseTransformVector(right) : right;
+        panUp = parent != null ? parent.InverseTransformVector(up) : up;
+        zoomBlend = 0f;
+        zoomReady = true;
+    }
+
+    private void UpdateZoom()
+    {
+        if (!zoomReady || !IsReading || busy || diary == null)
+            return;
+        Mouse mouse = Mouse.current;
+        Keyboard keyboard = Keyboard.current;
+        bool held = (mouse != null && mouse.rightButton.isPressed) || (keyboard != null && keyboard.zKey.isPressed);
+        zoomBlend = Mathf.MoveTowards(zoomBlend, held ? 1f : 0f, Time.unscaledDeltaTime * 5f);
+        Vector2 pointer = mouse != null ? mouse.position.ReadValue() : new Vector2(Screen.width, Screen.height) * 0.5f;
+        float x = Mathf.Clamp(pointer.x / Mathf.Max(1f, Screen.width) - 0.5f, -0.5f, 0.5f) * 2f;
+        float y = Mathf.Clamp(pointer.y / Mathf.Max(1f, Screen.height) - 0.5f, -0.5f, 0.5f) * 2f;
+        Vector3 target = zoomPosition - panRight * x - panUp * y;
+        diary.localPosition = Vector3.Lerp(readPosition, target, Mathf.SmoothStep(0f, 1f, zoomBlend));
+    }
+
+    private GameObject translationRoot;
+    private TextMeshProUGUI translationTitle;
+    private TextMeshProUGUI translationBody;
+    private bool translationOn;
+    private int translationShown = -1;
+
+    private bool TranslationAvailable() =>
+        !Loc.Italian && transcribe != null && transcribe.PageCount > 0 && PoemTranslations.TryGet(transcribe.CurrentPoemId, out _);
+
+    private void UpdateTranslation(bool reading)
+    {
+        bool available = reading && TranslationAvailable();
+        if (available)
+        {
+            InputAction write = player != null ? player.WriteAction : null;
+            bool pressed = write != null ? write.WasPressedThisFrame() : Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame;
+            if (pressed)
+                translationOn = !translationOn;
+        }
+        bool show = available && translationOn;
+        if (show && translationRoot == null)
+            BuildTranslation();
+        if (translationRoot != null && translationRoot.activeSelf != show)
+            translationRoot.SetActive(show);
+        if (!show)
+        {
+            if (!reading)
+                translationOn = false;
+            return;
+        }
+        int poemId = transcribe.CurrentPoemId;
+        if (poemId == translationShown || !PoemTranslations.TryGet(poemId, out PoemTranslations.Entry entry))
+            return;
+        translationShown = poemId;
+        translationTitle.text = entry.IsNote ? entry.Title + "  —  about the poem" : entry.Title;
+        translationBody.text = entry.Text;
+    }
+
+    private void BuildTranslation()
+    {
+        translationRoot = new GameObject("Poem Translation", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        translationRoot.transform.SetParent(transform, false);
+        var canvas = translationRoot.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 32000;
+        var scaler = translationRoot.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
+        panel.transform.SetParent(translationRoot.transform, false);
+        var panelRect = (RectTransform)panel.transform;
+        panelRect.anchorMin = new Vector2(1f, 0.5f);
+        panelRect.anchorMax = new Vector2(1f, 0.5f);
+        panelRect.pivot = new Vector2(1f, 0.5f);
+        panelRect.anchoredPosition = new Vector2(-40f, 20f);
+        panelRect.sizeDelta = new Vector2(620f, 900f);
+        Image image = panel.GetComponent<Image>();
+        image.color = new Color(0.06f, 0.05f, 0.04f, 0.86f);
+        image.raycastTarget = false;
+
+        TMP_FontAsset font = DialogueRunner.ActiveFont != null ? DialogueRunner.ActiveFont : TMP_Settings.defaultFontAsset;
+        translationTitle = TranslationText(panel.transform, "Title", font, 34f, new Vector2(30f, -28f), new Vector2(-30f, -90f), true);
+        translationBody = TranslationText(panel.transform, "Body", font, 25f, new Vector2(30f, -100f), new Vector2(-30f, -30f), false);
+        translationBody.enableAutoSizing = true;
+        translationBody.fontSizeMin = 14f;
+        translationBody.fontSizeMax = 26f;
+        translationRoot.SetActive(false);
+    }
+
+    private static TextMeshProUGUI TranslationText(Transform parent, string name, TMP_FontAsset font, float size, Vector2 topLeft, Vector2 bottomRight, bool title)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.transform.SetParent(parent, false);
+        var rect = (RectTransform)go.transform;
+        if (title)
+        {
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.offsetMin = new Vector2(topLeft.x, bottomRight.y);
+            rect.offsetMax = new Vector2(bottomRight.x, topLeft.y);
+        }
+        else
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(topLeft.x, -bottomRight.y);
+            rect.offsetMax = new Vector2(bottomRight.x, topLeft.y);
+        }
+        var text = go.GetComponent<TextMeshProUGUI>();
+        if (font != null)
+            text.font = font;
+        text.fontSize = size;
+        text.color = new Color(0.95f, 0.91f, 0.84f, 1f);
+        text.alignment = title ? TextAlignmentOptions.TopLeft : TextAlignmentOptions.TopLeft;
+        text.fontStyle = title ? FontStyles.Bold : FontStyles.Normal;
+        text.textWrappingMode = TextWrappingModes.Normal;
+        text.raycastTarget = false;
+        return text;
     }
 
     private IEnumerator Close()
     {
+        if (zoomReady && diary != null)
+            diary.localPosition = readPosition;
+        zoomReady = false;
+        zoomBlend = 0f;
         busy = true;
         if (IsReading)
             Cursor.lockState = previousLock;

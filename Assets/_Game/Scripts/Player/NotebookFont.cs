@@ -13,7 +13,7 @@ public sealed class NotebookFont : ScriptableObject
     public Font font;
     public bool use = true;
     [Tooltip("Size compared to the old notebook font.")]
-    [Range(0.4f, 1.6f)] public float size = 0.75f;
+    [Range(0.4f, 1.6f)] public float size = 0.85f;
     [Tooltip("Extra space between the lines of the poems.")]
     [Range(-40f, 80f)] public float lineSpacing = 25f;
 
@@ -36,7 +36,7 @@ public sealed class NotebookFont : ScriptableObject
     }
 
     public static bool Active => Current == null || Current.use;
-    public static float Size => Current != null ? Current.size : 0.75f;
+    public static float Size => Current != null ? Current.size : 0.85f;
     public static float LineSpacing => Current != null ? Current.lineSpacing : 25f;
 
     public static TMP_FontAsset Asset(TMP_FontAsset look)

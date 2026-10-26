@@ -6208,7 +6208,7 @@ MonoBehaviour:
       il mare\nnei primi cespugli\nperch\xE8 di volare\nnon ha pi\xF9 voglia\nMa
       non vivere di lamento\ncome un cardellino accecato"
     poemVoice: {fileID: 8300000, guid: d0505963b9530fc408881e10bfe71d30, type: 3}
-  _promptFormat: HOLD {0} TO TRANSCRIBE
+  _promptFormat: PRESS {0} TO TRANSCRIBE
   _promptSize: 30
 --- !u!114 &681735470
 MonoBehaviour:
@@ -7156,7 +7156,7 @@ MonoBehaviour:
   - note: Moammed at the window
     waitFor: 4096
     amount: 0
-    objective: LOOK AT THE MAN BY THE WINDOW
+    objective: SOMEONE IS STANDING BY THE WINDOW
     lines:
     - speakerId: ungaretti
       pieces:
@@ -7175,7 +7175,7 @@ MonoBehaviour:
   - note: Broom
     waitFor: 2
     amount: 0
-    objective: PICK UP THE BROOM
+    objective: THE LEAVES WILL NOT SWEEP THEMSELVES
     lines: []
     action: 0
     observableIndex: 0
@@ -7183,7 +7183,7 @@ MonoBehaviour:
   - note: Sweep between the beds
     waitFor: 4
     amount: 40
-    objective: SWEEP BETWEEN THE TWO BEDS
+    objective: SOMETHING LIES UNDER THE LEAVES BETWEEN THE BEDS
     lines:
     - speakerId: apollinaire
       pieces:
@@ -7197,7 +7197,7 @@ MonoBehaviour:
   - note: Fragment 1
     waitFor: 1024
     amount: 0
-    objective: SWEEP BETWEEN THE TWO BEDS
+    objective: SOMETHING LIES UNDER THE LEAVES BETWEEN THE BEDS
     lines:
     - speakerId: ungaretti
       pieces:
@@ -7210,7 +7210,7 @@ MonoBehaviour:
   - note: Transcribe 1
     waitFor: 2048
     amount: 0
-    objective: KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE
+    objective: THE WORDS FADE WHEN YOU LOOK AWAY
     lines: []
     action: 1
     observableIndex: 0
@@ -7218,7 +7218,7 @@ MonoBehaviour:
   - note: The coat is gone
     waitFor: 512
     amount: 0
-    objective: LOOK AT THE COAT ON THE CHAIR, THEN LOOK AWAY
+    objective: HIS COAT IS STILL ON THE CHAIR
     lines:
     - speakerId: ungaretti
       pieces:
@@ -7233,10 +7233,11 @@ MonoBehaviour:
     action: 0
     observableIndex: 0
     fragment: 0
+    changeOnTouch: 1
   - note: Fragment 2
     waitFor: 1024
     amount: 0
-    objective: SWEEP IN FRONT OF THE DESK
+    objective: HE WROTE AT THAT DESK, AT NIGHT
     lines:
     - speakerId: apollinaire
       pieces:
@@ -7249,7 +7250,7 @@ MonoBehaviour:
   - note: Transcribe 2
     waitFor: 2048
     amount: 0
-    objective: KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE
+    objective: THE WORDS FADE WHEN YOU LOOK AWAY
     lines: []
     action: 1
     observableIndex: 1
@@ -7257,7 +7258,7 @@ MonoBehaviour:
   - note: The shelf is empty
     waitFor: 512
     amount: 0
-    objective: LOOK AT THE BOOKS ON THE SHELF, THEN LOOK AWAY
+    objective: HIS BOOKS ARE STILL ON THE SHELF
     lines:
     - speakerId: ungaretti
       pieces:
@@ -7267,10 +7268,11 @@ MonoBehaviour:
     action: 0
     observableIndex: 1
     fragment: 0
+    changeOnTouch: 1
   - note: Fragment 3
     waitFor: 1024
     amount: 0
-    objective: SWEEP UNDER THE WINDOW
+    objective: THE WIND HAS BLOWN LEAVES UNDER THE WINDOW
     lines:
     - speakerId: apollinaire
       pieces:
@@ -7300,7 +7302,7 @@ MonoBehaviour:
   - note: Transcribe 3
     waitFor: 2048
     amount: 0
-    objective: KEEP YOUR EYES ON THE WORDS WHILE YOU TRANSCRIBE
+    objective: THE WORDS FADE WHEN YOU LOOK AWAY
     lines: []
     action: 1
     observableIndex: 2
@@ -7308,7 +7310,7 @@ MonoBehaviour:
   - note: Moammed is gone
     waitFor: 512
     amount: 0
-    objective: LOOK AT MOAMMED, THEN LOOK AWAY
+    objective: MOAMMED IS STILL BY THE WINDOW... FOR NOW
     lines:
     - speakerId: ungaretti
       pieces:
@@ -7340,7 +7342,7 @@ MonoBehaviour:
   - note: Look at Apollinaire
     waitFor: 4096
     amount: 0
-    objective: LOOK AT {character}
+    objective: '{character} IS STILL HERE'
     lines:
     - speakerId: apollinaire
       pieces:
@@ -7354,7 +7356,7 @@ MonoBehaviour:
   - note: Apollinaire is gone
     waitFor: 512
     amount: 0
-    objective: LOOK AWAY FROM {character}
+    objective: SOME GOODBYES ONLY HAPPEN WHEN YOU ARE NOT LOOKING
     lines: []
     action: 4
     observableIndex: 3
@@ -7362,7 +7364,7 @@ MonoBehaviour:
   - note: Turn around
     waitFor: 256
     amount: 0
-    objective: TURN AROUND
+    objective: THE ROOM IS CHANGING BEHIND YOU
     lines: []
     action: 0
     observableIndex: 0

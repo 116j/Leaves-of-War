@@ -8830,7 +8830,7 @@ MonoBehaviour:
       volete ancora udire,\nSe sperate di non perire.\n\nHanno l'impercettibile sussurro,\nNon
       fanno pi\xF9 rumore\nDel crescere dell'erba,\nLieta dove non passa l'uomo."
     poemVoice: {fileID: 8300000, guid: 4f0e7107879aaf74fa985810673a946e, type: 3}
-  _promptFormat: HOLD {0} TO TRANSCRIBE
+  _promptFormat: PRESS {0} TO TRANSCRIBE
   _promptSize: 30
 --- !u!114 &681735470
 MonoBehaviour:
@@ -16883,7 +16883,7 @@ MonoBehaviour:
   - note: Lucien
     waitFor: 4096
     amount: 0
-    objective: LOOK AT LUCIEN
+    objective: SOMEONE IS WAITING IN THE CLEARING
     lines:
     - speakerId: lucien
       pieces:
@@ -16922,7 +16922,7 @@ MonoBehaviour:
   - note: Sweep the clearing
     waitFor: 4
     amount: 20
-    objective: SWEEP THE CLEARING
+    objective: THE CLEARING IS BURIED IN LEAVES
     lines: []
     action: 1
     observableIndex: 1
@@ -16930,7 +16930,7 @@ MonoBehaviour:
   - note: Green a moment ago
     waitFor: 512
     amount: 0
-    objective: KEEP SWEEPING THE CLEARING
+    objective: THERE ARE STILL LEAVES IN THE CLEARING
     lines:
     - speakerId: lucien
       pieces:
@@ -16971,7 +16971,7 @@ MonoBehaviour:
   - note: The paper
     waitFor: 32
     amount: 0
-    objective: SWEEP THE LEAVES IN THE MIDDLE OF THE CLEARING
+    objective: SOMETHING LIES IN THE MIDDLE OF THE CLEARING
     lines: []
     action: 0
     observableIndex: 0
@@ -17005,7 +17005,7 @@ MonoBehaviour:
   - note: Look at Lucien
     waitFor: 4096
     amount: 0
-    objective: LOOK AT LUCIEN
+    objective: LUCIEN IS STILL HERE
     lines:
     - speakerId: lucien
       pieces:
@@ -17018,7 +17018,7 @@ MonoBehaviour:
   - note: Lucien is gone
     waitFor: 512
     amount: 0
-    objective: LOOK AWAY FROM LUCIEN
+    objective: SOME GOODBYES ONLY HAPPEN WHEN YOU ARE NOT LOOKING
     lines: []
     action: 9
     observableIndex: 0

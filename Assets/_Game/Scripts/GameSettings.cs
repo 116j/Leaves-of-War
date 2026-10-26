@@ -101,6 +101,7 @@ namespace Hortensia.Runtime
 
         public bool subtitlesEnabled;
         public bool inGameTextEnabled;
+        public bool hintsOff;
         public int textStyleVersion;
         public TextStyle subtitleStyle;
         public TextStyle screenStyle;
