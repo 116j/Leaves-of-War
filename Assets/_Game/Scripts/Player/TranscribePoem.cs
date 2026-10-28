@@ -127,6 +127,7 @@ public class TranscribePoem : RevealableObject
     private readonly Dictionary<int, int> fragmentsDone = new();
     private readonly Dictionary<int, SortedDictionary<int, string>> fragmentTexts = new();
     private bool joining;
+    private JoinWriting joinWriting;
     private bool finishingVoice;
     private FirstPersonController player;
     private TextMeshProUGUI prompt;
@@ -344,6 +345,7 @@ public class TranscribePoem : RevealableObject
     private void Update()
     {
         IsVoicePlaying = voiceSource != null && voiceSource.isPlaying;
+        RefitHeaders();
         UpdateWritingSound();
         float dt = Time.unscaledDeltaTime;
         bool playing = Time.timeScale > 0f && !DialogueRunner.LocksPlayer;
@@ -499,6 +501,10 @@ public class TranscribePoem : RevealableObject
         if (poem == null)
             yield break;
         joining = true;
+        string joinedBody = !string.IsNullOrWhiteSpace(poem.poemText) ? poem.poemText : JoinedFragments(poemId, int.MaxValue);
+        string joinedTitle = (poem.poemName ?? string.Empty).Trim();
+        joinWriting = JoinWriting.Create((joinedTitle.Length > 0 ? "<size=125%>" + joinedTitle + "</size>\n\n" : string.Empty) + (joinedBody ?? string.Empty).Trim(),
+            PoemFont, activePoem != null ? activePoem.FloorColor : new Color(0.12f, 0.08f, 0.05f, 0.85f));
         if (diary != null && diary.HasDiary)
         {
             yield return new WaitUntil(() => DiaryInteraction.IsWriting || diary.CanOpen && !BroomSweeper.Active);
@@ -510,6 +516,9 @@ public class TranscribePoem : RevealableObject
         currentp = poemId;
         transcriptionCoroutine = StartCoroutine(Transcribe(poemId));
         yield return new WaitUntil(() => transcribed.Contains(poemId) && transcriptionCoroutine == null);
+        if (joinWriting != null)
+            joinWriting.Finish();
+        joinWriting = null;
         joining = false;
     }
 
@@ -634,7 +643,9 @@ public class TranscribePoem : RevealableObject
                 SetReveal(text, Mathf.Clamp01(t));
                 WritingSection = index;
                 WritingProgress = Mathf.Clamp01(t);
-                if (activePoem != null)
+                if (joining && joinWriting != null)
+                    joinWriting.SetLifted((index + Mathf.Clamp01(t)) / sections.Count);
+                else if (activePoem != null)
                     activePoem.SetLifted((index + Mathf.Clamp01(t)) / sections.Count);
                 yield return null;
             }
@@ -682,6 +693,8 @@ public class TranscribePoem : RevealableObject
         {
             transcribed.Add(poemId);
             Remember(poemId);
+            if (joining && joinWriting != null)
+                joinWriting.Finish();
             Transcribed?.Invoke(poemId);
         }
         yield return new WaitForSecondsRealtime(1f);
@@ -1115,13 +1128,30 @@ public class TranscribePoem : RevealableObject
             return;
         if (!baseSizes.TryGetValue(header, out float size))
             baseSizes[header] = size = header.fontSize;
-        header.fontSize = size;
+        if (header.textWrappingMode != TextWrappingModes.NoWrap)
+            header.textWrappingMode = TextWrappingModes.NoWrap;
+        if (header.enableAutoSizing)
+            header.enableAutoSizing = false;
         float width = header.rectTransform.rect.width - header.margin.x - header.margin.z;
         if (width <= 1f)
             return;
-        float preferred = header.GetPreferredValues(header.text).x;
-        if (preferred > width)
-            header.fontSize = Mathf.Max(size * 0.5f, size * width / preferred * 0.98f);
+        float current = Mathf.Max(0.01f, header.fontSize);
+        float preferred = header.GetPreferredValues(header.text, float.PositiveInfinity, float.PositiveInfinity).x * size / current;
+        float target = preferred > width ? Mathf.Max(size * 0.35f, size * width / preferred * 0.97f) : size;
+        if (Mathf.Abs(target - current) > 0.05f)
+            header.fontSize = target;
+    }
+
+    private void RefitHeaders()
+    {
+        if (!DiaryInteraction.IsRaised && !DiaryInteraction.IsWriting && !DiaryInteraction.IsReading)
+            return;
+        TextMeshProUGUI current = HeaderLine(_assignedDateCurrent, _assignedNameCurrent, _assignedPlaceCurrent);
+        if (current != null && current.isActiveAndEnabled)
+            FitHeader(current);
+        TextMeshProUGUI old = HeaderLine(_assignedDateOld, _assignedNameOld, _assignedPlaceOld);
+        if (old != null && old.isActiveAndEnabled)
+            FitHeader(old);
     }
 
     private string HeaderText(PoemInfoContainer poem)

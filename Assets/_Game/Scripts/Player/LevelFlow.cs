@@ -1,8 +1,10 @@
 using Hortensia.Runtime;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class LevelFlow : MonoBehaviour
@@ -61,6 +63,8 @@ public class LevelFlow : MonoBehaviour
         public int fragment;
         [Tooltip("Observable Behaviour Changed: the change happens when the player touches the object (Interact) instead of when he looks away.")]
         public bool changeOnTouch;
+        [Tooltip("When the step starts, the keys set for walking are shown on screen until the player walks a few steps.")]
+        public bool showMoveKeys;
     }
 
     [Header("Level")]
@@ -170,6 +174,10 @@ public class LevelFlow : MonoBehaviour
     private float idleSweep;
     private float stepTime;
     private float lastDialogueEnd = float.NegativeInfinity;
+    private bool moveHint;
+    private float moveHintStart;
+    private Vector3 moveHintFrom;
+    private const string MoveHintText = "USE {0} TO MOVE";
     private bool firstStep;
     private float turnUnseen;
     private float activeTime;
@@ -287,6 +295,12 @@ public class LevelFlow : MonoBehaviour
                 idlePushed = stepPushed;
                 idleSweep = 0f;
                 stepTime = Time.time;
+                if (step.showMoveKeys && player != null)
+                {
+                    moveHint = true;
+                    moveHintStart = Time.time;
+                    moveHintFrom = player.transform.position;
+                }
                 activeTime = 0f;
                 lookTime = 0f;
                 turnUnseen = 0f;
@@ -840,6 +854,49 @@ public class LevelFlow : MonoBehaviour
         return !GameSettings.Current.hintsOff && Time.time - stepTime >= hintDelay;
     }
 
+    private bool MoveHintShown()
+    {
+        if (!moveHint || player == null)
+            return false;
+        Vector3 moved = player.transform.position - moveHintFrom;
+        moved.y = 0f;
+        if (moved.magnitude > 4f || Time.time - moveHintStart > 15f)
+        {
+            moveHint = false;
+            return false;
+        }
+        return !DialogueRunner.IsPlaying && !DiaryInteraction.IsRaised && Time.timeScale > 0f;
+    }
+
+    private string MoveKeys()
+    {
+        InputAction move = player != null ? player.MoveAction : null;
+        if (move == null)
+            return "WASD";
+        var groups = new List<string>();
+        for (int i = 0; i < move.bindings.Count; i++)
+        {
+            if (!move.bindings[i].isComposite)
+                continue;
+            var parts = new List<string>();
+            bool arrows = true;
+            for (int k = i + 1; k < move.bindings.Count && move.bindings[k].isPartOfComposite; k++)
+            {
+                string path = move.bindings[k].effectivePath ?? string.Empty;
+                arrows &= path.EndsWith("Arrow");
+                string name = move.GetBindingDisplayString(k, InputBinding.DisplayStringOptions.DontIncludeInteractions);
+                if (!string.IsNullOrWhiteSpace(name))
+                    parts.Add(name.ToUpperInvariant());
+            }
+            if (parts.Count == 0)
+                continue;
+            string group = arrows ? Loc.T("ARROW KEYS") : parts.TrueForAll(p => p.Length == 1) ? string.Concat(parts) : string.Join(" ", parts);
+            if (!groups.Contains(group))
+                groups.Add(group);
+        }
+        return groups.Count > 0 ? string.Join(" / ", groups) : "WASD";
+    }
+
     private string Format(string text, bool translate = true)
     {
         if (string.IsNullOrEmpty(text))
@@ -855,6 +912,12 @@ public class LevelFlow : MonoBehaviour
         if (transcribe != null && transcribe.IsPoemUncovered)
             poemFound = true;
 
+        if (MoveHintShown())
+        {
+            string keys = MoveKeys();
+            ScreenPrompt.Show(objective, true, string.Format(Loc.T(MoveHintText), keys), string.Format(MoveHintText, keys));
+            return;
+        }
         bool hidden = string.IsNullOrEmpty(objectiveText) || DialogueRunner.IsPlaying || DiaryInteraction.IsRaised || Time.timeScale <= 0f ||
                       !HintTime();
         ScreenPrompt.Show(objective, !hidden, hidden ? null : Format(objectiveText), hidden ? null : Format(objectiveText, false));

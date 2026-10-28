@@ -104,6 +104,7 @@ public sealed class FirstPersonController : MonoBehaviour
     public InputAction DiaryAction { get; private set; }
     public InputAction SweepAction { get; private set; }
     public InputAction LookAction => lookAction;
+    public InputAction MoveAction => moveAction;
     public InputAction WriteAction { get; private set; }
 
     public string InteractionPrompt =>

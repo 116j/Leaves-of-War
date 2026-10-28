@@ -53,6 +53,7 @@ public class AssignPoem : RevealableObject
     public int FragmentCount => _fragmentCount;
     public bool IsFragment => _fragment > 0;
     public string FragmentText => _fragmentText;
+    public Color FloorColor => _floorColor;
 
     public PoemInfoContainer Container() => new PoemInfoContainer
     {
